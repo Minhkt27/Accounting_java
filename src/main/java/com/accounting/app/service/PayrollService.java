@@ -1,0 +1,339 @@
+package com.accounting.app.service;
+
+import com.accounting.app.model.*;
+import com.accounting.app.repository.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class PayrollService {
+
+    @Autowired private EmployeeRepository employeeRepository;
+    @Autowired private AttendanceRepository attendanceRepository;
+    @Autowired private PayrollRepository payrollRepository;
+    @Autowired private SalaryParameterRepository salaryParameterRepository;
+    @Autowired private TaxTierRepository taxTierRepository;
+    @Autowired private AttendanceService attendanceService;
+    
+    @Autowired private VoucherRepository voucherRepo;
+    @Autowired private JournalEntryRepository journalRepo;
+    @Autowired private AccountCategoryRepository accountRepo;
+    @Autowired private InsuranceRateRepository insuranceRepo;
+
+    @Transactional
+    public void approveMonthlyPayroll(Integer month, Integer year) {
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương để phê duyệt");
+        
+        // Kiểm tra xem đã tính lương chưa (DRAFT)
+        boolean allDraft = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.DRAFT);
+        if (!allDraft) throw new RuntimeException("Chỉ được phê duyệt bảng lương đang ở trạng thái DRAFT");
+
+        Double totalGross = payrolls.stream().mapToDouble(Payroll::getGrossIncome).sum();
+        Double totalInsuranceEE = payrolls.stream().mapToDouble(Payroll::getTotalInsurance).sum();
+        Double totalInsuranceER = payrolls.stream().mapToDouble(Payroll::getTotalEmployerInsurance).sum();
+        Double totalTax = payrolls.stream().mapToDouble(Payroll::getTaxAmount).sum();
+
+        // 1. Tạo Voucher hạch toán chi phí (Voucher Kế toán - PK)
+        String voucherNo = String.format("PK%02d-%d", month, year % 100);
+        Voucher v = new Voucher(voucherNo, "PHIEU_KE_TOAN", LocalDate.now(), totalGross + totalInsuranceER, "Ghi nhận chi phí lương & bảo hiểm tháng " + month + "/" + year);
+        v = voucherRepo.save(v);
+
+        // 2. Hạch toán tài khoản
+        AccountCategory acc642 = accountRepo.findById("642").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 642"));
+        AccountCategory acc334 = accountRepo.findById("334").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 334"));
+        AccountCategory acc338 = accountRepo.findById("338").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 338"));
+        AccountCategory acc3335 = accountRepo.findById("3335").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 3335"));
+
+        // - Nợ 642 / Có 334 (Lương Gross)
+        journalRepo.save(new JournalEntry(v, acc642, acc334, totalGross, "Trích chi phí lương tháng " + month));
+        // - Nợ 334 / Có 338 (BH NLĐ 10.5%)
+        if (totalInsuranceEE > 0)
+            journalRepo.save(new JournalEntry(v, acc334, acc338, totalInsuranceEE, "Trích BH NLĐ tháng " + month));
+        // - Nợ 642 / Có 338 (BH DN 23.5%)
+        if (totalInsuranceER > 0)
+            journalRepo.save(new JournalEntry(v, acc642, acc338, totalInsuranceER, "Trích BH & KPCĐ DN tháng " + month));
+        // - Nợ 334 / Có 3335 (Thuế TNCN)
+        if (totalTax > 0)
+            journalRepo.save(new JournalEntry(v, acc334, acc3335, totalTax, "Trích thuế TNCN tháng " + month));
+
+        // 3. Cập nhật trạng thái -> APPROVED
+        payrolls.forEach(p -> {
+            p.setStatus(PayrollStatus.APPROVED);
+            p.setApprovedBy("KE_TOAN_TRUONG");
+            p.setApprovedAt(java.time.LocalDateTime.now());
+        });
+        payrollRepository.saveAll(payrolls);
+    }
+
+    @Transactional
+    public void rejectMonthlyPayroll(Integer month, Integer year, String reason) {
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương để từ chối");
+
+        // Chỉ từ chối khi đang ở trạng thái DRAFT
+        boolean allDraft = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.DRAFT);
+        if (!allDraft) throw new RuntimeException("Chỉ được từ chối bảng lương đang ở trạng thái DRAFT");
+
+        payrolls.forEach(p -> {
+            p.setStatus(PayrollStatus.REJECTED);
+            p.setRejectionReason(reason);
+            p.setApprovedBy("KE_TOAN_TRUONG");
+            p.setApprovedAt(java.time.LocalDateTime.now());
+        });
+        payrollRepository.saveAll(payrolls);
+    }
+
+    @Transactional
+    public void payMonthlyPayroll(Integer month, Integer year, String paymentMethod) {
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương để thanh toán");
+        
+        // Kiểm tra xem đã APPROVED chưa
+        boolean allApproved = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.APPROVED);
+        if (!allApproved) throw new RuntimeException("Chỉ được thanh toán sau khi bảng lương đã được Phê duyệt (APPROVED)");
+
+        Double totalNet = payrolls.stream().mapToDouble(Payroll::getNetPay).sum();
+
+        // 1. Tạo Voucher Thanh toán (PC/UNC)
+        String prefix = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PC" : "UNC";
+        String type = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PHIEU_CHI" : "UNC";
+        String voucherNo = String.format("%s%02d-%d", prefix, month, year % 100);
+        
+        Voucher v = new Voucher(voucherNo, type, LocalDate.now(), totalNet, "Thanh toán lương tháng " + month + "/" + year);
+        v = voucherRepo.save(v);
+
+        // 2. Hạch toán: Nợ 334 / Có 111, 112
+        AccountCategory acc334 = accountRepo.findById("334").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 334"));
+        AccountCategory accMethod = accountRepo.findById("PAYMENT".equalsIgnoreCase(paymentMethod) ? "111" : "112")
+                .orElseThrow(() -> new RuntimeException("Thiếu tài khoản thanh toán (111/112)"));
+
+        journalRepo.save(new JournalEntry(v, acc334, accMethod, totalNet, "Thực chi tiền lương tháng " + month));
+
+        // 3. Cập nhật trạng thái -> PAID
+        payrolls.forEach(p -> p.setStatus(PayrollStatus.PAID));
+        payrollRepository.saveAll(payrolls);
+    }
+
+    @Transactional
+    public void calculateMonthlyPayroll(Integer month, Integer year) {
+        LocalDate now = LocalDate.now();
+        int currentMonthValue = now.getYear() * 12 + now.getMonthValue();
+        int targetMonthValue = year * 12 + month;
+
+        System.out.println("Payroll Check: Target=" + targetMonthValue + " vs Current=" + currentMonthValue);
+
+        if (targetMonthValue >= currentMonthValue) {
+            throw new RuntimeException("Không thể tính lương cho tháng đang diễn ra hoặc tương lai (Yêu cầu: " + month + "/" + year + ", Hiện tại: " + now.getMonthValue() + "/" + now.getYear() + ")");
+        }
+
+        // 1. Thu thập dữ liệu đầu vào & Hằng số
+        SalaryParameter params = salaryParameterRepository.findAll().stream()
+                .findFirst().orElse(defaultParams());
+        
+        List<Employee> employees = employeeRepository.findAll();
+        
+        // Xác định số công chuẩn thực tế (Dựa trên cấu hình: FIXED hoặc MONTHLY)
+        Double standardDays = params.getStandardWorkDays();
+        if ("MONTHLY".equalsIgnoreCase(params.getStandardWorkDayMode())) {
+            standardDays = (double) calculateBusinessDays(month, year);
+        }
+        
+        for (Employee emp : employees) {
+            if (!emp.getActive()) continue;
+
+            // Ưu tiên lấy dữ liệu chấm công đã có trong DB (do kế toán đã xác nhận hoặc sửa tay)
+            Optional<Attendance> optAttendance = attendanceRepository.findByEmployeeIdAndMonthAndYear(emp.getId(), month, year);
+            
+            Attendance attendance;
+            Double realDays;
+            Double paidLeaveDays;
+            if (optAttendance.isPresent()) {
+                attendance = optAttendance.get();
+                realDays = attendance.getRealWorkDays();
+                paidLeaveDays = attendance.getPaidLeaveDays();
+            } else {
+                // Nếu chưa có bản ghi chấm công, hệ thống mới tự tính gợi ý từ biến động nghỉ phép
+                com.accounting.app.dto.AttendanceSuggestion suggestion = attendanceService.getAttendanceSuggestion(emp.getId(), month, year, standardDays);
+                realDays = suggestion.getPhysicalDays();
+                paidLeaveDays = suggestion.getPaidLeaveDays();
+                attendance = new Attendance(emp, month, year, realDays, paidLeaveDays, 0.0, 0.0, 0.0);
+                attendanceRepository.save(attendance);
+            }
+
+            Payroll payroll = payrollRepository.findByEmployeeIdAndMonthAndYear(emp.getId(), month, year)
+                    .orElse(new Payroll());
+
+            payroll.setEmployee(emp);
+            payroll.setMonth(month);
+            payroll.setYear(year);
+            payroll.setContractSalary(emp.getContractSalary());
+            payroll.setRealWorkDays(realDays);
+            payroll.setPaidLeaveDays(paidLeaveDays);
+
+            // Bước 2: Tính lương theo thời gian
+            Double totalPaidDays = realDays + (paidLeaveDays != null ? paidLeaveDays : 0.0);
+            Double baseSalary = (emp.getContractSalary() / standardDays) * totalPaidDays;
+            
+            if (emp.getEmployeeType() == EmployeeType.PROBATION) {
+                baseSalary = baseSalary * 0.85;
+            }
+            baseSalary = (double) Math.round(baseSalary);
+            payroll.setBaseSalaryPay(baseSalary);
+
+            // Bước 3: Tính phụ cấp
+            Double mealAllowance = (double) Math.round(params.getMealAllowance() * realDays);
+            Double positionAllowance = (double) Math.round((emp.getPositionCoefficient() != null ? emp.getPositionCoefficient() : 0.0) * params.getMinimumWage());
+            Double seniorityAllowance = emp.getSeniorityAllowance() != null ? emp.getSeniorityAllowance() : 0.0;
+            
+            payroll.setMealAllowance(mealAllowance);
+            payroll.setPositionAllowance(positionAllowance);
+            payroll.setSeniorityAllowance(seniorityAllowance);
+            payroll.setOtherAllowances(0.0);
+            payroll.setBonus(0.0);
+            payroll.setPenalty(0.0);
+
+            // Bước 4: Tính OT (3 loại hệ số: 1.5, 2.0, 3.0)
+            Double hourlyRate = emp.getContractSalary() / (standardDays * 8);
+            Double otNormal = (double) Math.round(hourlyRate * 1.5 * attendance.getOtNormalHours());
+            Double otWeekend = (double) Math.round(hourlyRate * 2.0 * attendance.getOtWeekendHours());
+            Double otHoliday = (double) Math.round(hourlyRate * 3.0 * attendance.getOtHolidayHours());
+            
+            payroll.setOtNormalPay(otNormal);
+            payroll.setOtWeekendPay(otWeekend);
+            payroll.setOtHolidayPay(otHoliday);
+            payroll.setOtPay(otNormal + otWeekend + otHoliday);
+
+            // Phần OT miễn thuế (chênh lệch hệ số)
+            Double otPremiumExempt = (double) Math.round(hourlyRate * (
+                0.5 * attendance.getOtNormalHours() + 
+                1.0 * attendance.getOtWeekendHours() + 
+                2.0 * attendance.getOtHolidayHours()
+            ));
+            payroll.setOtPremiumPay(otPremiumExempt);
+
+            // Tổng thu nhập
+            Double grossIncome = baseSalary + mealAllowance + positionAllowance + seniorityAllowance + payroll.getOtPay();
+            payroll.setGrossIncome(grossIncome);
+
+            // Bước 5: Tính bảo hiểm dựa trên cấu hình InsuranceRate
+            List<InsuranceRate> currentRates = insuranceRepo.findAll();
+            Double rateXH_EE = currentRates.stream().filter(r -> "XH".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(8.0) / 100.0;
+            Double rateYT_EE = currentRates.stream().filter(r -> "YT".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(1.5) / 100.0;
+            Double rateTN_EE = currentRates.stream().filter(r -> "TN".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(1.0) / 100.0;
+
+            Double rateXH_ER = currentRates.stream().filter(r -> "XH".equals(r.getType())).mapToDouble(InsuranceRate::getEmployerRate).findFirst().orElse(17.5) / 100.0;
+            Double rateYT_ER = currentRates.stream().filter(r -> "YT".equals(r.getType())).mapToDouble(InsuranceRate::getEmployerRate).findFirst().orElse(3.0) / 100.0;
+            Double rateTN_ER = currentRates.stream().filter(r -> "TN".equals(r.getType())).mapToDouble(InsuranceRate::getEmployerRate).findFirst().orElse(1.0) / 100.0;
+            Double rateKP_ER = 0.02; // Kinh phí công đoàn mặc định 2%
+
+            Double bhxhEE = 0.0, bhytEE = 0.0, bhtnEE = 0.0;
+            Double bhxhER = 0.0, bhytER = 0.0, bhtnER = 0.0, kpcdER = 0.0;
+
+            if (emp.getEmployeeType() == EmployeeType.FULL_TIME) {
+                bhxhEE = (double) Math.round(emp.getContractSalary() * rateXH_EE);
+                bhytEE = (double) Math.round(emp.getContractSalary() * rateYT_EE);
+                bhtnEE = (double) Math.round(emp.getContractSalary() * rateTN_EE);
+
+                bhxhER = (double) Math.round(emp.getContractSalary() * rateXH_ER);
+                bhytER = (double) Math.round(emp.getContractSalary() * rateYT_ER);
+                bhtnER = (double) Math.round(emp.getContractSalary() * rateTN_ER);
+                kpcdER = (double) Math.round(emp.getContractSalary() * rateKP_ER);
+            }
+            
+            payroll.setBhxhNhanVien(bhxhEE);
+            payroll.setBhytNhanVien(bhytEE);
+            payroll.setBhtnNhanVien(bhtnEE);
+            payroll.setTotalInsurance(bhxhEE + bhytEE + bhtnEE);
+
+            payroll.setBhxhCongTy(bhxhER);
+            payroll.setBhytCongTy(bhytER);
+            payroll.setBhtnCongTy(bhtnER);
+            payroll.setKpcdCongTy(kpcdER);
+            payroll.setTotalEmployerInsurance(bhxhER + bhytER + bhtnER + kpcdER);
+
+            // Bước 6: Tính thuế TNCN
+            Double taxableIncomeBase = grossIncome - mealAllowance - payroll.getOtPremiumPay();
+            Double deductionSelf = 15500000.0; 
+            Double deductionDependent = (emp.getDependentCount() != null ? emp.getDependentCount() : 0) * 6200000.0;
+            
+            Double taxableIncome = taxableIncomeBase - deductionSelf - deductionDependent - payroll.getTotalInsurance();
+            if (taxableIncome < 0) taxableIncome = 0.0;
+            
+            Double taxAmount = calculatePIT(taxableIncome);
+            if (emp.getEmployeeType() == EmployeeType.INTERN && grossIncome >= 2000000) {
+                taxAmount = (double) Math.round(grossIncome * 0.1);
+            }
+            
+            payroll.setTaxableIncome(taxableIncome);
+            payroll.setTaxAmount(taxAmount);
+
+            // Bước 7: Tính lương thực lĩnh
+            Double netPay = grossIncome - payroll.getTotalInsurance() - taxAmount;
+            payroll.setNetPay(netPay);
+            payroll.setStatus(PayrollStatus.DRAFT);
+
+            payrollRepository.save(payroll);
+        }
+    }
+
+    private Double calculatePIT(Double income) {
+        if (income <= 0) return 0.0;
+        List<TaxTier> tiers = taxTierRepository.findAll();
+        
+        if (tiers.isEmpty()) {
+            // Default PIT brackets
+            if (income <= 5000000) return income * 0.05;
+            if (income <= 10000000) return income * 0.1 - 250000;
+            if (income <= 18000000) return income * 0.15 - 750000;
+            if (income <= 32000000) return income * 0.2 - 1650000;
+            if (income <= 52000000) return income * 0.25 - 3250000;
+            if (income <= 80000000) return income * 0.3 - 5850000;
+            return income * 0.35 - 9850000;
+        }
+        
+        tiers.sort(Comparator.comparing(TaxTier::getTierLevel));
+        Double tax = 0.0;
+        Double remainingIncome = income;
+        
+        for (TaxTier tier : tiers) {
+            Double tierSpan = tier.getUpperBound() - tier.getLowerBound();
+            if (remainingIncome > tierSpan && tierSpan > 0) {
+                tax += tierSpan * (tier.getTaxRate() / 100.0);
+                remainingIncome -= tierSpan;
+            } else {
+                tax += remainingIncome * (tier.getTaxRate() / 100.0);
+                break;
+            }
+        }
+        return (double) Math.round(tax);
+    }
+
+    private int calculateBusinessDays(int month, int year) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        int daysInMonth = start.lengthOfMonth();
+        int businessDays = 0;
+        for (int i = 1; i <= daysInMonth; i++) {
+            LocalDate date = LocalDate.of(year, month, i);
+            if (date.getDayOfWeek().getValue() < 6) { // T2 -> T6
+                businessDays++;
+            }
+        }
+        return businessDays;
+    }
+
+    private SalaryParameter defaultParams() {
+        SalaryParameter p = new SalaryParameter();
+        p.setStandardWorkDays(26.0);
+        p.setStandardWorkDayMode("FIXED");
+        p.setMinimumWage(1800000.0);
+        p.setMealAllowance(25000.0);
+        return p;
+    }
+}

@@ -1,0 +1,42 @@
+# Java / Maven
+target/
+*.jar
+*.war
+*.ear
+.mvn/wrapper/
+.factorypath
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env*
+frontend/.eslintcache
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+.settings/
+.classpath
+.project
+.nb-gradle/
+
+# Docker & Database
+postgres_data/
+uploads/
+*.log
+docker-compose.override.yml
+
+# Temporary/Backup
+*.bak
+*.tmp
+/tmp/
+backend_debug_full.log
+backend_full_research.log
+backend_last_500.log
+backend_debug.log
