@@ -46,6 +46,7 @@ A modern, high-performance desktop-style web application for comprehensive payro
 *   **Admin**: `admin` / `admin123`
 *   **HR (nhansu)**: `nhansu` / `123456`
 *   **Payroll Accountant**: `ketoan_luong` / `123456`
+*   **Chief Accountant**: `ketoan_truong` / `123456`
 
 ## 📁 Project Structure
 
