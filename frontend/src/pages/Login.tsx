@@ -1,7 +1,5 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
 import axios from "axios"
 
 export default function Login() {
@@ -20,47 +18,65 @@ export default function Login() {
       localStorage.setItem("token", res.data.token)
       localStorage.setItem("user", JSON.stringify(res.data))
       navigate("/")
-    } catch (err) {
-      setError("Sai tài khoản hoặc mật khẩu (API Error hoặc chưa start Backend)")
+    } catch {
+      setError("SAI TÀI KHOẢN HOẶC MẬT KHẨU RỒI!")
     }
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-md rounded-xl border bg-card p-8 shadow-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Kế Toán Tiền Lương</h1>
-          <p className="text-sm text-muted-foreground mt-2">Đăng nhập vào hệ thống</p>
-        </div>
+    <div style={{ background: "#eee", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "Arial" }}>
+      <div style={{ background: "white", padding: "40px", border: "5px solid black", width: "350px", textAlign: "center" }}>
+        <h1 style={{ color: "blue", margin: "0 0 20px 0" }}>ĐĂNG NHẬP</h1>
+        <p style={{ fontWeight: "bold" }}>Hệ Thống Kế Toán Tiền Lương</p>
         
         {error && (
-          <div className="mb-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+          <div style={{ background: "red", color: "white", padding: "10px", margin: "10px 0", border: "2px solid black", fontWeight: "bold" }}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Tên đăng nhập</label>
-            <Input 
+        <form onSubmit={handleLogin} style={{ textAlign: "left", marginTop: "20px" }}>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ fontWeight: "bold", display: "block" }}>Tên đăng nhập:</label>
+            <input 
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
-              placeholder="admin" 
+              placeholder="nhập tên vào đây" 
               required 
+              style={{ padding: "10px", width: "100%", border: "2px solid black", marginTop: "5px" }}
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Mật khẩu</label>
-            <Input 
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ fontWeight: "bold", display: "block" }}>Mật khẩu:</label>
+            <input 
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              placeholder="••••••••" 
+              placeholder="vào đây nữa" 
               required 
+              style={{ padding: "10px", width: "100%", border: "2px solid black", marginTop: "5px" }}
             />
           </div>
-          <Button type="submit" className="w-full mt-4">Đăng nhập</Button>
+          <button 
+            type="submit" 
+            style={{ 
+                background: "blue", 
+                color: "white", 
+                width: "100%", 
+                padding: "15px", 
+                border: "3px solid black", 
+                fontWeight: "bold", 
+                cursor: "pointer",
+                fontSize: "16px"
+            }}
+          >
+            BẤM ĐỂ ĐĂNG NHẬP
+          </button>
         </form>
+        
+        <p style={{ marginTop: "20px", fontSize: "12px", color: "gray" }}>
+            Lưu ý: Nếu không đăng nhập được hãy báo Admin
+        </p>
       </div>
     </div>
   )

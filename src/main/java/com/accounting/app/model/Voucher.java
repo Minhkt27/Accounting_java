@@ -20,6 +20,8 @@ public class Voucher {
     private LocalDate voucherDate;
     private Double totalAmount;
     private String description;
+    private Integer targetMonth; // Kỳ hạch toán (tháng)
+    private Integer targetYear;  // Kỳ hạch toán (năm)
 
     private LocalDateTime createdAt;
 

@@ -1,35 +1,9 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { motion, AnimatePresence } from "framer-motion"
-import { UserCog, Plus, Pencil, Trash2, KeyRound, Shield, Save, Check, X, AlertCircle, Users } from "lucide-react"
 
-interface UserItem {
-  id: number
-  username: string
-  email: string
-  roles: string[]
-}
+import type { UserItem, RoleItem, PermItem } from "../types"
 
-interface RoleItem {
-  id: number
-  name: string
-  displayName: string
-}
 
-interface PermItem {
-  roleName: string
-  functionCode: string
-  allowed: boolean
-}
-
-const ROLE_COLORS: Record<string, string> = {
-  ROLE_ADMIN: "bg-rose-500/10 text-rose-500 border-rose-500/20",
-  ROLE_KE_TOAN_TRUONG: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  ROLE_KE_TOAN_LUONG: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  ROLE_NHAN_SU: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-}
 
 const ROLE_LABELS: Record<string, string> = {
   ROLE_ADMIN: "Quản trị viên",
@@ -70,9 +44,12 @@ export default function UserManagementPage() {
   const [resetUserId, setResetUserId] = useState<number | null>(null)
   const [newPassword, setNewPassword] = useState("")
 
-  const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` }
+  const headers = useMemo(() => ({ 
+    Authorization: `Bearer ${localStorage.getItem("token")}` 
+  }), [])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true)
     try {
       const [uRes, rRes, pRes] = await Promise.all([
         axios.get("/api/admin/users", { headers }),
@@ -83,7 +60,7 @@ export default function UserManagementPage() {
       setRoles(Array.isArray(rRes.data) ? rRes.data : [])
       setPerms(Array.isArray(pRes.data) ? pRes.data : [])
       setPermDirty(false)
-    } catch (err) { 
+    } catch (err: unknown) { 
         console.error(err)
         setUsers([])
         setRoles([])
@@ -91,9 +68,9 @@ export default function UserManagementPage() {
     } finally {
         setLoading(false)
     }
-  }
+  }, [headers])
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData() }, [fetchData])
 
   const isAllowed = (roleName: string, functionCode: string) => {
     if (roleName === "ROLE_ADMIN") return true
@@ -157,7 +134,10 @@ export default function UserManagementPage() {
     try {
       await axios.put(`/api/admin/users/${resetUserId}/password`, { newPassword }, { headers })
       setResetUserId(null); setNewPassword("")
-    } catch (err: any) { alert(err.response?.data || "Lỗi!") }
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        alert(message) 
+    }
   }
 
   const toggleRole = (roleName: string) => {
@@ -166,258 +146,176 @@ export default function UserManagementPage() {
 
   if (loading) {
     return (
-        <div className="h-[60vh] flex flex-col items-center justify-center gap-4 animate-pulse pt-20">
-            <UserCog className="w-16 h-16 text-slate-200" />
-            <div className="h-4 w-48 bg-slate-100 rounded-full"></div>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Đang tải cấu hình hệ thống...</p>
+        <div style={{ padding: "50px", textAlign: "center" }}>
+            <h2 style={{ color: "blue" }}>ĐANG TẢI DỮ LIỆU...</h2>
+            <p>Vui lòng đợi một lát!</p>
         </div>
     )
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-700 pb-16">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-            <h1 className="text-4xl font-black tracking-tighter text-slate-800 flex items-center gap-3">
-                <UserCog className="w-10 h-10 text-primary" /> QUẢN TRỊ HỆ THỐNG
-            </h1>
-            <p className="text-muted-foreground font-medium text-sm">Quản lý tài khoản & Ma trận phân quyền chức năng</p>
+    <div style={{ padding: "20px", background: "#f0f0f0", minHeight: "100vh" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", background: "white", padding: "10px", border: "2px solid black" }}>
+        <div>
+            <h1 style={{ color: "blue", margin: "0" }}>QUẢN TRỊ NGƯỜI DÙNG</h1>
+            <p style={{ margin: "0" }}>Trang quản lý các tài khoản trong hệ thống</p>
         </div>
-        <Button onClick={openCreate} className="gap-2 bg-primary hover:bg-primary/90 text-white rounded-2xl h-12 px-6 shadow-xl shadow-primary/20">
-            <Plus className="w-5 h-5" /> Thêm tài khoản
-        </Button>
+        <button 
+            onClick={openCreate} 
+            style={{ background: "blue", color: "white", padding: "10px 20px", border: "2px solid black", cursor: "pointer", fontWeight: "bold" }}
+        >
+            + THÊM NGƯỜI DÙNG MỚI
+        </button>
       </div>
 
-      <section className="bg-[#111827] rounded-[2.5rem] shadow-2xl p-8 text-white relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-primary/10 blur-[120px] rounded-full"></div>
-        <div className="relative z-10 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-6">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
-                        <Shield className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                        <h3 className="font-black text-lg tracking-tight">Ma trận phân quyền</h3>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Cấu hình chức năng cho từng vai trò</p>
-                    </div>
-                </div>
-                <Button 
-                    onClick={savePerms} 
-                    disabled={!permDirty} 
-                    className={`gap-2 h-10 px-6 rounded-xl transition-all duration-300 font-black text-xs ${
-                        permDirty ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" : "bg-slate-800 text-slate-500 opacity-50"
-                    }`}
-                >
-                    <Save className="w-4 h-4" /> {permDirty ? "LẬP TỨC LƯU THAY ĐỔI" : "ĐÃ LƯU"}
-                </Button>
-            </div>
-
-            <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-xs">
-                    <thead>
-                        <tr className="text-slate-500 font-black uppercase tracking-widest">
-                            <th className="p-4 text-left min-w-[200px]">Chức năng / Module</th>
-                            <th className="p-4 text-center">
-                                <span className="px-3 py-1 rounded-lg border border-slate-700 bg-slate-800/50">Admin</span>
-                            </th>
-                            {EDITABLE_ROLES.map(r => (
-                                <th key={r} className="p-4 text-center">
-                                    <span className="px-3 py-1 rounded-lg border border-slate-700 bg-slate-800/50 whitespace-nowrap">
-                                        {ROLE_LABELS[r]}
-                                    </span>
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/50">
-                        {FUNCTION_CODES.map(fn => (
-                            <tr key={fn} className="hover:bg-slate-800/20 transition-colors">
-                                <td className="p-4 font-black text-slate-300 text-sm">{FUNCTION_LABELS[fn]}</td>
-                                <td className="p-4 text-center">
-                                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-500 font-black">
-                                        <Check className="w-4 h-4" />
-                                    </div>
-                                </td>
-                                {EDITABLE_ROLES.map(r => {
-                                    const allowed = isAllowed(r, fn)
-                                    return (
-                                        <td key={r} className="p-4 text-center">
-                                            <button
-                                                onClick={() => togglePerm(r, fn)}
-                                                className={`w-9 h-9 rounded-xl border-2 transition-all flex items-center justify-center mx-auto ${
-                                                    allowed
-                                                        ? "bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/30"
-                                                        : "bg-slate-900 border-slate-800 text-slate-700 hover:border-slate-600"
-                                                }`}
-                                            >
-                                                {allowed ? <Check className="w-5 h-5 stroke-[3]" /> : <X className="w-4 h-4" />}
-                                            </button>
-                                        </td>
-                                    )
-                                })}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            <AnimatePresence>
-                {permDirty && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 overflow-hidden group shadow-2xl shadow-amber-500/5"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500 animate-pulse">
-                            <AlertCircle className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="font-black text-amber-500 text-sm">Dữ liệu phân quyền đã thay đổi!</p>
-                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Bạn cần nhấn Lưu để áp dụng thay đổi vào hệ thống</p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+      <div style={{ background: "white", padding: "20px", border: "2px solid black", marginBottom: "30px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid black", paddingBottom: "10px", marginBottom: "20px" }}>
+            <h2 style={{ margin: "0", color: "blue" }}>BẢNG PHÂN QUYỀN</h2>
+            <button 
+                onClick={savePerms} 
+                disabled={!permDirty}
+                style={{ 
+                    background: permDirty ? "green" : "gray", 
+                    color: "white", 
+                    padding: "5px 15px", 
+                    border: "2px solid black",
+                    fontWeight: "bold"
+                }}
+            >
+                LƯU THAY ĐỔI
+            </button>
         </div>
-      </section>
 
-      <section className="border border-slate-100 rounded-[2.5rem] bg-white shadow-2xl shadow-slate-200/50 overflow-hidden">
-        <div className="bg-slate-50/50 p-8 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="font-black text-slate-800 text-sm uppercase flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" /> Danh sách tài khoản vận hành
-            </h3>
-            <span className="text-[10px] font-black bg-primary/10 text-primary px-3 py-1 rounded-full">
-                {users.length} NGƯỜI DÙNG
-            </span>
-        </div>
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-                <thead>
-                    <tr className="bg-[#111827] text-white">
-                        <th className="px-8 py-6 font-black uppercase tracking-tighter">Tải khoản</th>
-                        <th className="px-8 py-6 font-black uppercase tracking-tighter">Email liên hệ</th>
-                        <th className="px-8 py-6 font-black uppercase tracking-tighter">Vai trò</th>
-                        <th className="px-8 py-6 font-black uppercase tracking-tighter text-center">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {users.map(u => (
-                        <tr key={u.id} className="hover:bg-slate-50 transition-colors group">
-                            <td className="px-8 py-6">
-                                <div className="font-black text-slate-800 text-base">{u.username}</div>
-                                <div className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">ID: #{u.id}</div>
-                            </td>
-                            <td className="px-8 py-6 text-slate-500 font-medium">{u.email}</td>
-                            <td className="px-8 py-6">
-                                <div className="flex gap-2 flex-wrap">
-                                    {(u.roles || []).map(r => (
-                                        <span key={r} className={`px-3 py-1 text-[10px] font-black rounded-lg border ${ROLE_COLORS[r] || "bg-slate-100 text-slate-700 border-slate-200"}`}>
-                                            {ROLE_LABELS[r] || r}
-                                        </span>
-                                    ))}
-                                </div>
-                            </td>
-                            <td className="px-8 py-6">
-                                <div className="flex gap-2 justify-center">
-                                    <button onClick={() => openEdit(u)} className="p-2.5 rounded-xl hover:bg-blue-50 text-blue-600 border border-transparent hover:border-blue-100 transition-all" title="Sửa"><Pencil className="w-4 h-4" /></button>
-                                    <button onClick={() => { setResetUserId(u.id); setNewPassword("") }} className="p-2.5 rounded-xl hover:bg-amber-50 text-amber-600 border border-transparent hover:border-amber-100 transition-all" title="Đổi mật khẩu"><KeyRound className="w-4 h-4" /></button>
-                                    <button onClick={() => handleDelete(u.id)} className="p-2.5 rounded-xl hover:bg-red-50 text-red-600 border border-transparent hover:border-red-100 transition-all" title="Xóa"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                            </td>
-                        </tr>
+        <table border={1} style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+                <tr style={{ background: "#eee" }}>
+                    <th style={{ padding: "10px", border: "1px solid black" }}>CHỨC NĂNG</th>
+                    <th style={{ padding: "10px", border: "1px solid black" }}>ADMIN</th>
+                    {EDITABLE_ROLES.map(r => (
+                        <th key={r} style={{ padding: "10px", border: "1px solid black" }}>{ROLE_LABELS[r]}</th>
                     ))}
-                </tbody>
-            </table>
-        </div>
-      </section>
-
-      {/* MODALS */}
-      <AnimatePresence>
-        {showForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" 
-                    onClick={() => setShowForm(false)} 
-                />
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative z-50 w-full max-w-md rounded-3xl bg-white p-8 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] space-y-6"
-                >
-                    <h2 className="text-2xl font-black tracking-tight">{editingUser ? "Chỉnh sửa tài khoản" : "Tạo tài khoản mới"}</h2>
-                    <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Tên đăng nhập</label>
-                            <Input className="h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white" value={formUsername} onChange={e => setFormUsername(e.target.value)} disabled={!!editingUser} />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Email</label>
-                            <Input className="h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white" value={formEmail} onChange={e => setFormEmail(e.target.value)} />
-                        </div>
-                        {!editingUser && (
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Mật khẩu</label>
-                                <Input type="password" className="h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white" value={formPassword} onChange={e => setFormPassword(e.target.value)} />
-                            </div>
-                        )}
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Phân quyền vai trò</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {roles.filter(r => r.name !== "ROLE_ADMIN").map(r => (
+                </tr>
+            </thead>
+            <tbody>
+                {FUNCTION_CODES.map(fn => (
+                    <tr key={fn}>
+                        <td style={{ padding: "8px", border: "1px solid black", fontWeight: "bold" }}>{FUNCTION_LABELS[fn]}</td>
+                        <td style={{ padding: "8px", border: "1px solid black", textAlign: "center", color: "green" }}>
+                            V
+                        </td>
+                        {EDITABLE_ROLES.map(r => {
+                            const allowed = isAllowed(r, fn)
+                            return (
+                                <td key={r} style={{ padding: "8px", border: "1px solid black", textAlign: "center" }}>
                                     <button
-                                        key={r.name}
-                                        onClick={() => toggleRole(r.name)}
-                                        className={`px-3 py-3 rounded-xl text-[10px] font-black border-2 transition-all text-left flex items-center justify-between ${
-                                            formRoles.includes(r.name)
-                                                ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                                                : "bg-slate-50 text-slate-500 border-slate-100 hover:border-slate-200"
-                                        }`}
+                                        onClick={() => togglePerm(r, fn)}
+                                        style={{ 
+                                            background: allowed ? "lightgreen" : "lightpink", 
+                                            padding: "5px 10px", 
+                                            border: "1px solid black",
+                                            cursor: "pointer",
+                                            width: "30px"
+                                        }}
                                     >
-                                        {r.displayName}
-                                        {formRoles.includes(r.name) && <Check className="w-3 h-3" />}
+                                        {allowed ? "O" : "X"}
                                     </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                        <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold" onClick={() => setShowForm(false)}>Hủy</Button>
-                        <Button className="flex-1 h-12 rounded-xl font-black bg-[#111827] text-white hover:bg-black" onClick={handleSave}>
-                            {editingUser ? "LƯU THAY ĐỔI" : "TẠO TÀI KHOẢN"}
-                        </Button>
-                    </div>
-                </motion.div>
-            </div>
-        )}
+                                </td>
+                            )
+                        })}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+      </div>
 
-        {resetUserId && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" 
-                    onClick={() => setResetUserId(null)} 
-                />
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                    className="relative z-50 w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl space-y-6"
-                >
-                    <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto">
-                        <KeyRound className="w-8 h-8 text-amber-500" />
-                    </div>
-                    <div className="text-center space-y-1">
-                        <h2 className="text-xl font-black">Đặt lại mật khẩu</h2>
-                        <p className="text-xs text-slate-500 font-medium">Bảo mật cho: <strong className="text-slate-800">{users.find(u => u.id === resetUserId)?.username}</strong></p>
-                    </div>
-                    <Input type="password" placeholder="Mật khẩu bảo mật mới" className="h-12 rounded-xl text-center font-black" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-                    <div className="flex gap-3">
-                        <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold" onClick={() => setResetUserId(null)}>Hủy bỏ</Button>
-                        <Button onClick={handleResetPassword} className="flex-1 h-12 rounded-xl font-black bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20">XÁC NHẬN</Button>
-                    </div>
-                </motion.div>
-            </div>
-        )}
-      </AnimatePresence>
+      <div style={{ background: "white", padding: "20px", border: "2px solid black" }}>
+        <h2 style={{ color: "blue", borderBottom: "2px solid black", paddingBottom: "10px" }}>DANH SÁCH TÀI KHOẢN</h2>
+        <table border={1} style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
+            <thead style={{ background: "blue", color: "white" }}>
+                <tr>
+                    <th style={{ padding: "10px", border: "1px solid black" }}>Tên đăng nhập</th>
+                    <th style={{ padding: "10px", border: "1px solid black" }}>Email</th>
+                    <th style={{ padding: "10px", border: "1px solid black" }}>Quyền</th>
+                    <th style={{ padding: "10px", border: "1px solid black" }}>Sửa/Xóa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {users.map(u => (
+                    <tr key={u.id}>
+                        <td style={{ padding: "10px", border: "1px solid black", fontWeight: "bold" }}>{u.username} (ID: {u.id})</td>
+                        <td style={{ padding: "10px", border: "1px solid black" }}>{u.email}</td>
+                        <td style={{ padding: "10px", border: "1px solid black" }}>
+                            {u.roles.map(r => (
+                                <span key={r} style={{ 
+                                    padding: "2px 5px", 
+                                    marginRight: "5px", 
+                                    background: "#eee", 
+                                    border: "1px solid gray",
+                                    fontSize: "12px"
+                                }}>
+                                    {ROLE_LABELS[r]}
+                                </span>
+                            ))}
+                        </td>
+                        <td style={{ padding: "10px", border: "1px solid black", textAlign: "center" }}>
+                            <button onClick={() => openEdit(u)} style={{ marginRight: "5px" }}>Sửa</button>
+                            <button onClick={() => { setResetUserId(u.id); setNewPassword("") }} style={{ marginRight: "5px" }}>Đổi Pass</button>
+                            <button onClick={() => handleDelete(u.id)} style={{ color: "red" }}>Xóa</button>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+      </div>
+
+      {showForm && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <div style={{ background: "white", padding: "30px", border: "3px solid black", width: "400px" }}>
+                  <h2 style={{ borderBottom: "2px solid blue" }}>{editingUser ? "SỬA NGƯỜI DÙNG" : "THÊM NGƯỜI DÙNG"}</h2>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "20px" }}>
+                      <label>Tên đăng nhập:</label>
+                      <input value={formUsername} onChange={e => setFormUsername(e.target.value)} disabled={!!editingUser} style={{ padding: "5px", border: "1px solid black" }} />
+                      
+                      <label>Email:</label>
+                      <input value={formEmail} onChange={e => setFormEmail(e.target.value)} style={{ padding: "5px", border: "1px solid black" }} />
+                      
+                      {!editingUser && (
+                          <>
+                            <label>Mật khẩu:</label>
+                            <input type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} style={{ padding: "5px", border: "1px solid black" }} />
+                          </>
+                      )}
+
+                      <label>Chọn quyền:</label>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                          {roles.filter(r => r.name !== "ROLE_ADMIN").map(r => (
+                              <label key={r.name} style={{ border: "1px solid black", padding: "5px", background: formRoles.includes(r.name) ? "yellow" : "white" }}>
+                                  <input type="checkbox" checked={formRoles.includes(r.name)} onChange={() => toggleRole(r.name)} />
+                                  {r.displayName}
+                              </label>
+                          ))}
+                      </div>
+                  </div>
+                  <div style={{ marginTop: "30px", display: "flex", gap: "10px" }}>
+                      <button onClick={handleSave} style={{ flex: 1, background: "blue", color: "white", padding: "10px", border: "2px solid black", fontWeight: "bold" }}>LƯU LẠI</button>
+                      <button onClick={() => setShowForm(false)} style={{ flex: 1, background: "white", border: "2px solid black" }}>ĐÓNG</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {resetUserId && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <div style={{ background: "white", padding: "30px", border: "3px solid black" }}>
+                  <h3>ĐỔI MẬT KHẨU MỚI</h3>
+                  <input type="password" placeholder="Nhập pass mới" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ padding: "10px", width: "100%" }} />
+                  <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+                      <button onClick={handleResetPassword} style={{ background: "blue", color: "white", padding: "10px", border: "1px solid black" }}>XÁC NHẬN</button>
+                      <button onClick={() => setResetUserId(null)}>HỦY</button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   )
 }

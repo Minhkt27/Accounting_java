@@ -21,4 +21,5 @@ public class InsuranceRate {
     private Double employerRate;
     
     private LocalDate effectiveDate;
+    private String status = "APPROVED"; // APPROVED, PENDING
 }

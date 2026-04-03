@@ -15,4 +15,5 @@ public class SalaryParameter {
     private String standardWorkDayMode = "FIXED"; // FIXED or MONTHLY
     private Double minimumWage;
     private Double mealAllowance;
+    private String status = "APPROVED"; // APPROVED, PENDING
 }

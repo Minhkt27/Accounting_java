@@ -1,27 +1,31 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import axios from "axios"
 import { Users, TrendingUp, Calendar, UserMinus, UserPlus } from "lucide-react"
+import type { Employee, Leave } from "../types"
 
 export default function HRTrackingPage() {
-  const [employees, setEmployees] = useState<any[]>([])
-  const [leaves, setLeaves] = useState<any[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [leaves, setLeaves] = useState<Leave[]>([])
+
+  const auth = useMemo(() => ({ 
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } 
+  }), [])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         const resE = await axios.get("/api/employees", auth)
         setEmployees(resE.data)
         const resL = await axios.get("/api/leaves", auth)
         setLeaves(resL.data)
-      } catch (err) { console.error(err) }
+      } catch (err: unknown) { console.error(err) }
     }
     fetchData()
-  }, [])
+  }, [auth])
 
   const activeCount = employees.filter(e => e.active).length
   const inactiveCount = employees.filter(e => !e.active).length
-  const avgSalary = employees.length > 0 ? employees.reduce((a, b) => a + b.contractSalary, 0) / employees.length : 0
+  const avgSalary = employees.length > 0 ? employees.reduce((a, b) => a + (b.baseSalary || 0), 0) / employees.length : 0
 
   const maternityCount = leaves.filter(l => l.leaveType === 'MATERNITY').length
   const sickCount = leaves.filter(l => l.leaveType === 'SICK').length
@@ -73,7 +77,7 @@ export default function HRTrackingPage() {
                           </div>
                           <div className="text-right">
                               <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded">MỚI</span>
-                              <p className="font-black text-xs mt-1 text-slate-600">{formatVND(e.contractSalary)}</p>
+                              <p className="font-black text-xs mt-1 text-slate-600">{formatVND(e.baseSalary || 0)}</p>
                           </div>
                       </div>
                   ))}

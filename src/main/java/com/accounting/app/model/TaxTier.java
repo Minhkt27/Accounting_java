@@ -15,4 +15,5 @@ public class TaxTier {
     private Double upperBound;
     private Double taxRate;
     private Integer tierLevel;
+    private String status = "APPROVED"; // APPROVED, PENDING
 }

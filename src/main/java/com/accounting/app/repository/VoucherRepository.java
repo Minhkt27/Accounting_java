@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface VoucherRepository extends JpaRepository<Voucher, Long> {
     List<Voucher> findByVoucherDateBetween(LocalDate start, LocalDate end);
+    List<Voucher> findByTargetMonthAndTargetYear(Integer targetMonth, Integer targetYear);
 }

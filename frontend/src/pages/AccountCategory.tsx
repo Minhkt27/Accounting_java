@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -17,7 +17,7 @@ export default function AccountCategoryPage() {
   const [type, setType] = useState("Nợ")
   const [error, setError] = useState("")
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
     try {
       const token = localStorage.getItem("token")
       const res = await axios.get("/api/config/accounts", {
@@ -25,15 +25,18 @@ export default function AccountCategoryPage() {
       })
       setAccounts(res.data)
       setError("")
-    } catch (err: any) {
-      if(err.response?.status === 401) window.location.href = "/login"
-      setError("Không thể lấy dữ liệu: " + err.message)
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        window.location.href = "/login"
+      }
+      const message = err instanceof Error ? err.message : String(err)
+      setError("Không thể lấy dữ liệu: " + message)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchAccounts()
-  }, [])
+  }, [fetchAccounts])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,8 +48,9 @@ export default function AccountCategoryPage() {
       fetchAccounts()
       setId("")
       setName("")
-    } catch (err: any) {
-      setError("Lỗi lưu dữ liệu: " + err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      setError("Lỗi lưu dữ liệu: " + message)
     }
   }
 

@@ -142,7 +142,7 @@ export default function Layout() {
 
   const menuItems = useMemo<MenuItem[]>(() => [
     { to: "/", label: "Tổng quan", icon: <Home size={18} /> },
-    { to: "/config/salary", label: "Cấu hình Lương", icon: <Settings size={18} /> },
+    { to: "/config/salary", label: "Cấu hình Lương", icon: <Settings size={18} />, functionCode: "CONFIG_INSURANCE" },
     { label: "Dữ liệu tính lương", icon: <Database size={18} />, children: [
         { to: "/employees", label: "Hồ sơ nhân sự", functionCode: "HR_EMPLOYEE" },
         { to: "/attendance", label: "Chấm công tháng", functionCode: "HR_ATTENDANCE" },
@@ -158,7 +158,7 @@ export default function Layout() {
     { label: "Chi trả", icon: <Wallet size={18} />, children: [
         { to: "/payments", label: "Thanh toán & UNC", functionCode: "PAYROLL_APPROVE" },
     ]},
-    { to: "/reports", label: "Báo cáo", icon: <PieChart size={18} /> },
+    { to: "/reports", label: "Báo cáo", icon: <PieChart size={18} />, functionCode: "ACCOUNTING_VIEW" },
     { label: "Thiết lập", icon: <Settings size={18} />, children: [
         { to: "/admin/users", label: "Quản lý người dùng", functionCode: "ADMIN_USERS" },
         { to: "/config/accounts", label: "Danh mục tài khoản", functionCode: "CONFIG_ACCOUNT" },
@@ -178,15 +178,15 @@ export default function Layout() {
   }, [roles])
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans antialiased text-slate-900">
-      <aside className="w-72 bg-[#111827] flex flex-col shadow-2xl relative z-20">
+    <div className="flex h-screen bg-slate-50 font-sans antialiased text-slate-900 print:bg-white print:block">
+      <aside className="w-72 bg-[#111827] flex flex-col shadow-2xl relative z-20 no-print">
         <div className="p-8 pb-4">
              <div className="flex items-center gap-3 px-2">
                 <div className="w-10 h-10 bg-primary/20 flex items-center justify-center rounded-xl border border-primary/30">
                     <ShieldCheck className="text-primary w-6 h-6" />
                 </div>
                 <div>
-                   <h1 className="text-white font-black text-lg leading-tight uppercase tracking-tighter">ANTIGRAVITY</h1>
+                   <h1 className="text-white font-black text-lg leading-tight uppercase tracking-tighter">PHUC ANH COMPANY</h1>
                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Accounting OS</p>
                 </div>
              </div>
@@ -236,8 +236,8 @@ export default function Layout() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 bg-white relative">
-        <header className="h-16 flex items-center justify-between px-10 border-b border-slate-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
+      <main className="flex-1 flex flex-col min-w-0 bg-white relative print:block print:w-full">
+        <header className="h-16 flex items-center justify-between px-10 border-b border-slate-100 sticky top-0 bg-white/80 backdrop-blur-md z-10 no-print">
            <div className="flex items-center gap-4">
               <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></div>
               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{location.pathname.split('/').pop() || 'Dashboard'}</span>
@@ -253,7 +253,7 @@ export default function Layout() {
               </button>
            </div>
         </header>
-        <div className="flex-1 p-10 overflow-auto">
+        <div className="flex-1 p-10 overflow-auto print:p-0 print:overflow-visible">
             <Outlet />
         </div>
       </main>

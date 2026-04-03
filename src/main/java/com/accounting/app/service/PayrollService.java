@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PayrollService {
@@ -25,6 +26,7 @@ public class PayrollService {
     @Autowired private JournalEntryRepository journalRepo;
     @Autowired private AccountCategoryRepository accountRepo;
     @Autowired private InsuranceRateRepository insuranceRepo;
+    @Autowired private DeductionSettingRepository deductionRepo;
 
     @Transactional
     public void approveMonthlyPayroll(Integer month, Integer year) {
@@ -107,6 +109,8 @@ public class PayrollService {
         String voucherNo = String.format("%s%02d-%d", prefix, month, year % 100);
         
         Voucher v = new Voucher(voucherNo, type, LocalDate.now(), totalNet, "Thanh toán lương tháng " + month + "/" + year);
+        v.setTargetMonth(month);
+        v.setTargetYear(year);
         v = voucherRepo.save(v);
 
         // 2. Hạch toán: Nợ 334 / Có 111, 112
@@ -134,10 +138,15 @@ public class PayrollService {
         }
 
         // 1. Thu thập dữ liệu đầu vào & Hằng số
+        System.out.println("Processing Payroll Calculation for: Month=" + month + ", Year=" + year);
+        
         SalaryParameter params = salaryParameterRepository.findAll().stream()
+                .filter(p -> "APPROVED".equals(p.getStatus()))
                 .findFirst().orElse(defaultParams());
+        System.out.println("Using Salary Parameters: " + params.getStatus());
         
         List<Employee> employees = employeeRepository.findAll();
+        System.out.println("Found " + employees.size() + " total employees in database.");
         
         // Xác định số công chuẩn thực tế (Dựa trên cấu hình: FIXED hoặc MONTHLY)
         Double standardDays = params.getStandardWorkDays();
@@ -156,8 +165,8 @@ public class PayrollService {
             Double paidLeaveDays;
             if (optAttendance.isPresent()) {
                 attendance = optAttendance.get();
-                realDays = attendance.getRealWorkDays();
-                paidLeaveDays = attendance.getPaidLeaveDays();
+                realDays = attendance.getRealWorkDays() != null ? attendance.getRealWorkDays() : 0.0;
+                paidLeaveDays = attendance.getPaidLeaveDays() != null ? attendance.getPaidLeaveDays() : 0.0;
             } else {
                 // Nếu chưa có bản ghi chấm công, hệ thống mới tự tính gợi ý từ biến động nghỉ phép
                 com.accounting.app.dto.AttendanceSuggestion suggestion = attendanceService.getAttendanceSuggestion(emp.getId(), month, year, standardDays);
@@ -179,7 +188,8 @@ public class PayrollService {
 
             // Bước 2: Tính lương theo thời gian
             Double totalPaidDays = realDays + (paidLeaveDays != null ? paidLeaveDays : 0.0);
-            Double baseSalary = (emp.getContractSalary() / standardDays) * totalPaidDays;
+            Double contractSal = emp.getContractSalary() != null ? emp.getContractSalary() : 0.0;
+            Double baseSalary = (contractSal / standardDays) * totalPaidDays;
             
             if (emp.getEmployeeType() == EmployeeType.PROBATION) {
                 baseSalary = baseSalary * 0.85;
@@ -188,8 +198,10 @@ public class PayrollService {
             payroll.setBaseSalaryPay(baseSalary);
 
             // Bước 3: Tính phụ cấp
-            Double mealAllowance = (double) Math.round(params.getMealAllowance() * realDays);
-            Double positionAllowance = (double) Math.round((emp.getPositionCoefficient() != null ? emp.getPositionCoefficient() : 0.0) * params.getMinimumWage());
+            Double mealAllowance = (double) Math.round((params.getMealAllowance() != null ? params.getMealAllowance() : 0.0) * realDays);
+            Double posCoef = emp.getPositionCoefficient() != null ? emp.getPositionCoefficient() : 0.0;
+            Double minWage = params.getMinimumWage() != null ? params.getMinimumWage() : 0.0;
+            Double positionAllowance = (double) Math.round(posCoef * minWage);
             Double seniorityAllowance = emp.getSeniorityAllowance() != null ? emp.getSeniorityAllowance() : 0.0;
             
             payroll.setMealAllowance(mealAllowance);
@@ -200,10 +212,14 @@ public class PayrollService {
             payroll.setPenalty(0.0);
 
             // Bước 4: Tính OT (3 loại hệ số: 1.5, 2.0, 3.0)
-            Double hourlyRate = emp.getContractSalary() / (standardDays * 8);
-            Double otNormal = (double) Math.round(hourlyRate * 1.5 * attendance.getOtNormalHours());
-            Double otWeekend = (double) Math.round(hourlyRate * 2.0 * attendance.getOtWeekendHours());
-            Double otHoliday = (double) Math.round(hourlyRate * 3.0 * attendance.getOtHolidayHours());
+            Double hourlyRate = (emp.getContractSalary() != null ? emp.getContractSalary() : 0.0) / (standardDays * 8);
+            double otNormHours = attendance.getOtNormalHours() != null ? attendance.getOtNormalHours() : 0.0;
+            double otWeekHours = attendance.getOtWeekendHours() != null ? attendance.getOtWeekendHours() : 0.0;
+            double otHoliHours = attendance.getOtHolidayHours() != null ? attendance.getOtHolidayHours() : 0.0;
+
+            Double otNormal = (double) Math.round(hourlyRate * 1.5 * otNormHours);
+            Double otWeekend = (double) Math.round(hourlyRate * 2.0 * otWeekHours);
+            Double otHoliday = (double) Math.round(hourlyRate * 3.0 * otHoliHours);
             
             payroll.setOtNormalPay(otNormal);
             payroll.setOtWeekendPay(otWeekend);
@@ -212,9 +228,9 @@ public class PayrollService {
 
             // Phần OT miễn thuế (chênh lệch hệ số)
             Double otPremiumExempt = (double) Math.round(hourlyRate * (
-                0.5 * attendance.getOtNormalHours() + 
-                1.0 * attendance.getOtWeekendHours() + 
-                2.0 * attendance.getOtHolidayHours()
+                0.5 * otNormHours + 
+                1.0 * otWeekHours + 
+                2.0 * otHoliHours
             ));
             payroll.setOtPremiumPay(otPremiumExempt);
 
@@ -222,8 +238,10 @@ public class PayrollService {
             Double grossIncome = baseSalary + mealAllowance + positionAllowance + seniorityAllowance + payroll.getOtPay();
             payroll.setGrossIncome(grossIncome);
 
-            // Bước 5: Tính bảo hiểm dựa trên cấu hình InsuranceRate
-            List<InsuranceRate> currentRates = insuranceRepo.findAll();
+            // Bước 5: Tính bảo hiểm dựa trên cấu hình InsuranceRate (chỉ lấy APPROVED)
+            List<InsuranceRate> currentRates = insuranceRepo.findAll().stream()
+                .filter(r -> "APPROVED".equals(r.getStatus()))
+                .toList();
             Double rateXH_EE = currentRates.stream().filter(r -> "XH".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(8.0) / 100.0;
             Double rateYT_EE = currentRates.stream().filter(r -> "YT".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(1.5) / 100.0;
             Double rateTN_EE = currentRates.stream().filter(r -> "TN".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(1.0) / 100.0;
@@ -237,14 +255,15 @@ public class PayrollService {
             Double bhxhER = 0.0, bhytER = 0.0, bhtnER = 0.0, kpcdER = 0.0;
 
             if (emp.getEmployeeType() == EmployeeType.FULL_TIME) {
-                bhxhEE = (double) Math.round(emp.getContractSalary() * rateXH_EE);
-                bhytEE = (double) Math.round(emp.getContractSalary() * rateYT_EE);
-                bhtnEE = (double) Math.round(emp.getContractSalary() * rateTN_EE);
+                Double cSal = emp.getContractSalary() != null ? emp.getContractSalary() : 0.0;
+                bhxhEE = (double) Math.round(cSal * rateXH_EE);
+                bhytEE = (double) Math.round(cSal * rateYT_EE);
+                bhtnEE = (double) Math.round(cSal * rateTN_EE);
 
-                bhxhER = (double) Math.round(emp.getContractSalary() * rateXH_ER);
-                bhytER = (double) Math.round(emp.getContractSalary() * rateYT_ER);
-                bhtnER = (double) Math.round(emp.getContractSalary() * rateTN_ER);
-                kpcdER = (double) Math.round(emp.getContractSalary() * rateKP_ER);
+                bhxhER = (double) Math.round(cSal * rateXH_ER);
+                bhytER = (double) Math.round(cSal * rateYT_ER);
+                bhtnER = (double) Math.round(cSal * rateTN_ER);
+                kpcdER = (double) Math.round(cSal * rateKP_ER);
             }
             
             payroll.setBhxhNhanVien(bhxhEE);
@@ -258,12 +277,18 @@ public class PayrollService {
             payroll.setKpcdCongTy(kpcdER);
             payroll.setTotalEmployerInsurance(bhxhER + bhytER + bhtnER + kpcdER);
 
-            // Bước 6: Tính thuế TNCN
-            Double taxableIncomeBase = grossIncome - mealAllowance - payroll.getOtPremiumPay();
-            Double deductionSelf = 15500000.0; 
-            Double deductionDependent = (emp.getDependentCount() != null ? emp.getDependentCount() : 0) * 6200000.0;
+            // Bước 6: Tính thuế TNCN (Lấy cấu hình giảm trừ APPROVED)
+            DeductionSetting deductions = deductionRepo.findAll().stream()
+                .filter(d -> "APPROVED".equals(d.getStatus()))
+                .findFirst().orElse(new DeductionSetting(null, 15500000.0, 6200000.0, "APPROVED")); 
             
-            Double taxableIncome = taxableIncomeBase - deductionSelf - deductionDependent - payroll.getTotalInsurance();
+            Double otPremium = payroll.getOtPremiumPay() != null ? payroll.getOtPremiumPay() : 0.0;
+            Double taxableIncomeBase = grossIncome - mealAllowance - otPremium;
+            Double dSelf = deductions.getPersonalDeduction() != null ? deductions.getPersonalDeduction() : 0.0; 
+            Double dDep = (emp.getDependentCount() != null ? emp.getDependentCount() : 0) * (deductions.getDependentDeduction() != null ? deductions.getDependentDeduction() : 0.0);
+            
+            Double totalInsEE = payroll.getTotalInsurance() != null ? payroll.getTotalInsurance() : 0.0;
+            Double taxableIncome = taxableIncomeBase - dSelf - dDep - totalInsEE;
             if (taxableIncome < 0) taxableIncome = 0.0;
             
             Double taxAmount = calculatePIT(taxableIncome);
@@ -275,17 +300,22 @@ public class PayrollService {
             payroll.setTaxAmount(taxAmount);
 
             // Bước 7: Tính lương thực lĩnh
-            Double netPay = grossIncome - payroll.getTotalInsurance() - taxAmount;
+            Double tIns = payroll.getTotalInsurance() != null ? payroll.getTotalInsurance() : 0.0;
+            Double tAmount = taxAmount != null ? taxAmount : 0.0;
+            Double netPay = grossIncome - tIns - tAmount;
             payroll.setNetPay(netPay);
             payroll.setStatus(PayrollStatus.DRAFT);
 
-            payrollRepository.save(payroll);
+                payrollRepository.save(payroll);
         }
+        System.out.println("Payroll Calculation completed successfully.");
     }
 
     private Double calculatePIT(Double income) {
         if (income <= 0) return 0.0;
-        List<TaxTier> tiers = taxTierRepository.findAll();
+        List<TaxTier> tiers = taxTierRepository.findAll().stream()
+            .filter(t -> "APPROVED".equals(t.getStatus()))
+            .collect(Collectors.toList());
         
         if (tiers.isEmpty()) {
             // Default PIT brackets
@@ -303,7 +333,10 @@ public class PayrollService {
         Double remainingIncome = income;
         
         for (TaxTier tier : tiers) {
-            Double tierSpan = tier.getUpperBound() - tier.getLowerBound();
+            Double lBound = tier.getLowerBound() != null ? tier.getLowerBound() : 0.0;
+            Double uBound = tier.getUpperBound() != null ? tier.getUpperBound() : 999999999.0;
+            Double tierSpan = uBound - lBound;
+            
             if (remainingIncome > tierSpan && tierSpan > 0) {
                 tax += tierSpan * (tier.getTaxRate() / 100.0);
                 remainingIncome -= tierSpan;

@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/accounting")
-@PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
 public class AccountingController {
 
     @Autowired private VoucherRepository voucherRepo;
@@ -24,12 +23,13 @@ public class AccountingController {
      * UC21 - Danh sách chứng từ theo kỳ
      */
     @GetMapping("/vouchers")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<List<Map<String, Object>>> getVouchers(
             @RequestParam Integer month, @RequestParam Integer year) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
         
-        List<Voucher> vouchers = voucherRepo.findByVoucherDateBetween(start, end);
+        List<Voucher> vouchers = voucherRepo.findByTargetMonthAndTargetYear(month, year);
         
         List<Map<String, Object>> result = vouchers.stream().map(v -> {
             Map<String, Object> map = new LinkedHashMap<>();
@@ -50,12 +50,13 @@ public class AccountingController {
      * UC22 - Sổ nhật ký chung (Journal entries)
      */
     @GetMapping("/journal")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<List<Map<String, Object>>> getJournalEntries(
             @RequestParam Integer month, @RequestParam Integer year) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
         
-        List<Voucher> vouchers = voucherRepo.findByVoucherDateBetween(start, end);
+        List<Voucher> vouchers = voucherRepo.findByTargetMonthAndTargetYear(month, year);
         List<JournalEntry> entries = journalRepo.findByVoucherIn(vouchers);
         
         List<Map<String, Object>> result = entries.stream().map(e -> {
@@ -79,6 +80,7 @@ public class AccountingController {
      * Báo cáo tổng hợp thuế & bảo hiểm theo kỳ
      */
     @GetMapping("/summary")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW') or @perm.check('DASHBOARD_VIEW')")
     public ResponseEntity<Map<String, Object>> getSummary(
             @RequestParam Integer month, @RequestParam Integer year) {
         List<Payroll> payrolls = payrollRepo.findByMonthAndYear(month, year);
@@ -126,6 +128,7 @@ public class AccountingController {
      * Thu thập dữ liệu biến động lương 6 tháng gần nhất cho Dashboard
      */
     @GetMapping("/trend")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW') or @perm.check('DASHBOARD_VIEW')")
     public ResponseEntity<List<Map<String, Object>>> getSalaryTrend() {
         List<Map<String, Object>> trend = new ArrayList<>();
         LocalDate now = LocalDate.now();
@@ -151,13 +154,14 @@ public class AccountingController {
      * UC23 - Sổ cái (General Ledger per Account)
      */
     @GetMapping("/ledger/{accountId}")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<List<Map<String, Object>>> getLedgerEntries(
             @PathVariable String accountId,
             @RequestParam Integer month, @RequestParam Integer year) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
         
-        List<Voucher> vouchers = voucherRepo.findByVoucherDateBetween(start, end);
+        List<Voucher> vouchers = voucherRepo.findByTargetMonthAndTargetYear(month, year);
         List<JournalEntry> entries = journalRepo.findByVoucherIn(vouchers);
         
         // Lọc các bút toán có liên quan đến tài khoản này (Nợ hoặc Có)
@@ -182,6 +186,7 @@ public class AccountingController {
      * Báo cáo chi tiết Bảo hiểm (BHXH, BHYT, BHTN) theo kỳ
      */
     @GetMapping("/report/insurance")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<Map<String, Object>> getInsuranceReport(
             @RequestParam Integer month, @RequestParam Integer year) {
         List<Payroll> payrolls = payrollRepo.findByMonthAndYear(month, year);
@@ -230,6 +235,7 @@ public class AccountingController {
      * Báo cáo chi tiết Thuế TNCN theo kỳ
      */
     @GetMapping("/report/tax")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<Map<String, Object>> getTaxReport(
             @RequestParam Integer month, @RequestParam Integer year) {
         List<Payroll> payrolls = payrollRepo.findByMonthAndYear(month, year);
@@ -262,6 +268,7 @@ public class AccountingController {
      * Báo cáo Kinh phí Công đoàn theo kỳ
      */
     @GetMapping("/report/union-fee")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<Map<String, Object>> getUnionFeeReport(
             @RequestParam Integer month, @RequestParam Integer year) {
         List<Payroll> payrolls = payrollRepo.findByMonthAndYear(month, year);

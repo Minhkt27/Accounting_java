@@ -1,26 +1,36 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 
+interface InsuranceRate {
+  type: string
+  employeeRate: number
+  employerRate: number
+  effectiveDate: string
+}
+
 export default function InsuranceRatePage() {
-  const [rates, setRates] = useState<any[]>([])
+  const [rates, setRates] = useState<InsuranceRate[]>([])
   const [type, setType] = useState("")
   const [employeeRate, setEmployeeRate] = useState(0)
   const [employerRate, setEmployerRate] = useState(0)
   const [effectiveDate, setEffectiveDate] = useState("")
   const [error, setError] = useState("")
-
-  const fetchData = async () => {
-    try {
-      const res = await axios.get("/api/config/insurance", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      })
-      setRates(res.data)
-    } catch (err: any) { setError(err.message) }
-  }
-
-  useEffect(() => { fetchData() }, [])
+ 
+   const fetchData = useCallback(async () => {
+     try {
+       const res = await axios.get("/api/config/insurance", {
+         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+       })
+       setRates(res.data)
+     } catch (err: unknown) { 
+        if (err instanceof Error) setError(err.message)
+        else setError(String(err))
+     }
+   }, [])
+ 
+   useEffect(() => { fetchData() }, [fetchData])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +39,10 @@ export default function InsuranceRatePage() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       fetchData()
-    } catch (err: any) { setError(err.message) }
+    } catch (err: unknown) { 
+        if (err instanceof Error) setError(err.message)
+        else setError(String(err))
+    }
   }
 
   return (

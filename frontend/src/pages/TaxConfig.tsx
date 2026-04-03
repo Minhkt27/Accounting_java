@@ -1,24 +1,28 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Plus, Trash2 } from "lucide-react"
+import type { TaxTier, DeductionSetting } from "../types"
 
 export default function TaxConfigPage() {
-  const [tiers, setTiers] = useState<any[]>([])
-  const [deductions, setDeductions] = useState<any>({ personalDeduction: 15500000, dependentDeduction: 6200000 })
+  const [tiers, setTiers] = useState<TaxTier[]>([])
+  const [deductions, setDeductions] = useState<DeductionSetting>({ personalDeduction: 15500000, dependentDeduction: 6200000 })
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       const resTax = await axios.get("/api/config/tax", auth)
       setTiers(resTax.data)
       const resDed = await axios.get("/api/config/deductions", auth)
       if(resDed.data.length > 0) setDeductions(resDed.data[0])
-    } catch (err: any) { alert("Lỗi tải dữ liệu: " + err.message) }
-  }
+    } catch (err: unknown) { 
+      const message = err instanceof Error ? err.message : String(err)
+      alert("Lỗi tải dữ liệu: " + message) 
+    }
+  }, [])
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData() }, [fetchData])
 
   const handleAddTier = () => {
     setTiers([...tiers, { lowerBound: 0, upperBound: 0, taxRate: 0, tierLevel: tiers.length + 1 }])
@@ -30,7 +34,10 @@ export default function TaxConfigPage() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       alert("Đã cập nhật biểu thuế TNCN!")
-    } catch (err: any) { alert("Lỗi lưu thuế: " + err.message) }
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        alert("Lỗi lưu thuế: " + message) 
+    }
   }
 
   const handleSaveDeduction = async () => {
@@ -39,7 +46,10 @@ export default function TaxConfigPage() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       alert("Đã cập nhật giảm trừ gia cảnh!")
-    } catch (err: any) { alert("Lỗi lưu giảm trừ: " + err.message) }
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        alert("Lỗi lưu giảm trừ: " + message) 
+    }
   }
 
   return (

@@ -1,17 +1,21 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Calculator, CheckCircle, XCircle } from "lucide-react"
+import { Calculator, CheckCircle, XCircle, FileSpreadsheet } from "lucide-react"
+import { ExportService } from "../utils/ExportService"
 import PayslipDialog from "../components/PayslipDialog"
 import PaymentDialog from "../components/PaymentDialog"
 
-interface Employee {
+export interface Employee {
   id: string
   fullName: string
+  dob?: string
+  phone?: string
+  email?: string
 }
 
-interface Payroll {
+export interface Payroll {
   id: number
   employee: Employee
   month: number
@@ -42,6 +46,7 @@ interface Payroll {
   taxAmount: number
   netPay: number
   status: string
+  rejectionReason?: string
 }
 
 export default function PayrollPage() {
@@ -50,21 +55,24 @@ export default function PayrollPage() {
   const [month, setMonth] = useState(new Date().getMonth() === 0 ? 12 : new Date().getMonth())
   const [year, setYear] = useState(new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear())
   const [loading, setLoading] = useState(false)
+  
+  const user = JSON.parse(localStorage.getItem("user") || "{}")
+  const canApprove = user.roles?.includes("ROLE_ADMIN") || user.roles?.includes("ROLE_KE_TOAN_TRUONG")
 
-  const fetchPayrolls = async () => {
+  const fetchPayrolls = useCallback(async () => {
     try {
       const res = await axios.get(`/api/payroll/${month}/${year}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       setPayrolls(res.data)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err)
     }
-  }
+  }, [month, year])
 
   useEffect(() => {
     fetchPayrolls()
-  }, [month, year])
+  }, [fetchPayrolls])
 
   const handleCalculate = async () => {
     setLoading(true)
@@ -74,8 +82,9 @@ export default function PayrollPage() {
       })
       alert(`Đã tính lương xong cho tháng ${month}/${year}`)
       fetchPayrolls()
-    } catch (err: any) {
-      alert(err.response?.data || "Lỗi khi tính lương")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      alert(message || "Lỗi khi tính lương")
     } finally {
       setLoading(false)
     }
@@ -89,8 +98,9 @@ export default function PayrollPage() {
       })
       alert("Đã chốt lương thành công!")
       fetchPayrolls()
-    } catch (err: any) {
-      alert(err.response?.data || "Lỗi khi chốt")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      alert(message || "Lỗi khi chốt")
     }
   }
 
@@ -101,8 +111,9 @@ export default function PayrollPage() {
       })
       alert("Đã thanh toán lương và tự động sinh chứng từ kế toán thành công!")
       fetchPayrolls()
-    } catch (err: any) {
-      alert(err.response?.data || "Lỗi khi thanh toán")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      alert(message || "Lỗi khi thanh toán")
     }
   }
 
@@ -119,10 +130,63 @@ export default function PayrollPage() {
       setShowRejectDialog(false)
       setRejectReason("")
       fetchPayrolls()
-    } catch (err: any) {
-      alert(err.response?.data || "Lỗi khi từ chối")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      alert(message || "Lỗi khi từ chối")
     }
   }
+
+  const handleExportExcel = () => {
+    const data = payrolls.map(p => ({
+      employeeId: p.employee.id,
+      fullName: p.employee.fullName,
+      month: p.month,
+      year: p.year,
+      contractSalary: p.contractSalary,
+      realWorkDays: p.realWorkDays,
+      paidLeaveDays: p.paidLeaveDays,
+      baseSalaryPay: p.baseSalaryPay,
+      mealAllowance: p.mealAllowance,
+      positionAllowance: p.positionAllowance,
+      seniorityAllowance: p.seniorityAllowance,
+      otPay: p.otPay,
+      grossIncome: p.grossIncome,
+      totalInsurance: p.totalInsurance,
+      taxAmount: p.taxAmount,
+      totalEmployerInsurance: p.totalEmployerInsurance,
+      kpcdCongTy: p.kpcdCongTy,
+      netPay: p.netPay,
+      status: p.status
+    }));
+
+    ExportService.exportToExcel(
+      data,
+      `Bang_luong_thang_${month}_${year}`,
+      'Bảng lương',
+      {
+        employeeId: "Mã NV",
+        fullName: "Họ tên",
+        month: "Tháng",
+        year: "Năm",
+        contractSalary: "Lương HĐ",
+        realWorkDays: "Công mặt",
+        paidLeaveDays: "Ngày phép",
+        baseSalaryPay: "Lương thời gian",
+        mealAllowance: "Phụ cấp ăn",
+        positionAllowance: "Phụ cấp CV",
+        seniorityAllowance: "Phụ cấp TN",
+        otPay: "Tiền OT",
+        grossIncome: "Tổng thu nhập",
+        totalInsurance: "BH Nhân viên",
+        taxAmount: "Thuế TNCN",
+        totalEmployerInsurance: "BH Công ty",
+        kpcdCongTy: "Kinh phí CĐ",
+        netPay: "Thực lĩnh",
+        status: "Trạng thái"
+      }
+    );
+  }
+
 
   const formatVND = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0)
@@ -141,13 +205,19 @@ export default function PayrollPage() {
           <Calculator className="w-6 h-6 text-primary" /> Quản lý Lương (Payroll)
         </h1>
         
-        <div className="flex flex-wrap items-center gap-3 bg-muted/30 p-2 rounded-xl border shadow-sm">
+        <div className="flex flex-nowrap items-center gap-3 bg-muted/30 p-2 rounded-xl border shadow-sm overflow-x-auto scrollbar-hide flex-shrink-0">
           <div className="flex items-center gap-2 border-r pr-3">
             <span className="text-[10px] font-black uppercase text-muted-foreground mr-1">Kỳ lương</span>
             <Input type="number" className="w-16 h-8 text-center font-bold" value={month} onChange={e => setMonth(Number(e.target.value))} />
             <span className="text-muted-foreground">/</span>
             <Input type="number" className="w-20 h-8 text-center font-bold" value={year} onChange={e => setYear(Number(e.target.value))} />
           </div>
+
+          <Button variant="outline" onClick={handleExportExcel} className="gap-2 h-8 border-green-600 text-green-600 hover:bg-green-50 shadow-sm">
+            <FileSpreadsheet className="w-4 h-4" /> Excel
+          </Button>
+
+          <div className="w-[1px] h-6 bg-slate-200 mx-1" />
           
           <Button 
             onClick={handleCalculate} 
@@ -157,93 +227,102 @@ export default function PayrollPage() {
              <Calculator className="w-4 h-4" /> {loading ? "Đang tính..." : isRejectedAll ? "Tính lại" : "Tính Lương"}
           </Button>
 
-          <Button 
-            onClick={handleApprove} 
-            disabled={!isDraftAll || payrolls.length === 0}
-            className="gap-2 h-8 bg-amber-500 hover:bg-amber-600 text-white font-bold"
-          >
-             <CheckCircle className="w-4 h-4" /> Chốt Sổ
-          </Button>
+          {canApprove && (
+            <Button 
+              onClick={handleApprove} 
+              disabled={!isDraftAll || payrolls.length === 0}
+              className="gap-2 h-8 bg-amber-500 hover:bg-amber-600 text-white font-bold"
+            >
+               <CheckCircle className="w-4 h-4" /> Chốt Sổ
+            </Button>
+          )}
 
-          <Button 
-            onClick={() => setShowRejectDialog(true)} 
-            disabled={!isDraftAll || payrolls.length === 0}
-            className="gap-2 h-8 bg-red-500 hover:bg-red-600 text-white font-bold"
-          >
-             <XCircle className="w-4 h-4" /> Từ chối
-          </Button>
+          {canApprove && (
+            <Button 
+              onClick={() => setShowRejectDialog(true)} 
+              disabled={!isDraftAll || payrolls.length === 0}
+              className="gap-2 h-8 bg-red-500 hover:bg-red-600 text-white font-bold"
+            >
+               <XCircle className="w-4 h-4" /> Từ chối
+            </Button>
+          )}
 
-          <PaymentDialog 
-            onPay={handlePay}
-            disabled={!isApprovedAll || isPaidAll}
-          />
+          {canApprove && (
+            <PaymentDialog 
+              onPay={handlePay}
+              disabled={!isApprovedAll || isPaidAll}
+            />
+          )}
         </div>
       </div>
 
-      <div className="border rounded-xl bg-card shadow-lg overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm text-left whitespace-nowrap">
-          <thead className="bg-primary text-primary-foreground border-b border-primary-foreground/10">
-            <tr>
-              <th className="px-4 py-4 font-bold">Mã NV</th>
-              <th className="px-4 py-4 font-bold">Họ tên nhân viên</th>
-              <th className="px-4 py-4 font-bold text-center">Trạng thái</th>
-              <th className="px-4 py-4 font-bold text-center">Hành động</th>
-              <th className="px-4 py-4 font-bold text-right text-yellow-200">Thực lĩnh</th>
-              <th className="px-4 py-4 font-medium text-right bg-primary/95">Công mặt</th>
-              <th className="px-4 py-4 font-medium text-right bg-primary/95">Ngày phép</th>
-              <th className="px-4 py-4 font-medium text-right">Lương thời gian</th>
-              <th className="px-4 py-4 font-medium text-right">Phụ cấp/OT</th>
-              <th className="px-4 py-4 font-bold text-right text-blue-300">Tổng thu nhâp</th>
-              <th className="px-4 py-4 font-medium text-right text-red-300">Bảo hiểm</th>
-              <th className="px-4 py-4 font-medium text-right text-red-300">Thuế TNCN</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {payrolls.map((p) => (
-              <tr key={p.id} className="hover:bg-muted/50 transition-colors">
-                <td className="px-4 py-4 font-bold text-muted-foreground">{p.employee.id}</td>
-                <td className="px-4 py-4 font-semibold">{p.employee.fullName}</td>
-                <td className="px-4 py-4 text-center">
-                  <span className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-lg shadow-sm border ${
-                    p.status === 'APPROVED' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                    p.status === 'PAID' ? 'bg-green-50 text-green-700 border-green-200' :
-                    p.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
-                    'bg-slate-50 text-slate-700 border-slate-200'
-                  }`}>
-                    {p.status === 'DRAFT' ? 'Dự thảo' : p.status === 'APPROVED' ? 'Đã chốt' : p.status === 'REJECTED' ? 'Từ chối' : 'Đã trả'}
-                  </span>
-                  {(p as any).rejectionReason && (
-                    <p className="text-[10px] text-red-500 mt-1 italic max-w-[120px] truncate" title={(p as any).rejectionReason}>"{(p as any).rejectionReason}"</p>
-                  )}
-                </td>
-                <td className="px-4 py-4 text-center">
-                    <PayslipDialog payroll={p} />
-                </td>
-                <td className="px-4 py-4 text-right">
-                    <div className="font-black text-green-600 dark:text-green-400 text-base tabular-nums">
-                        {formatVND(p.netPay)}
-                    </div>
-                </td>
-                <td className="px-4 py-4 text-right font-medium text-slate-500 tabular-nums bg-muted/20">{p.realWorkDays}</td>
-                <td className="px-4 py-4 text-right font-bold text-green-600 tabular-nums bg-muted/20">+{p.paidLeaveDays || 0}</td>
-                <td className="px-4 py-4 text-right font-bold tabular-nums text-primary/80">{formatVND(p.baseSalaryPay)}</td>
-                <td className="px-4 py-4 text-right tabular-nums">{formatVND(p.mealAllowance + p.otPay)}</td>
-                <td className="px-4 py-4 text-right font-black text-blue-600 dark:text-blue-400 tabular-nums">{formatVND(p.grossIncome)}</td>
-                <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">-{formatVND(p.totalInsurance)}</td>
-                <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">-{formatVND(p.taxAmount)}</td>
-              </tr>
-            ))}
-            {payrolls.length === 0 && (
+        <div className="border rounded-xl bg-card shadow-lg overflow-hidden overflow-x-auto">
+          <table className="w-full text-sm text-left whitespace-nowrap">
+            <thead className="bg-primary text-primary-foreground border-b border-primary-foreground/10">
               <tr>
-                <td colSpan={12} className="px-6 py-16 text-center text-muted-foreground/60 italic">
-                  <Calculator className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                  Chưa có dữ liệu bảng lương tháng {month}/{year}. Vui lòng nhấn "Tính Lương".
-                </td>
+                <th className="px-4 py-4 font-bold">Mã NV</th>
+                <th className="px-4 py-4 font-bold">Họ tên nhân viên</th>
+                <th className="px-4 py-4 font-bold text-center">Trạng thái</th>
+                <th className="px-4 py-4 font-bold text-center">Hành động</th>
+                <th className="px-4 py-4 font-bold text-right text-yellow-200">Thực lĩnh</th>
+                <th className="px-4 py-4 font-medium text-right bg-primary/95">Công mặt</th>
+                <th className="px-4 py-4 font-medium text-right bg-primary/95">Ngày phép</th>
+                <th className="px-4 py-4 font-medium text-right">Lương thời gian</th>
+                <th className="px-4 py-4 font-medium text-right">Phụ cấp/OT</th>
+                <th className="px-4 py-4 font-bold text-right text-blue-300">Tổng thu nhâp</th>
+                <th className="px-4 py-4 font-medium text-right text-red-300">Bảo hiểm</th>
+                <th className="px-4 py-4 font-medium text-right text-red-300">Thuế TNCN</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y">
+              {payrolls.map((p) => (
+                <tr key={p.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="px-4 py-4 font-bold text-muted-foreground">{p.employee.id}</td>
+                  <td className="px-4 py-4 font-semibold">{p.employee.fullName}</td>
+                  <td className="px-4 py-4 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <span 
+                        className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-lg shadow-sm border ${
+                          p.status === 'APPROVED' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                          p.status === 'PAID' ? 'bg-green-50 text-green-700 border-green-200' :
+                          p.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200 cursor-help' :
+                          'bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                        title={p.status === 'REJECTED' ? p.rejectionReason : ""}
+                      >
+                        {p.status === 'DRAFT' ? 'Dự thảo' : p.status === 'APPROVED' ? 'Đã chốt' : p.status === 'REJECTED' ? 'Từ chối' : 'Đã trả'}
+                        {p.status === 'REJECTED' && p.rejectionReason && " *"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-center">
+                      <PayslipDialog payroll={p} />
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                      <div className="font-black text-green-600 dark:text-green-400 text-base tabular-nums">
+                          {formatVND(p.netPay)}
+                      </div>
+                  </td>
+                  <td className="px-4 py-4 text-right font-medium text-slate-500 tabular-nums bg-muted/20">{p.realWorkDays}</td>
+                  <td className="px-4 py-4 text-right font-bold text-green-600 tabular-nums bg-muted/20">+{p.paidLeaveDays || 0}</td>
+                  <td className="px-4 py-4 text-right font-bold tabular-nums text-primary/80">{formatVND(p.baseSalaryPay)}</td>
+                  <td className="px-4 py-4 text-right tabular-nums">{formatVND(p.mealAllowance + p.otPay)}</td>
+                  <td className="px-4 py-4 text-right font-black text-blue-600 dark:text-blue-400 tabular-nums">{formatVND(p.grossIncome)}</td>
+                  <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">-{formatVND(p.totalInsurance)}</td>
+                  <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">-{formatVND(p.taxAmount)}</td>
+                </tr>
+              ))}
+              {payrolls.length === 0 && (
+                <tr>
+                  <td colSpan={12} className="px-6 py-16 text-center text-muted-foreground/60 italic">
+                    <Calculator className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                    Chưa có dữ liệu bảng lương tháng {month}/{year}. Vui lòng nhấn "Tính Lương".
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
       {/* Reject Dialog */}
       {showRejectDialog && (

@@ -3,8 +3,14 @@ import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 
+interface SystemParams {
+  standardWorkDays: number
+  minimumWage: number
+  mealAllowance: number
+}
+
 export default function SystemParamsPage() {
-  const [params, setParams] = useState<any>({ standardWorkDays: 26, minimumWage: 1800000, mealAllowance: 25000 })
+  const [params, setParams] = useState<SystemParams>({ standardWorkDays: 26, minimumWage: 1800000, mealAllowance: 25000 })
 
   useEffect(() => {
     axios.get("/api/config/params", {
@@ -18,7 +24,10 @@ export default function SystemParamsPage() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       alert("Đã lưu tham số hằng số!")
-    } catch (err: any) { alert("Lỗi: " + err.message) }
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        alert("Lỗi: " + message) 
+    }
   }
 
   return (

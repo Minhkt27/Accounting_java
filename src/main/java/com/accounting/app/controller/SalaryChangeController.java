@@ -82,69 +82,81 @@ public class SalaryChangeController {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             change.setCreatedBy(auth.getName());
 
+            // UC: Tự động phê duyệt nếu là Nhân sự tạo (trừ biến động Lương) hoặc Admin tạo
+            boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            boolean isHR = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_NHAN_SU"));
+            boolean isSalaryType = "SALARY_ADJUSTMENT".equals(change.getChangeType());
+
+            if (isAdmin || isHR) {
+                change.setStatus("APPROVED");
+                change.setApprovedBy(auth.getName());
+                change.setApprovedAt(java.time.LocalDateTime.now());
+                
+                // Tự động cập nhật lương nếu là Điều chỉnh lương hoặc Thăng chức
+                if ("SALARY_ADJUSTMENT".equals(change.getChangeType()) || "PROMOTION".equals(change.getChangeType())) {
+                    emp.setContractSalary(change.getNewValue());
+                    employeeRepo.save(emp);
+                }
+            }
+
             changeRepo.save(change);
-            return ResponseEntity.ok(Map.of("message", "Đã tạo đề xuất biến động thành công", "id", change.getId()));
+            return ResponseEntity.ok(Map.of(
+                "message", change.getStatus().equals("APPROVED") ? "Đã cập nhật biến động thành công!" : "Đã tạo đề xuất biến động thành công", 
+                "status", change.getStatus()
+            ));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi: " + e.getMessage()));
         }
     }
 
     /**
-     * Phê duyệt biến động — Chỉ Kế toán trưởng
-     * Khi phê duyệt SALARY_ADJUSTMENT hoặc PROMOTION, tự động cập nhật lương nhân viên
+     * Cập nhật biến động — Chỉ HR hoặc Admin
      */
-    @PostMapping("/{id}/approve")
-    @PreAuthorize("@perm.check('HR_SALARY_CHANGE_APPROVE')")
-    public ResponseEntity<?> approve(@PathVariable Long id) {
+    @PutMapping("/{id}")
+    @PreAuthorize("@perm.check('HR_SALARY_CHANGE')")
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         try {
             SalaryChange change = changeRepo.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động #" + id));
 
-            if (!"PENDING".equals(change.getStatus())) {
-                throw new RuntimeException("Chỉ có thể phê duyệt biến động đang ở trạng thái PENDING");
-            }
+            change.setChangeType((String) body.get("changeType"));
+            change.setOldValue(toDouble(body.get("oldValue")));
+            change.setNewValue(toDouble(body.get("newValue")));
+            change.setReason((String) body.get("reason"));
+            change.setEffectiveDate(java.time.LocalDate.parse((String) body.get("effectiveDate")));
 
+            // Nếu HR hoặc Admin sửa => đảm bảo trạng thái APPROVED và cập nhật lương nhân viên
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            change.setStatus("APPROVED");
-            change.setApprovedBy(auth.getName());
-            change.setApprovedAt(LocalDateTime.now());
-            changeRepo.save(change);
-
-            // Nếu là điều chỉnh lương hoặc thăng chức => tự động cập nhật lương HĐ
-            if ("SALARY_ADJUSTMENT".equals(change.getChangeType()) || "PROMOTION".equals(change.getChangeType())) {
-                Employee emp = change.getEmployee();
-                emp.setContractSalary(change.getNewValue());
-                employeeRepo.save(emp);
+            boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            boolean isHR = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_NHAN_SU"));
+            
+            if (isAdmin || isHR) {
+                change.setStatus("APPROVED");
+                if ("SALARY_ADJUSTMENT".equals(change.getChangeType()) || "PROMOTION".equals(change.getChangeType())) {
+                    Employee emp = change.getEmployee();
+                    emp.setContractSalary(change.getNewValue());
+                    employeeRepo.save(emp);
+                }
             }
 
-            return ResponseEntity.ok(Map.of("message", "Đã phê duyệt biến động #" + id + " thành công"));
+            changeRepo.save(change);
+            return ResponseEntity.ok(Map.of("message", "Đã cập nhật biến động thành công"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi: " + e.getMessage()));
         }
     }
 
     /**
-     * Từ chối biến động — Chỉ Kế toán trưởng
+     * Xóa biến động — Chỉ HR hoặc Admin
      */
-    @PostMapping("/{id}/reject")
-    @PreAuthorize("@perm.check('HR_SALARY_CHANGE_APPROVE')")
-    public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, String> body) {
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@perm.check('HR_SALARY_CHANGE')")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
         try {
             SalaryChange change = changeRepo.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động #" + id));
-
-            if (!"PENDING".equals(change.getStatus())) {
-                throw new RuntimeException("Chỉ có thể từ chối biến động đang ở trạng thái PENDING");
-            }
-
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            change.setStatus("REJECTED");
-            change.setApprovedBy(auth.getName());
-            change.setApprovedAt(LocalDateTime.now());
-            change.setRejectionReason(body.get("reason"));
-            changeRepo.save(change);
-
-            return ResponseEntity.ok(Map.of("message", "Đã từ chối biến động #" + id));
+            changeRepo.delete(change);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa biến động thành công"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi: " + e.getMessage()));
         }

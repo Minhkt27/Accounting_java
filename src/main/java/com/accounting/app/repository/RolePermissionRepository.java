@@ -13,4 +13,5 @@ public interface RolePermissionRepository extends JpaRepository<RolePermission, 
     boolean existsByRoleNameAndFunctionCode(String roleName, String functionCode);
     List<RolePermission> findByRoleName(String roleName);
     List<RolePermission> findByFunctionCode(String functionCode);
+    void deleteByRoleName(String roleName);
 }

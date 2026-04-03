@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Plus, UserRoundCheck, Edit, Trash2, Eye, X, FileUp, FileText } from "lucide-react"
+import { Plus, UserRoundCheck, Edit, Trash2, Eye, X, FileUp, FileText, FileSpreadsheet, Mail, Phone, MapPin, Calendar } from "lucide-react"
+import { ExportService } from "../utils/ExportService"
 
 interface Employee {
   id: string
@@ -18,6 +19,11 @@ interface Employee {
   email: string
   hometown: string
   contractFilePath?: string
+  gender?: string
+  address?: string
+  position?: string
+  department?: string
+  joinDate?: string
 }
 
 export default function EmployeeList() {
@@ -32,19 +38,19 @@ export default function EmployeeList() {
     active: true, dob: "", phone: "", email: "", hometown: ""
   })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       const res = await axios.get("/api/employees", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       setEmployees(res.data)
-      setLoading(false)
-    } catch (err) { console.error(err); setLoading(false) }
-  }
+    } catch (err: unknown) { 
+        console.error(err) 
+    }
+  }, [])
 
-  useEffect(() => { fetchEmployees() }, [])
+  useEffect(() => { fetchEmployees() }, [fetchEmployees])
 
   const validate = () => {
     if (!currentEmp.id || !currentEmp.fullName || !currentEmp.dob) {
@@ -75,7 +81,7 @@ export default function EmployeeList() {
     if (!validate()) return
     try {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      let savedEmp: any
+      let savedEmp: Employee | null = null
       if (isEditing) {
         const res = await axios.put(`/api/employees/${currentEmp.id}`, currentEmp, auth)
         savedEmp = res.data
@@ -84,7 +90,6 @@ export default function EmployeeList() {
         savedEmp = res.data
       }
 
-      // Xử lý upload file nếu có
       if (selectedFile && savedEmp) {
         const formData = new FormData()
         formData.append("file", selectedFile)
@@ -96,10 +101,11 @@ export default function EmployeeList() {
         })
       }
 
-      resetForm()
-      fetchEmployees()
       alert("Đã lưu thông tin nhân sự!")
-    } catch (err) { alert("Lỗi khi lưu nhân viên") }
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        alert("Lỗi khi lưu nhân viên: " + message) 
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -109,7 +115,10 @@ export default function EmployeeList() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       fetchEmployees()
-    } catch (err) { alert("Lỗi khi xóa nhân viên") }
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        alert("Lỗi khi xóa nhân viên: " + message) 
+    }
   }
 
   const handleEdit = (emp: Employee) => {
@@ -140,17 +149,38 @@ export default function EmployeeList() {
     window.open(`/api/employees/download-contract/${id}?access_token=${token}`, "_blank")
   }
 
-  const handleOpenAddForm = async () => {
+  const handleOpenAddForm = useCallback(async () => {
     try {
       const res = await axios.get("/api/employees/next-id", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
-      setCurrentEmp({ ...currentEmp, id: res.data })
+      setCurrentEmp(prev => ({ ...prev, id: res.data }))
       setShowForm(true)
-    } catch (err) {
-      setShowForm(true) // Fallback if API fails
+    } catch (err: unknown) {
+      setShowForm(true)
     }
+  }, [])
+
+  const handleExportExcel = () => {
+    ExportService.exportToExcel(
+      employees, 
+      'Danh_sach_nhan_vien', 
+      'Nhân viên',
+      {
+        id: "Mã NV",
+        fullName: "Họ tên",
+        dob: "Ngày sinh",
+        phone: "Số điện thoại",
+        email: "Email",
+        hometown: "Quê quán",
+        contractSalary: "Lương HĐ",
+        dependentCount: "Người phụ thuộc",
+        employeeType: "Loại nhân sự",
+        active: "Đang làm việc"
+      }
+    );
   }
+
 
   return (
     <div className="space-y-6">
@@ -158,11 +188,18 @@ export default function EmployeeList() {
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <UserRoundCheck className="w-6 h-6 text-primary" /> Hồ sơ nhân sự nâng cao (UC07-08)
         </h1>
-        {!showForm && (
-          <Button onClick={handleOpenAddForm} className="gap-2">
-            <Plus className="w-4 h-4" /> Thêm nhân viên
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {!showForm && (
+            <>
+              <Button variant="outline" onClick={handleExportExcel} className="gap-2 border-green-600 text-green-600 hover:bg-green-50">
+                <FileSpreadsheet className="w-4 h-4" /> Xuất Excel
+              </Button>
+              <Button onClick={handleOpenAddForm} className="gap-2">
+                <Plus className="w-4 h-4" /> Thêm nhân viên
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {showForm && (
@@ -277,55 +314,74 @@ export default function EmployeeList() {
           </form>
         </div>
       )}
-
-      <div className="border rounded-xl bg-card shadow-sm overflow-hidden bg-white">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-muted/50 text-muted-foreground uppercase text-[11px] font-bold tracking-wider">
-            <tr>
-              <th className="px-6 py-4">Mã NV</th>
-              <th className="px-6 py-4">Họ tên</th>
-              <th className="px-6 py-4">SĐT / Email</th>
-              <th className="px-6 py-4 text-right">Lương HĐ</th>
-              <th className="px-6 py-4 text-center">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {loading ? (
-              <tr><td colSpan={5} className="text-center py-10 text-muted-foreground">Đang tải hồ sơ...</td></tr>
-            ) : employees.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-10 text-muted-foreground italic">Chưa có dữ liệu nhân sự.</td></tr>
-            ) : employees.map((emp) => (
-              <tr key={emp.id} className="hover:bg-muted/30 transition-all duration-200 group">
-                <td className="px-6 py-4 font-bold text-muted-foreground">{emp.id}</td>
-                <td className="px-6 py-4">
-                  <div className="font-medium">{emp.fullName}</div>
-                  <div className="text-[10px] text-muted-foreground">{emp.employeeType}</div>
-                </td>
-                <td className="px-6 py-4 text-xs">
-                  <div>{emp.phone || '-'}</div>
-                  <div className="text-muted-foreground">{emp.email || '-'}</div>
-                </td>
-                <td className="px-6 py-4 text-right font-mono text-primary">
-                  {new Intl.NumberFormat('vi-VN').format(emp.contractSalary)} đ
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => handleView(emp)} title="Xem chi tiết">
-                      <Eye className="w-4 h-4 text-blue-500" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(emp)} title="Chỉnh sửa">
-                      <Edit className="w-4 h-4 text-orange-500" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(emp.id)} title="Xóa hồ sơ">
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {!showForm && (
+          <div className="border border-slate-100 rounded-[2rem] bg-white/70 backdrop-blur-xl shadow-2xl shadow-slate-200/50 overflow-hidden">
+              <table className="w-full text-sm text-left">
+                  <thead className="bg-[#111827] text-white">
+                      <tr>
+                          <th className="px-6 py-5 font-black uppercase tracking-tighter">Mã NV</th>
+                          <th className="px-6 py-5 font-black uppercase tracking-tighter">Họ tên nhân viên</th>
+                          <th className="px-6 py-5 font-black uppercase tracking-tighter">Thông tin liên hệ</th>
+                          <th className="px-6 py-5 font-black uppercase tracking-tighter">Vị trí & Phòng ban</th>
+                          <th className="px-6 py-5 font-black uppercase tracking-tighter">Thao tác</th>
+                      </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                      {employees.map((employee) => (
+                          <tr key={employee.id} className="hover:bg-slate-50/80 transition-all group">
+                              <td className="px-6 py-5 font-black text-slate-400 group-hover:text-primary transition-colors tabular-nums">{employee.id}</td>
+                              <td className="px-6 py-5">
+                                  <div className="font-black text-slate-800 text-base">{employee.fullName}</div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-[10px] font-black bg-slate-100 text-slate-400 px-2 py-0.5 rounded uppercase tracking-widest">{employee.employeeType || 'N/A'}</span>
+                                      <span className="text-[10px] font-black bg-blue-50 text-blue-500 px-2 py-0.5 rounded uppercase tracking-widest">NV Chính thức</span>
+                                  </div>
+                              </td>
+                              <td className="px-6 py-5 space-y-1">
+                                  <div className="flex items-center gap-2 text-slate-600 font-bold group-hover:text-slate-900 transition-colors">
+                                      <Mail size={14} className="text-slate-300" /> {employee.email}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                                      <Phone size={14} className="text-slate-200" /> {employee.phone}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                                      <MapPin size={14} className="text-slate-200" /> {employee.hometown}
+                                  </div>
+                              </td>
+                              <td className="px-6 py-5">
+                                  <div className="flex items-center gap-2 text-slate-700 font-bold">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                                      {employee.employeeType}
+                                  </div>
+                                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest mt-1 ml-3.5 italic">Phòng Nhân sự</div>
+                                  <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold mt-2 ml-3.5">
+                                      <Calendar size={12} /> Ngày sinh: {employee.dob}
+                                  </div>
+                              </td>
+                              <td className="px-6 py-5">
+                                  <div className="flex items-center gap-2">
+                                      <Button variant="ghost" size="icon" onClick={() => handleView(employee)}>
+                                          <Eye className="w-4 h-4 text-blue-500" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" onClick={() => handleEdit(employee)}>
+                                          <Edit className="w-4 h-4 text-orange-500" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" onClick={() => handleDelete(employee.id)}>
+                                          <Trash2 className="w-4 h-4 text-destructive" />
+                                      </Button>
+                                  </div>
+                              </td>
+                          </tr>
+                      ))}
+                      {employees.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="text-center py-20 text-slate-300 italic">Chưa có dữ liệu nhân sự.</td>
+                        </tr>
+                      )}
+                  </tbody>
+              </table>
+          </div>
+      )}
     </div>
   )
 }

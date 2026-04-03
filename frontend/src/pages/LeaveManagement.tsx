@@ -1,25 +1,34 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { PlaneTakeoff, Trash2 } from "lucide-react"
+import type { Leave, Employee, LeaveType } from "../types"
 
 export default function LeaveManagementPage() {
-  const [leaves, setLeaves] = useState<any[]>([])
-  const [employees, setEmployees] = useState<any[]>([])
-  const [newLeave, setNewLeave] = useState({ employee: { id: "" }, leaveType: "ANNUAL", startDate: "", endDate: "" })
+  const [leaves, setLeaves] = useState<Leave[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [newLeave, setNewLeave] = useState<{
+    employee: { id: string };
+    leaveType: LeaveType;
+    startDate: string;
+    endDate: string;
+  }>({ employee: { id: "" }, leaveType: "ANNUAL", startDate: "", endDate: "" })
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       const resL = await axios.get("/api/leaves", auth)
       setLeaves(resL.data)
       const resE = await axios.get("/api/employees", auth)
       setEmployees(resE.data)
-    } catch (err: any) { alert("Lỗi tải dữ liệu: " + err.message) }
-  }
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        alert("Lỗi tải dữ liệu: " + message) 
+    }
+  }, [])
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData() }, [fetchData])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +38,10 @@ export default function LeaveManagementPage() {
       })
       fetchData()
       alert("Đã ghi nhận ngày nghỉ!")
-    } catch (err: any) { alert("Lỗi lưu dữ liệu: " + err.message) }
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        alert("Lỗi lưu dữ liệu: " + message) 
+    }
   }
 
   const handleDelete = async (id: number) => {
@@ -63,7 +75,7 @@ export default function LeaveManagementPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Loại nghỉ</label>
             <select 
-              value={newLeave.leaveType} onChange={e => setNewLeave({...newLeave, leaveType: e.target.value})}
+              value={newLeave.leaveType} onChange={e => setNewLeave({...newLeave, leaveType: e.target.value as LeaveType})}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="ANNUAL">Nghỉ phép năm (CTY trả)</option>
@@ -84,8 +96,8 @@ export default function LeaveManagementPage() {
             <div className="p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
                 💡 Dự kiến tính: <strong>{(() => {
                     let count = 0;
-                    let curr = new Date(newLeave.startDate);
-                    let end = new Date(newLeave.endDate);
+                    const curr = new Date(newLeave.startDate);
+                    const end = new Date(newLeave.endDate);
                     while (curr <= end) {
                         const day = curr.getDay();
                         if (day !== 0 && day !== 6) count++;

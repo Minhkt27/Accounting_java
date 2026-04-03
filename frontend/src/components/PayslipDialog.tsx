@@ -1,9 +1,11 @@
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog"
 import { Button } from "./ui/button"
-import { FileText, Printer, ShieldCheck } from "lucide-react"
+import { FileText } from "lucide-react"
+
+import type { Payroll } from "../pages/PayrollPage"
 
 interface PayslipDialogProps {
-  payroll: any
+  payroll: Payroll
 }
 
 export default function PayslipDialog({ payroll }: PayslipDialogProps) {
@@ -11,9 +13,6 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0)
   }
 
-  const handlePrint = () => {
-    window.print()
-  }
 
   // Hàm chuyển số thành chữ (Tiếng Việt)
   const toVietnameseWords = (amount: number): string => {
@@ -69,18 +68,18 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
+      <DialogTrigger>
         <Button variant="outline" className="h-7 text-[10px] font-bold gap-1 px-3 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-full shadow-sm">
           <FileText className="w-3 h-3" /> Phiếu lương
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl bg-white text-black p-0 print:p-0 print:m-0 print:shadow-none sm:rounded-[1rem] border-none shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+      <DialogContent className="max-w-2xl bg-white text-black p-0 payslip-modal print:p-0 print:m-0 print:shadow-none sm:rounded-[1rem] border-none shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
         <div id="payslip-content" className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
           <div className="flex justify-between items-start border-b-4 border-primary pb-4">
             <div>
-              <h1 className="text-xl font-black text-slate-800 uppercase leading-none">CÔNG TY TNHH GIẢI PHÁP KẾ TOÁN SỐ</h1>
-              <p className="text-[10px] text-muted-foreground mt-1 font-bold">Đ/c: Số 1 Đại Cồ Việt, Hai Bà Trưng, Hà Nội</p>
-              <p className="text-[10px] text-muted-foreground font-bold">Mã số thuế: 010123456789</p>
+              <h1 className="text-lg font-black text-slate-800 uppercase leading-none text-primary">PHUC ANH COMPANY</h1>
+              <p className="text-[10px] text-muted-foreground mt-1 font-bold italic underline opacity-80">Số 43, Tổ 4, Xã Sóc Sơn, TP Hà Nội, Việt Nam</p>
+              <p className="text-[10px] text-muted-foreground font-bold mt-1 opacity-80">Mã số thuế: 0110465135</p>
               <hr className="my-2 border-primary/20 w-32" />
               <h2 className="text-lg font-black text-primary uppercase">Phiếu Lương Nhân Viên</h2>
               <p className="text-sm font-black text-slate-500">Kỳ lương: Tháng {payroll.month}/{payroll.year}</p>
@@ -134,7 +133,7 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
               <div className="flex justify-between text-[11px]"><span>BHXH (8%):</span> <span className="text-red-600">-{formatVND(payroll.bhxhNhanVien)}</span></div>
               <div className="flex justify-between text-[11px]"><span>BHYT (1.5%):</span> <span className="text-red-600">-{formatVND(payroll.bhytNhanVien)}</span></div>
               <div className="flex justify-between text-[11px]"><span>BHTN (1%):</span> <span className="text-red-600">-{formatVND(payroll.bhtnNhanVien)}</span></div>
-              <div className="flex justify-between font-bold text-red-500 border-t pt-1"><span>TỔNG TRÍCH BH (10.5%):</span> <span>-{formatVND(payroll.totalInsurance)}</span></div>
+              <div className="flex justify-between font-bold text-red-500 border-t pt-1"><span>TỔNG TRÍCH BH (10.5%):</span> <span className="tabular-nums">-{formatVND(payroll.totalInsurance)}</span></div>
               <div className="flex justify-between group relative cursor-help">
                 <span className="underline decoration-dotted decoration-red-300">THUẾ TNCN:</span>
                 <span className="font-bold text-red-500">-{formatVND(payroll.taxAmount)}</span>
@@ -175,11 +174,6 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
               <p>Nhân viên ký nhận</p>
             </div>
           </div>
-        </div>
-        <div className="flex justify-end gap-3 mt-6 print:hidden">
-          <Button variant="outline" onClick={handlePrint} className="gap-2 h-10 px-6 rounded-xl font-bold">
-            <Printer className="w-4 h-4" /> In phiếu lương
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
