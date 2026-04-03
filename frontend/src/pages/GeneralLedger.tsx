@@ -64,16 +64,16 @@ export default function GeneralLedgerPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-4 rounded-xl shadow-sm border gap-4">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center bg-white p-4 rounded-xl shadow-sm border gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Book className="w-6 h-6 text-primary" /> Sổ cái (General Ledger)
         </h1>
-        <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2 rounded-lg border">
-            <div className="flex items-center gap-2 border-r pr-2 mr-2">
-              <span className="text-[10px] font-black uppercase text-muted-foreground whitespace-nowrap">Tài khoản</span>
+        <div className="flex flex-wrap lg:flex-nowrap items-center gap-3 bg-slate-50/80 p-1.5 rounded-lg border shadow-sm">
+            <div className="flex items-center gap-2 px-2">
+              <span className="text-xs font-semibold uppercase text-muted-foreground whitespace-nowrap">Tài khoản</span>
               <select 
                 value={accountId} onChange={e => setAccountId(e.target.value)}
-                className="h-8 bg-transparent border-none font-bold text-primary focus:ring-0"
+                className="h-8 bg-transparent border-none font-bold text-primary focus:ring-0 cursor-pointer outline-none"
               >
                   <option value="334">334 - Phải trả NLĐ</option>
                   <option value="338">338 - Phải trả BH, KPCĐ</option>
@@ -83,21 +83,23 @@ export default function GeneralLedgerPage() {
                   <option value="3335">3335 - Thuế TNCN</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <Input type="number" className="w-16 h-8 text-center" value={month} onChange={e => setMonth(Number(e.target.value))} />
-              <span className="text-muted-foreground">/</span>
-              <Input type="number" className="w-20 h-8 text-center" value={year} onChange={e => setYear(Number(e.target.value))} />
+            
+            <div className="hidden lg:block h-6 w-[1px] bg-border"></div>
+
+            <div className="flex items-center gap-2 px-2">
+              <Input type="number" className="w-16 h-8 text-center bg-white font-medium shadow-sm transition-all focus:border-primary" value={month} onChange={e => setMonth(Number(e.target.value))} />
+              <span className="text-muted-foreground font-bold">/</span>
+              <Input type="number" className="w-20 h-8 text-center bg-white font-medium shadow-sm transition-all focus:border-primary" value={year} onChange={e => setYear(Number(e.target.value))} />
             </div>
             
-            <div className="flex items-center gap-2 border-l pl-2 ml-2">
-              <Button size="default" variant="outline" onClick={handleExportExcel} className="h-8 gap-1 border-green-600 text-green-600 hover:bg-green-50 shadow-sm">
+            <div className="hidden lg:block h-6 w-[1px] bg-border"></div>
+            
+            <div className="flex items-center gap-2 px-1">
+              <Button size="default" variant="outline" onClick={handleExportExcel} className="h-8 gap-1.5 border-green-600 text-green-600 hover:bg-green-50 shadow-sm bg-white hover:text-green-700">
                   <FileSpreadsheet className="w-4 h-4" /> Excel
               </Button>
-              <Button size="default" onClick={fetchLedger} disabled={loading} className="h-8 ml-2 gap-1">
-                  <Search className="w-3 h-3" /> Tìm kiếm
-              </Button>
-              <Button size="default" onClick={fetchLedger} disabled={loading} className="h-8 ml-2 gap-1">
-                  <Search className="w-3 h-3" /> Tìm kiếm
+              <Button size="default" onClick={fetchLedger} disabled={loading} className="h-8 gap-1.5 shadow-sm">
+                  <Search className="w-4 h-4" /> Tìm kiếm
               </Button>
             </div>
         </div>
