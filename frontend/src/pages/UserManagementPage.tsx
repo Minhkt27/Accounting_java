@@ -1,9 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
-
+import { 
+    Users, Shield, Key, Plus, Trash2, 
+    Edit3, Save, CheckCircle2, XCircle, 
+    Lock, Mail, User, Search,
+    Settings, Info
+} from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
 import type { UserItem, RoleItem, PermItem } from "../types"
-
-
 
 const ROLE_LABELS: Record<string, string> = {
   ROLE_ADMIN: "Quản trị viên",
@@ -43,6 +49,7 @@ export default function UserManagementPage() {
 
   const [resetUserId, setResetUserId] = useState<number | null>(null)
   const [newPassword, setNewPassword] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
 
   const headers = useMemo(() => ({ 
     Authorization: `Bearer ${localStorage.getItem("token")}` 
@@ -62,9 +69,6 @@ export default function UserManagementPage() {
       setPermDirty(false)
     } catch (err: unknown) { 
         console.error(err)
-        setUsers([])
-        setRoles([])
-        setPerms([])
     } finally {
         setLoading(false)
     }
@@ -100,6 +104,7 @@ export default function UserManagementPage() {
       await axios.put("/api/admin/users/permissions", updates, { headers })
       setPermDirty(false)
       fetchData()
+      alert("Cập nhật phân quyền thành công!")
     } catch (err: any) { alert(err.response?.data || "Lỗi!") }
   }
 
@@ -133,7 +138,8 @@ export default function UserManagementPage() {
     if (!resetUserId || !newPassword) return
     try {
       await axios.put(`/api/admin/users/${resetUserId}/password`, { newPassword }, { headers })
-      setResetUserId(null); setNewPassword("")
+      setResetUserId(null); setNewPassword("");
+      alert("Đã đổi mật khẩu thành công!")
     } catch (err: unknown) { 
         const message = err instanceof Error ? err.message : String(err)
         alert(message) 
@@ -144,178 +150,322 @@ export default function UserManagementPage() {
     setFormRoles(prev => prev.includes(roleName) ? prev.filter(r => r !== roleName) : [...prev, roleName])
   }
 
-  if (loading) {
-    return (
-        <div style={{ padding: "50px", textAlign: "center" }}>
-            <h2 style={{ color: "blue" }}>ĐANG TẢI DỮ LIỆU...</h2>
-            <p>Vui lòng đợi một lát!</p>
-        </div>
-    )
-  }
+  if (loading) return (
+    <div className="h-[60vh] flex flex-col items-center justify-center gap-4 animate-pulse">
+        <Users className="w-12 h-12 text-slate-200 animate-bounce" />
+        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Đang tải danh sách tài khoản...</p>
+    </div>
+  )
 
   return (
-    <div style={{ padding: "20px", background: "#f0f0f0", minHeight: "100vh" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", background: "white", padding: "10px", border: "2px solid black" }}>
-        <div>
-            <h1 style={{ color: "blue", margin: "0" }}>QUẢN TRỊ NGƯỜI DÙNG</h1>
-            <p style={{ margin: "0" }}>Trang quản lý các tài khoản trong hệ thống</p>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+      {/* Header Area */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex flex-col gap-1">
+            <h1 className="text-4xl font-black tracking-tighter text-slate-800 flex items-center gap-3 uppercase">
+                <Shield className="w-10 h-10 text-primary" /> Quản trị hệ thống
+            </h1>
+            <p className="text-muted-foreground font-medium text-sm">Quản lý tài khoản người dùng và phân quyền chức năng</p>
         </div>
-        <button 
-            onClick={openCreate} 
-            style={{ background: "blue", color: "white", padding: "10px 20px", border: "2px solid black", cursor: "pointer", fontWeight: "bold" }}
+        <Button 
+            onClick={openCreate}
+            className="flex items-center gap-2 px-8 h-14 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
         >
-            + THÊM NGƯỜI DÙNG MỚI
-        </button>
+            <Plus size={18} /> Thêm người dùng
+        </Button>
       </div>
 
-      <div style={{ background: "white", padding: "20px", border: "2px solid black", marginBottom: "30px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid black", paddingBottom: "10px", marginBottom: "20px" }}>
-            <h2 style={{ margin: "0", color: "blue" }}>BẢNG PHÂN QUYỀN</h2>
-            <button 
-                onClick={savePerms} 
-                disabled={!permDirty}
-                style={{ 
-                    background: permDirty ? "green" : "gray", 
-                    color: "white", 
-                    padding: "5px 15px", 
-                    border: "2px solid black",
-                    fontWeight: "bold"
-                }}
-            >
-                LƯU THAY ĐỔI
-            </button>
-        </div>
-
-        <table border={1} style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-                <tr style={{ background: "#eee" }}>
-                    <th style={{ padding: "10px", border: "1px solid black" }}>CHỨC NĂNG</th>
-                    <th style={{ padding: "10px", border: "1px solid black" }}>ADMIN</th>
-                    {EDITABLE_ROLES.map(r => (
-                        <th key={r} style={{ padding: "10px", border: "1px solid black" }}>{ROLE_LABELS[r]}</th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                {FUNCTION_CODES.map(fn => (
-                    <tr key={fn}>
-                        <td style={{ padding: "8px", border: "1px solid black", fontWeight: "bold" }}>{FUNCTION_LABELS[fn]}</td>
-                        <td style={{ padding: "8px", border: "1px solid black", textAlign: "center", color: "green" }}>
-                            V
-                        </td>
-                        {EDITABLE_ROLES.map(r => {
-                            const allowed = isAllowed(r, fn)
-                            return (
-                                <td key={r} style={{ padding: "8px", border: "1px solid black", textAlign: "center" }}>
-                                    <button
-                                        onClick={() => togglePerm(r, fn)}
-                                        style={{ 
-                                            background: allowed ? "lightgreen" : "lightpink", 
-                                            padding: "5px 10px", 
-                                            border: "1px solid black",
-                                            cursor: "pointer",
-                                            width: "30px"
-                                        }}
-                                    >
-                                        {allowed ? "O" : "X"}
-                                    </button>
-                                </td>
-                            )
-                        })}
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-      </div>
-
-      <div style={{ background: "white", padding: "20px", border: "2px solid black" }}>
-        <h2 style={{ color: "blue", borderBottom: "2px solid black", paddingBottom: "10px" }}>DANH SÁCH TÀI KHOẢN</h2>
-        <table border={1} style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
-            <thead style={{ background: "blue", color: "white" }}>
-                <tr>
-                    <th style={{ padding: "10px", border: "1px solid black" }}>Tên đăng nhập</th>
-                    <th style={{ padding: "10px", border: "1px solid black" }}>Email</th>
-                    <th style={{ padding: "10px", border: "1px solid black" }}>Quyền</th>
-                    <th style={{ padding: "10px", border: "1px solid black" }}>Sửa/Xóa</th>
-                </tr>
-            </thead>
-            <tbody>
-                {users.map(u => (
-                    <tr key={u.id}>
-                        <td style={{ padding: "10px", border: "1px solid black", fontWeight: "bold" }}>{u.username} (ID: {u.id})</td>
-                        <td style={{ padding: "10px", border: "1px solid black" }}>{u.email}</td>
-                        <td style={{ padding: "10px", border: "1px solid black" }}>
-                            {u.roles.map(r => (
-                                <span key={r} style={{ 
-                                    padding: "2px 5px", 
-                                    marginRight: "5px", 
-                                    background: "#eee", 
-                                    border: "1px solid gray",
-                                    fontSize: "12px"
-                                }}>
-                                    {ROLE_LABELS[r]}
-                                </span>
-                            ))}
-                        </td>
-                        <td style={{ padding: "10px", border: "1px solid black", textAlign: "center" }}>
-                            <button onClick={() => openEdit(u)} style={{ marginRight: "5px" }}>Sửa</button>
-                            <button onClick={() => { setResetUserId(u.id); setNewPassword("") }} style={{ marginRight: "5px" }}>Đổi Pass</button>
-                            <button onClick={() => handleDelete(u.id)} style={{ color: "red" }}>Xóa</button>
-                        </td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-      </div>
-
-      {showForm && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              <div style={{ background: "white", padding: "30px", border: "3px solid black", width: "400px" }}>
-                  <h2 style={{ borderBottom: "2px solid blue" }}>{editingUser ? "SỬA NGƯỜI DÙNG" : "THÊM NGƯỜI DÙNG"}</h2>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "20px" }}>
-                      <label>Tên đăng nhập:</label>
-                      <input value={formUsername} onChange={e => setFormUsername(e.target.value)} disabled={!!editingUser} style={{ padding: "5px", border: "1px solid black" }} />
-                      
-                      <label>Email:</label>
-                      <input value={formEmail} onChange={e => setFormEmail(e.target.value)} style={{ padding: "5px", border: "1px solid black" }} />
-                      
-                      {!editingUser && (
-                          <>
-                            <label>Mật khẩu:</label>
-                            <input type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} style={{ padding: "5px", border: "1px solid black" }} />
-                          </>
-                      )}
-
-                      <label>Chọn quyền:</label>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                          {roles.filter(r => r.name !== "ROLE_ADMIN").map(r => (
-                              <label key={r.name} style={{ border: "1px solid black", padding: "5px", background: formRoles.includes(r.name) ? "yellow" : "white" }}>
-                                  <input type="checkbox" checked={formRoles.includes(r.name)} onChange={() => toggleRole(r.name)} />
-                                  {r.displayName}
-                              </label>
-                          ))}
+      <div className="grid grid-cols-1 gap-10">
+          {/* Permissions Matrix */}
+          <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                          <Settings size={16} />
                       </div>
+                      <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight italic">Ma trận <span className="text-primary italic">Phân quyền</span></h2>
                   </div>
-                  <div style={{ marginTop: "30px", display: "flex", gap: "10px" }}>
-                      <button onClick={handleSave} style={{ flex: 1, background: "blue", color: "white", padding: "10px", border: "2px solid black", fontWeight: "bold" }}>LƯU LẠI</button>
-                      <button onClick={() => setShowForm(false)} style={{ flex: 1, background: "white", border: "2px solid black" }}>ĐÓNG</button>
-                  </div>
+                  <Button 
+                    onClick={savePerms} 
+                    disabled={!permDirty}
+                    className={`h-11 px-8 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+                        permDirty ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600' : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                      <Save size={16} className="mr-2" /> Lưu thay đổi
+                  </Button>
               </div>
-          </div>
-      )}
 
-      {resetUserId && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              <div style={{ background: "white", padding: "30px", border: "3px solid black" }}>
-                  <h3>ĐỔI MẬT KHẨU MỚI</h3>
-                  <input type="password" placeholder="Nhập pass mới" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ padding: "10px", width: "100%" }} />
-                  <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
-                      <button onClick={handleResetPassword} style={{ background: "blue", color: "white", padding: "10px", border: "1px solid black" }}>XÁC NHẬN</button>
-                      <button onClick={() => setResetUserId(null)}>HỦY</button>
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                          <thead>
+                              <tr className="bg-slate-50/50 border-b border-slate-100">
+                                  <th className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest pl-8">Chức năng hệ thống</th>
+                                  <th className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center">Admin</th>
+                                  {EDITABLE_ROLES.map(r => (
+                                      <th key={r} className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center">{ROLE_LABELS[r]}</th>
+                                  ))}
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                              {FUNCTION_CODES.map(fn => (
+                                  <tr key={fn} className="group hover:bg-slate-50/50 transition-all">
+                                      <td className="px-4 py-3 pl-8">
+                                          <div className="flex items-center gap-3">
+                                              <div className="w-1 h-1 rounded-full bg-primary/30 group-hover:bg-primary transition-all" />
+                                              <span className="font-black text-slate-700 text-xs italic">{FUNCTION_LABELS[fn]}</span>
+                                          </div>
+                                      </td>
+                                      <td className="px-4 py-3 text-center">
+                                          <div className="flex justify-center">
+                                              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 border border-emerald-100">
+                                                  <CheckCircle2 size={14} />
+                                              </div>
+                                          </div>
+                                      </td>
+                                      {EDITABLE_ROLES.map(r => {
+                                          const allowed = isAllowed(r, fn)
+                                          return (
+                                              <td key={r} className="px-4 py-3 text-center">
+                                                  <button
+                                                      onClick={() => togglePerm(r, fn)}
+                                                      className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center transition-all ${
+                                                          allowed 
+                                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                                                            : 'bg-slate-50 text-slate-300 hover:bg-slate-100'
+                                                      }`}
+                                                  >
+                                                      {allowed ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                                  </button>
+                                              </td>
+                                          )
+                                      })}
+                                  </tr>
+                              ))}
+                          </tbody>
+                      </table>
                   </div>
               </div>
-          </div>
-      )}
+          </section>
+
+          {/* User List */}
+          <section className="space-y-6">
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                          <Users size={20} />
+                      </div>
+                      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Danh sách <span className="text-primary italic">Tài khoản</span></h2>
+                  </div>
+                  <div className="relative">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input 
+                          type="text"
+                          placeholder="Tìm người dùng..."
+                          value={searchTerm}
+                          onChange={e => setSearchTerm(e.target.value)}
+                          className="pl-11 pr-6 h-12 bg-white border border-slate-100 rounded-2xl w-64 focus:ring-2 focus:ring-primary/20 text-xs font-bold transition-all shadow-sm"
+                      />
+                  </div>
+              </div>
+
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden">
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                          <thead>
+                              <tr className="bg-slate-50/50 border-b border-slate-100">
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest pl-10">Người dùng</th>
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email liên hệ</th>
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Vai trò / Quyền hạn</th>
+                                  <th className="px-8 py-5 text-center pr-10">Thao tác</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                              {users.filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase())).map(u => (
+                                  <tr key={u.id} className="group hover:bg-slate-50/50 transition-all">
+                                      <td className="px-8 py-6 pl-10">
+                                          <div className="flex items-center gap-4">
+                                              <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
+                                                  <User size={20} />
+                                              </div>
+                                              <div>
+                                                  <div className="font-black text-slate-800 text-sm italic">{u.username}</div>
+                                                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: #{u.id}</div>
+                                              </div>
+                                          </div>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                          <div className="flex items-center gap-2 text-slate-600 font-bold text-xs">
+                                              <Mail size={14} className="text-slate-300" />
+                                              {u.email}
+                                          </div>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                          <div className="flex flex-wrap gap-2">
+                                              {u.roles.map(r => (
+                                                  <span key={r} className="px-3 py-1 rounded-full bg-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-500 border border-slate-200">
+                                                      {ROLE_LABELS[r]}
+                                                  </span>
+                                              ))}
+                                          </div>
+                                      </td>
+                                      <td className="px-8 py-6 text-center pr-10">
+                                          <div className="flex items-center justify-center gap-2">
+                                              <button onClick={() => openEdit(u)} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-all" title="Chỉnh sửa">
+                                                  <Edit3 size={16} />
+                                              </button>
+                                              <button onClick={() => { setResetUserId(u.id); setNewPassword("") }} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-amber-50 hover:text-amber-500 transition-all" title="Đổi mật khẩu">
+                                                  <Key size={16} />
+                                              </button>
+                                              <button onClick={() => handleDelete(u.id)} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all" title="Xóa tài khoản">
+                                                  <Trash2 size={16} />
+                                              </button>
+                                          </div>
+                                      </td>
+                                  </tr>
+                              ))}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </section>
+      </div>
+
+      {/* User Form Modal */}
+      <AnimatePresence>
+          {showForm && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-3xl w-full max-w-lg space-y-8"
+                  >
+                        <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
+                            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                                <User size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">{editingUser ? "Cập nhật" : "Tạo mới"} <span className="text-primary italic">Người dùng</span></h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Vui lòng nhập đầy đủ thông tin</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Tên đăng nhập</label>
+                                <Input 
+                                    value={formUsername} 
+                                    onChange={e => setFormUsername(e.target.value)} 
+                                    disabled={!!editingUser}
+                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-black text-slate-800"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Email liên hệ</label>
+                                <Input 
+                                    value={formEmail} 
+                                    onChange={e => setFormEmail(e.target.value)}
+                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-black text-slate-800"
+                                />
+                            </div>
+                            {!editingUser && (
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Mật khẩu ban đầu</label>
+                                    <Input 
+                                        type="password"
+                                        value={formPassword} 
+                                        onChange={e => setFormPassword(e.target.value)}
+                                        className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-black text-slate-800"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Phân vai trò</label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {roles.filter(r => r.name !== "ROLE_ADMIN").map(r => {
+                                        const selected = formRoles.includes(r.name)
+                                        return (
+                                            <button 
+                                                key={r.name} 
+                                                onClick={() => toggleRole(r.name)}
+                                                className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                                                    selected ? 'bg-primary/5 border-primary text-primary' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
+                                                }`}
+                                            >
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selected ? 'bg-primary border-primary' : 'border-slate-200'}`}>
+                                                    {selected && <CheckCircle2 size={12} className="text-white" />}
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">{r.displayName}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 pt-4 border-t border-slate-100 mt-4">
+                            <Button onClick={handleSave} className="flex-1 h-14 rounded-2xl bg-primary hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95">
+                                <Save size={18} className="mr-2" /> Lưu thông tin
+                            </Button>
+                            <Button variant="ghost" onClick={() => setShowForm(false)} className="px-8 h-14 rounded-2xl font-black text-xs uppercase text-slate-400 hover:bg-slate-50">
+                                Đóng
+                            </Button>
+                        </div>
+                  </motion.div>
+              </div>
+          )}
+      </AnimatePresence>
+
+      {/* Password Reset Modal */}
+      <AnimatePresence>
+          {resetUserId && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-3xl w-full max-w-sm space-y-8"
+                  >
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className="w-20 h-20 rounded-[2rem] bg-amber-100 flex items-center justify-center text-amber-500 mb-2">
+                                <Lock size={40} />
+                            </div>
+                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">Đổi mật khẩu</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thiết lập mật khẩu truy cập mới</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="relative">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                                <Input 
+                                    type="password" 
+                                    placeholder="Nhập mật khẩu mới..."
+                                    value={newPassword} 
+                                    onChange={e => setNewPassword(e.target.value)}
+                                    className="h-16 pl-12 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-black text-slate-800"
+                                />
+                            </div>
+                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
+                                <Info className="text-blue-500 w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <p className="text-[9px] text-blue-700 font-bold uppercase leading-relaxed text-left">Mật khẩu mới sẽ có hiệu lực ngay lập tức sau khi xác nhận.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3 pt-4">
+                            <Button onClick={handleResetPassword} className="h-14 rounded-2xl bg-[#111827] hover:bg-black text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95">
+                                Xác nhận đổi
+                            </Button>
+                            <Button variant="ghost" onClick={() => setResetUserId(null)} className="h-14 rounded-2xl font-black text-xs uppercase text-slate-400 hover:bg-slate-50">
+                                Hủy bỏ
+                            </Button>
+                        </div>
+                  </motion.div>
+              </div>
+          )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -63,6 +63,8 @@ public class Payroll {
     // Thuế TNCN
     private Double taxableIncome = 0.0;
     private Double taxAmount = 0.0;
+    private Double charityDeduction = 0.0; // Các khoản đóng góp từ thiện, nhân đạo
+
 
     // Lương thực lĩnh (Net)
     private Double netPay;           // Gross - Insurance_EE - Tax

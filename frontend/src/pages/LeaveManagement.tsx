@@ -55,12 +55,12 @@ export default function LeaveManagementPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold flex items-center gap-2">
-        <PlaneTakeoff className="w-6 h-6" /> Biến động nhân sự (UC09)
+        <PlaneTakeoff className="w-6 h-6" /> Danh sách nghỉ phép
       </h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <form onSubmit={handleSave} className="border p-6 rounded-xl bg-card space-y-4 shadow-sm h-fit">
-          <h3 className="font-semibold text-lg">Đăng ký nghỉ</h3>
+          <h3 className="font-semibold text-lg">Danh sách nghỉ phép</h3>
           <div className="space-y-2">
             <label className="text-sm font-medium">Nhân viên</label>
             <select 
@@ -78,9 +78,9 @@ export default function LeaveManagementPage() {
               value={newLeave.leaveType} onChange={e => setNewLeave({...newLeave, leaveType: e.target.value as LeaveType})}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <option value="ANNUAL">Nghỉ phép năm (CTY trả)</option>
-              <option value="SICK">Nghỉ ốm (BH trả)</option>
-              <option value="MATERNITY">Nghỉ thai sản (BH trả)</option>
+              <option value="ANNUAL">Nghỉ phép năm</option>
+              <option value="SICK">Nghỉ ốm</option>
+              <option value="MATERNITY">Nghỉ thai sản</option>
             </select>
           </div>
           <div className="space-y-2">

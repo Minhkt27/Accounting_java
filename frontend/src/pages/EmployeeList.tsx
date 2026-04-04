@@ -12,7 +12,8 @@ interface Employee {
   dependentCount: number
   positionCoefficient: number
   seniorityAllowance: number
-  employeeType: string
+  employeeType: "OFFICIAL" | "FULL_TIME" | "PROBATION" | "TRAINEE" | "INTERN" | "OTHER"
+  department?: string
   active: boolean
   dob: string
   phone: string
@@ -22,7 +23,6 @@ interface Employee {
   gender?: string
   address?: string
   position?: string
-  department?: string
   joinDate?: string
 }
 
@@ -32,10 +32,11 @@ export default function EmployeeList() {
   const [isEditing, setIsEditing] = useState(false)
   const [viewOnly, setViewOnly] = useState(false)
   const [currentEmp, setCurrentEmp] = useState<Partial<Employee>>({
-    id: "", fullName: "", contractSalary: undefined, dependentCount: 0, 
+    id: "", fullName: "", contractSalary: 0, dependentCount: 0, 
     positionCoefficient: 0.0, seniorityAllowance: 0.0,
     employeeType: "FULL_TIME", 
-    active: true, dob: "", phone: "", email: "", hometown: ""
+    active: true, dob: "", phone: "", email: "", hometown: "",
+    department: "Kế toán"
   })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
@@ -102,6 +103,8 @@ export default function EmployeeList() {
       }
 
       alert("Đã lưu thông tin nhân sự!")
+      resetForm()
+      fetchEmployees()
     } catch (err: unknown) { 
         const message = err instanceof Error ? err.message : String(err)
         alert("Lỗi khi lưu nhân viên: " + message) 
@@ -140,7 +143,7 @@ export default function EmployeeList() {
     setShowForm(false)
     setIsEditing(false)
     setViewOnly(false)
-    setCurrentEmp({ id: "", fullName: "", contractSalary: undefined, dependentCount: undefined, positionCoefficient: 0.0, seniorityAllowance: 0.0, employeeType: "FULL_TIME", active: true, dob: "", phone: "", email: "", hometown: "" })
+    setCurrentEmp({ id: "", fullName: "", contractSalary: 0, dependentCount: 0, positionCoefficient: 0.0, seniorityAllowance: 0.0, employeeType: "FULL_TIME", active: true, dob: "", phone: "", email: "", hometown: "", department: "Kế toán" })
     setSelectedFile(null)
   }
 
@@ -186,7 +189,7 @@ export default function EmployeeList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <UserRoundCheck className="w-6 h-6 text-primary" /> Hồ sơ nhân sự nâng cao (UC07-08)
+          <UserRoundCheck className="w-6 h-6 text-primary" /> Hồ sơ nhân sự
         </h1>
         <div className="flex items-center gap-2">
           {!showForm && (
@@ -240,8 +243,12 @@ export default function EmployeeList() {
                 <label className="text-sm font-medium">Lương hợp đồng (VNĐ)</label>
                 <Input 
                 type="number" 
+                min={0}
                 value={currentEmp.contractSalary ?? ""} 
-                onChange={e => setCurrentEmp({...currentEmp, contractSalary: e.target.value === "" ? undefined : Number(e.target.value)})} 
+                onChange={e => {
+                  e.target.value = e.target.value.replace(/^0+(?!$)/, '');
+                  setCurrentEmp({...currentEmp, contractSalary: e.target.value === "" ? 0 : Number(e.target.value)})
+                }} 
                 disabled={viewOnly}
                 required 
               />
@@ -250,18 +257,25 @@ export default function EmployeeList() {
               <label className="text-sm font-medium">Người phụ thuộc</label>
               <Input 
                 type="number" 
+                min={0}
                 value={currentEmp.dependentCount ?? ""} 
-                onChange={e => setCurrentEmp({...currentEmp, dependentCount: e.target.value === "" ? undefined : Number(e.target.value)})} 
+                onChange={e => {
+                  e.target.value = e.target.value.replace(/^0+(?!$)/, '');
+                  setCurrentEmp({...currentEmp, dependentCount: e.target.value === "" ? 0 : Number(e.target.value)})
+                }} 
                 disabled={viewOnly}
-                required 
               /></div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Hệ số chức vụ (0.4-1.0)</label>
                 <Input 
                   type="number" 
+                  min={0}
                   step="0.1"
                   value={currentEmp.positionCoefficient ?? ""} 
-                  onChange={e => setCurrentEmp({...currentEmp, positionCoefficient: e.target.value === "" ? undefined : Number(e.target.value)})} 
+                  onChange={e => {
+                    e.target.value = e.target.value.replace(/^0+(?!$)/, '');
+                    setCurrentEmp({...currentEmp, positionCoefficient: e.target.value === "" ? 0 : Number(e.target.value)})
+                  }} 
                   disabled={viewOnly}
                   placeholder="0.8"
                 />
@@ -270,18 +284,32 @@ export default function EmployeeList() {
                 <label className="text-sm font-medium">Phụ cấp thâm niên (VNĐ)</label>
                 <Input 
                   type="number" 
+                  min={0}
                   value={currentEmp.seniorityAllowance ?? ""} 
-                  onChange={e => setCurrentEmp({...currentEmp, seniorityAllowance: e.target.value === "" ? undefined : Number(e.target.value)})} 
+                  onChange={e => {
+                    e.target.value = e.target.value.replace(/^0+(?!$)/, '');
+                    setCurrentEmp({...currentEmp, seniorityAllowance: e.target.value === "" ? 0 : Number(e.target.value)})
+                  }} 
                   disabled={viewOnly}
                   placeholder="500,000"
                 />
               </div>
               <div className="space-y-2">
+                <label className="text-sm font-medium">Phòng ban</label>
+                <select value={currentEmp.department} onChange={e => setCurrentEmp({...currentEmp, department: e.target.value})} disabled={viewOnly} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="Kế toán">Kế toán</option>
+                  <option value="Nhân sự">Nhân sự</option>
+                  <option value="Kinh doanh">Kinh doanh</option>
+                  <option value="Kỹ thuật">Kỹ thuật</option>
+                </select>
+              </div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium">Loại nhân sự</label>
-                <select value={currentEmp.employeeType} onChange={e => setCurrentEmp({...currentEmp, employeeType: e.target.value})} disabled={viewOnly} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select value={currentEmp.employeeType} onChange={e => setCurrentEmp({...currentEmp, employeeType: e.target.value as any})} disabled={viewOnly} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="FULL_TIME">Chính thức</option>
-                  <option value="PROBATION">Thử việc (85%)</option>
-                  <option value="INTERN">Thực tập (10% Thuế)</option>
+                  <option value="PROBATION">Thử việc</option>
+                  <option value="INTERN">Thực tập sinh</option>
+                  <option value="OTHER">Khác</option>
                 </select>
               </div>
             </div>
@@ -322,8 +350,8 @@ export default function EmployeeList() {
                           <th className="px-6 py-5 font-black uppercase tracking-tighter">Mã NV</th>
                           <th className="px-6 py-5 font-black uppercase tracking-tighter">Họ tên nhân viên</th>
                           <th className="px-6 py-5 font-black uppercase tracking-tighter">Thông tin liên hệ</th>
-                          <th className="px-6 py-5 font-black uppercase tracking-tighter">Vị trí & Phòng ban</th>
-                          <th className="px-6 py-5 font-black uppercase tracking-tighter">Thao tác</th>
+                          <th className="px-6 py-5 font-black uppercase tracking-tighter text-center">Phòng ban</th>
+                          <th className="px-6 py-5 font-black uppercase tracking-tighter text-center">Thao tác</th>
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -333,8 +361,12 @@ export default function EmployeeList() {
                               <td className="px-6 py-5">
                                   <div className="font-black text-slate-800 text-base">{employee.fullName}</div>
                                   <div className="flex items-center gap-2 mt-1">
-                                      <span className="text-[10px] font-black bg-slate-100 text-slate-400 px-2 py-0.5 rounded uppercase tracking-widest">{employee.employeeType || 'N/A'}</span>
-                                      <span className="text-[10px] font-black bg-blue-50 text-blue-500 px-2 py-0.5 rounded uppercase tracking-widest">NV Chính thức</span>
+                                      <span className="text-[10px] font-black bg-blue-50 text-blue-500 px-2 py-0.5 rounded uppercase tracking-widest">
+                                          {employee.employeeType === 'OFFICIAL' || employee.employeeType === 'FULL_TIME' ? 'Chính thức' : 
+                                           employee.employeeType === 'PROBATION' ? 'Thử việc' :
+                                           employee.employeeType === 'TRAINEE' ? 'Học việc' :
+                                           employee.employeeType === 'INTERN' ? 'Thực tập sinh' : 'Khác'}
+                                      </span>
                                   </div>
                               </td>
                               <td className="px-6 py-5 space-y-1">
@@ -348,14 +380,10 @@ export default function EmployeeList() {
                                       <MapPin size={14} className="text-slate-200" /> {employee.hometown}
                                   </div>
                               </td>
-                              <td className="px-6 py-5">
-                                  <div className="flex items-center gap-2 text-slate-700 font-bold">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-                                      {employee.employeeType}
-                                  </div>
-                                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest mt-1 ml-3.5 italic">Phòng Nhân sự</div>
-                                  <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold mt-2 ml-3.5">
-                                      <Calendar size={12} /> Ngày sinh: {employee.dob}
+                              <td className="px-6 py-5 text-center">
+                                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200">
+                                      <div className="w-2 h-2 rounded-full bg-primary shadow-sm shadow-primary/20"></div>
+                                      {employee.department || 'N/A'}
                                   </div>
                               </td>
                               <td className="px-6 py-5">

@@ -4,19 +4,26 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { 
     Settings, ShieldCheck, Calculator, Save, Plus, Trash2, Pencil,
-    Info, AlertCircle, CheckCircle2, AlertTriangle
+    AlertCircle, CheckCircle2, RefreshCw
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import type { SalaryParameter, InsuranceRate, TaxTier, DeductionSetting } from "../types"
+import type { SalaryParameter, InsuranceRate, TaxTier, DeductionSetting, EmployeeTaxConfig } from "../types"
 
 export default function SalaryConfigPage() {
-  const [activeTab, setActiveTab] = useState<"params" | "insurance" | "tax">("params")
+  const [activeTab, setActiveTab] = useState<"params" | "insurance" | "tax" | "pit_rules">("params")
   const headers = useMemo(() => ({ 
     Authorization: `Bearer ${localStorage.getItem("token")}` 
   }), [])
 
   // --- State for System Params ---
-  const [params, setParams] = useState<SalaryParameter>({ standardWorkDays: 26, standardWorkDayMode: 'FIXED', minimumWage: 1800000, mealAllowance: 25000 })
+  const [params, setParams] = useState<SalaryParameter>({ 
+    standardWorkDays: 26, 
+    standardWorkDayMode: 'FIXED', 
+    baseSalary: 1800000, 
+    minimumWage: 1800000,
+    insuranceCeiling: 36000000, 
+    mealAllowance: 25000 
+  })
   
   // --- State for Insurance Rates ---
   const [rates, setRates] = useState<InsuranceRate[]>([])
@@ -27,10 +34,15 @@ export default function SalaryConfigPage() {
   // --- State for Tax Config ---
   const [taxTiers, setTaxTiers] = useState<TaxTier[]>([])
   const [deductions, setDeductions] = useState<DeductionSetting>({ personalDeduction: 15500000, dependentDeduction: 6200000 })
+  const [taxRules, setTaxRules] = useState<EmployeeTaxConfig[]>([])
 
   const [loading, setLoading] = useState(true)
   const [userRoles, setUserRoles] = useState<string[]>([])
   const [message, setMessage] = useState<{ text: string, type: "success" | "info" | "error" } | null>(null)
+  const [isDeductionEditing, setIsDeductionEditing] = useState(false)
+  const [isPitEditing, setIsPitEditing] = useState(false)
+  const [originalDeductions, setOriginalDeductions] = useState<DeductionSetting | null>(null)
+  const [originalTaxTiers, setOriginalTaxTiers] = useState<TaxTier[] | null>(null)
 
   const showMsg = useCallback((text: string, type: "success" | "info" | "error" = "success") => {
     setMessage({ text, type })
@@ -44,22 +56,43 @@ export default function SalaryConfigPage() {
       const payload = JSON.parse(atob(token!.split(".")[1]))
       setUserRoles(payload.roles || [])
 
-      const [resParams, resRates, resTax, resDed] = await Promise.all([
+      const [resParams, resRates, resTax, resDed, resTaxRules] = await Promise.all([
         axios.get("/api/config/params", { headers }),
         axios.get("/api/config/insurance", { headers }),
         axios.get("/api/config/tax", { headers }),
-        axios.get("/api/config/deductions", { headers })
+        axios.get("/api/config/deductions", { headers }),
+        axios.get("/api/config/tax-rules", { headers })
       ])
 
       const p = resParams.data.find((x: SalaryParameter) => x.status === 'PENDING') || resParams.data.find((x: SalaryParameter) => x.status === 'APPROVED')
       if (p) {
-        setParams(p)
+        setParams({
+            ...p,
+            insuranceCeiling: p.insuranceCeiling || (p.baseSalary * 20)
+        })
       } else {
-        setParams({ standardWorkDays: 26, standardWorkDayMode: 'FIXED', minimumWage: 1800000, mealAllowance: 25000, status: 'APPROVED' })
+        setParams({ 
+          standardWorkDays: 26, 
+          standardWorkDayMode: 'FIXED', 
+          baseSalary: 1800000, 
+          minimumWage: 1800000,
+          insuranceCeiling: 36000000, 
+          mealAllowance: 25000, 
+          status: 'APPROVED' 
+        })
       }
       
       setRates(resRates.data)
-      setTaxTiers(resTax.data)
+      
+      const allTax = resTax.data
+      const hasPendingTax = allTax.some((x: TaxTier) => x.status === 'PENDING')
+      if (hasPendingTax) {
+          setTaxTiers(allTax.filter((x: TaxTier) => x.status === 'PENDING'))
+      } else {
+          setTaxTiers(allTax.filter((x: TaxTier) => x.status === 'APPROVED'))
+      }
+      
+      setTaxRules(resTaxRules.data)
       
       const d = resDed.data.find((x: DeductionSetting) => x.status === 'PENDING') || resDed.data.find((x: DeductionSetting) => x.status === 'APPROVED')
       if (d) {
@@ -75,6 +108,16 @@ export default function SalaryConfigPage() {
       setLoading(false)
     }
   }, [headers, showMsg])
+
+  const insuranceSummary = useMemo(() => {
+    const findRate = (pattern: string) => rates.find(r => r.type.toUpperCase().includes(pattern))
+    return {
+      bhxh: findRate('XH'),
+      bhyt: findRate('YT'),
+      bhtn: findRate('TN'),
+      kpcd: findRate('CD') || findRate('CĐ')
+    }
+  }, [rates])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -191,22 +234,56 @@ export default function SalaryConfigPage() {
     }
   }
 
-  const saveTax = async () => {
+  const saveDeductions = async () => {
     try {
-      const [resTax, resDed] = await Promise.all([
-        axios.post("/api/config/tax", taxTiers, { headers }),
-        axios.post("/api/config/deductions", deductions, { headers })
-      ])
-      if (resTax.data[0]?.status === 'PENDING' || resDed.data.status === 'PENDING') {
-        showMsg("Đã gửi đề xuất biểu thuế & giảm trừ. Chờ phê duyệt.", "info")
+      const res = await axios.post("/api/config/deductions", deductions, { headers })
+      if (res.data.status === 'PENDING') {
+        showMsg("Đã gửi đề xuất định mức giảm trừ. Chờ phê duyệt.", "info")
       } else {
-        showMsg("Cập nhật biểu thuế & giảm trừ thành công!")
+        showMsg("Cập nhật định mức giảm trừ thành công!")
       }
+      setIsDeductionEditing(false)
       fetchData()
     } catch (err: unknown) { 
         const message = err instanceof Error ? err.message : String(err)
         showMsg(message, "error") 
     }
+  }
+
+  const cancelDeductionEdit = () => {
+    if (originalDeductions) {
+      setDeductions(originalDeductions)
+    }
+    setIsDeductionEditing(false)
+  }
+
+  const savePitTiers = async () => {
+    try {
+      // Đảm bảo tính liên tục của biểu thuế trước khi lưu
+      const sortedTiers = [...taxTiers].sort((a,b) => a.tierLevel - b.tierLevel);
+      for(let i = 1; i < sortedTiers.length; i++) {
+        sortedTiers[i].lowerBound = sortedTiers[i-1].upperBound;
+      }
+      
+      const res = await axios.post("/api/config/tax", sortedTiers, { headers })
+      if (res.data[0]?.status === 'PENDING') {
+        showMsg("Đã gửi đề xuất biểu thuế PIT. Chờ phê duyệt.", "info")
+      } else {
+        showMsg("Cập nhật biểu thuế PIT thành công!")
+      }
+      setIsPitEditing(false)
+      fetchData()
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        showMsg(message, "error") 
+    }
+  }
+
+  const cancelPitEdit = () => {
+    if (originalTaxTiers) {
+      setTaxTiers(originalTaxTiers)
+    }
+    setIsPitEditing(false)
   }
 
   const approveTax = async () => {
@@ -230,6 +307,32 @@ export default function SalaryConfigPage() {
             axios.post(`/api/config/deductions/${deductions.id}/reject`, {}, { headers })
         ])
         showMsg("Đã bác bỏ thay đổi biểu thuế & giảm trừ!", "info")
+        fetchData()
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        showMsg(message, "error") 
+    }
+  }
+
+  const saveTaxRules = async () => {
+    try {
+      const res = await axios.post("/api/config/tax-rules", taxRules, { headers })
+      if (res.data[0]?.status === 'PENDING') {
+        showMsg("Đã gửi đề xuất cấu hình thuế. Chờ phê duyệt.", "info")
+      } else {
+        showMsg("Cập nhật cấu hình thuế thành công!")
+      }
+      fetchData()
+    } catch (err: unknown) { 
+        const message = err instanceof Error ? err.message : String(err)
+        showMsg(message, "error") 
+    }
+  }
+
+  const approveTaxRules = async () => {
+    try {
+        await axios.post(`/api/config/tax-rules/approve`, {}, { headers })
+        showMsg("Đã phê duyệt cấu hình thuế TNCN!")
         fetchData()
     } catch (err: unknown) { 
         const message = err instanceof Error ? err.message : String(err)
@@ -275,7 +378,8 @@ export default function SalaryConfigPage() {
         {[
             { id: "params", label: "Tham số Hệ thống", icon: Settings },
             { id: "insurance", label: "Tỷ lệ Bảo hiểm", icon: ShieldCheck },
-            { id: "tax", label: "Biểu thuế TNCN", icon: Calculator }
+            { id: "pit_rules", label: "Thuế TNCN", icon: Calculator },
+            { id: "tax", label: "Biểu thuế Lũy tiến", icon: Calculator }
         ].map(t => (
             <button
                 key={t.id}
@@ -311,90 +415,79 @@ export default function SalaryConfigPage() {
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <h3 className="text-xl font-black text-slate-800">Tham số hằng số</h3>
+                                    <h3 className="text-xl font-black text-slate-800">Tham số tính lương</h3>
                                     {params.status === 'PENDING' ? (
                                         <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-200">Chờ duyệt</span>
                                     ) : (
                                         <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-200">Đang áp dụng</span>
                                     )}
                                 </div>
-                                <p className="text-muted-foreground text-xs font-medium">Định nghĩa các giá trị cơ bản cho việc tính toán lương hàng tháng</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Chế độ tính công chuẩn</label>
-                                <div className="flex flex-col gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200">
-                                    <button 
-                                        onClick={() => setParams({...params, standardWorkDayMode: 'FIXED'})}
-                                        className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all ${params.standardWorkDayMode === 'FIXED' ? 'bg-white shadow-md text-primary' : 'text-slate-400 hover:text-slate-600'}`}
-                                    >
-                                        <span className="text-xs font-black uppercase tracking-tight">Cố định (VD: 26 ngày)</span>
-                                        {params.standardWorkDayMode === 'FIXED' && <CheckCircle2 size={16} />}
-                                    </button>
-                                    <button 
-                                        onClick={() => setParams({...params, standardWorkDayMode: 'MONTHLY'})}
-                                        className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all ${params.standardWorkDayMode === 'MONTHLY' ? 'bg-white shadow-md text-primary' : 'text-slate-400 hover:text-slate-600'}`}
-                                    >
-                                        <span className="text-xs font-black uppercase tracking-tight">Tự động theo tháng</span>
-                                        {params.standardWorkDayMode === 'MONTHLY' && <CheckCircle2 size={16} />}
-                                    </button>
-                                </div>
+                                <button 
+                                    type="button"
+                                    className={`flex items-center justify-between px-4 py-3 rounded-xl bg-white shadow-md text-primary w-full border border-slate-100`}
+                                >
+                                    <span className="text-xs font-black uppercase tracking-tight">Cố định (26 ngày)</span>
+                                    <CheckCircle2 size={16} />
+                                </button>
                             </div>
 
-                            {params.standardWorkDayMode === 'FIXED' ? (
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Số công chuẩn (ngày)</label>
-                                    <Input 
-                                        type="number" 
-                                        min={0}
-                                        className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800"
-                                        value={params.standardWorkDays} 
-                                        onChange={e => {
-                                            e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                            setParams({...params, standardWorkDays: Math.max(0, Number(e.target.value))});
-                                        }} 
-                                    />
-                                    <p className="text-[10px] text-slate-400 pl-2">Thường là 26 ngày (Trừ Chủ Nhật)</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4 p-6 bg-blue-50 border border-blue-100 rounded-3xl">
-                                    <div className="flex items-center gap-3 text-blue-600">
-                                        <Info size={20} />
-                                        <span className="text-xs font-black uppercase">Chế độ tự động</span>
-                                    </div>
-                                    <p className="text-xs text-blue-700 leading-relaxed font-medium">Hệ thống sẽ tự động tính số ngày làm việc (T2 - T6) của từng tháng để làm căn cứ tính lương. Đơn giá ngày công sẽ thay đổi theo từng tháng.</p>
-                                </div>
-                            )}
-
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Lương tối thiểu (VNĐ)</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Số công chuẩn (ngày)</label>
                                 <Input 
                                     type="number" 
                                     min={0}
                                     className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800"
-                                    value={params.minimumWage} 
+                                    value={params.standardWorkDays} 
                                     onChange={e => {
                                         e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                        setParams({...params, minimumWage: Math.max(0, Number(e.target.value))});
+                                        setParams({...params, standardWorkDays: Math.max(0, Number(e.target.value))});
                                     }} 
                                 />
-                                <p className="text-[10px] text-slate-400 pl-2">Mức lương vùng/cơ sở áp dụng cho DN</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Lương cơ sở (VNĐ)</label>
+                                <Input 
+                                    type="text" 
+                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800"
+                                    value={new Intl.NumberFormat('vi-VN').format(params.baseSalary || 0)} 
+                                    onChange={e => {
+                                        const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                                        const val = Math.max(0, Number(raw));
+                                        setParams({
+                                            ...params, 
+                                            baseSalary: val,
+                                            minimumWage: val,
+                                            insuranceCeiling: val * 20
+                                        });
+                                    }} 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Mức trần đóng BHXH/BHYT (VNĐ)</label>
+                                <Input 
+                                    disabled
+                                    className="h-14 rounded-2xl bg-slate-100 border-slate-200 text-lg font-black text-slate-500 cursor-not-allowed"
+                                    value={new Intl.NumberFormat('vi-VN').format(params.insuranceCeiling || 0)} 
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Phụ cấp ăn ca (VNĐ/ngày)</label>
                                 <Input 
-                                    type="number" 
-                                    min={0}
+                                    type="text" 
                                     className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800"
-                                    value={params.mealAllowance} 
+                                    value={new Intl.NumberFormat('vi-VN').format(params.mealAllowance || 0)} 
                                     onChange={e => {
-                                        e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                        setParams({...params, mealAllowance: Math.max(0, Number(e.target.value))});
+                                        const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                                        setParams({...params, mealAllowance: Math.max(0, Number(raw))});
                                     }} 
                                 />
-                                <p className="text-[10px] text-slate-400 pl-2">Mức tối đa ko tính PIT là 730k/tháng</p>
                             </div>
                         </div>
 
@@ -416,7 +509,10 @@ export default function SalaryConfigPage() {
                                     </Button>
                                 </div>
                             ) : (
-                                <Button onClick={saveParams} className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm transition-all hover:scale-105 active:scale-95">
+                                <Button 
+                                    onClick={saveParams}
+                                    className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm"
+                                >
                                     <Save size={18} /> {userRoles.includes("ROLE_ADMIN") ? "LƯU THAY ĐỔI NGAY" : "GỬI ĐỀ XUẤT THAY ĐỔI"}
                                 </Button>
                             )}
@@ -465,68 +561,52 @@ export default function SalaryConfigPage() {
                                     <ShieldCheck className="text-emerald-500 w-6 h-6" />
                                     <h3 className="text-xl font-black text-slate-800">Danh sách tỷ lệ trích nộp</h3>
                                 </div>
-                                <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm bg-slate-50/30">
-                                    <table className="w-full text-sm text-left">
+                                <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm bg-white">
+                                    <table className="w-full text-sm">
                                         <thead>
-                                            <tr className="bg-[#111827] text-white">
-                                                <th className="px-6 py-4 font-black uppercase text-[10px] tracking-widest">Loại</th>
-                                                <th className="px-6 py-4 font-black uppercase text-[10px] tracking-widest text-center">NLĐ (%)</th>
-                                                <th className="px-6 py-4 font-black uppercase text-[10px] tracking-widest text-center">DN (%)</th>
-                                                <th className="px-6 py-4 font-black uppercase text-[10px] tracking-widest text-center">Hiệu lực</th>
-                                                <th className="px-6 py-4 font-black uppercase text-[10px] tracking-widest text-center">Trạng thái</th>
-                                                <th className="px-6 py-4 font-black uppercase text-[10px] tracking-widest text-center">Hành động</th>
+                                            <tr className="bg-[#111827] text-white border-b border-slate-700">
+                                                <th colSpan={3} className="px-4 py-3 font-black uppercase text-[11px] tracking-widest text-center border-r border-slate-700">Người lao động đóng</th>
+                                                <th colSpan={4} className="px-4 py-3 font-black uppercase text-[11px] tracking-widest text-center">Doanh nghiệp đóng</th>
+                                            </tr>
+                                            <tr className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHXH (%)</th>
+                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHYT (%)</th>
+                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHTN (%)</th>
+                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHXH (%)</th>
+                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHYT (%)</th>
+                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHTN (%)</th>
+                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center">KPCĐ (%)</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {rates.map((r, i) => (
-                                                <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-6 py-4 font-black text-slate-800 text-base">{r.type}</td>
-                                                    <td className="px-6 py-4 text-center font-bold text-blue-600">{r.employeeRate}%</td>
-                                                    <td className="px-6 py-4 text-center font-bold text-indigo-600">{r.employerRate}%</td>
-                                                    <td className="px-6 py-4 text-center text-xs font-medium text-slate-500">{r.effectiveDate}</td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            {r.status === 'PENDING' ? (
-                                                                <div className="flex flex-col items-center gap-1">
-                                                                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest">Chờ duyệt</span>
-                                                                    {(userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN")) && (
-                                                                        <div className="flex gap-2">
-                                                                            <button onClick={() => r.id && approveRate(r.id)} className="text-[10px] font-black text-emerald-600 uppercase hover:underline">Duyệt</button>
-                                                                            <button onClick={() => r.id && rejectRate(r.id)} className="text-[10px] font-black text-red-600 uppercase hover:underline">Bác bỏ</button>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest">Áp dụng</span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <button 
-                                                                onClick={() => handleEditRate(r)}
-                                                                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"
-                                                                title="Chỉnh sửa"
-                                                            >
-                                                                <Pencil size={16} />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => r.id && deleteRate(r.id)}
-                                                                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-red-600 transition-colors"
-                                                                title="Xóa"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            <tr className="hover:bg-slate-50/50 transition-colors">
+                                                {/* Người lao động */}
+                                                <td className="px-4 py-5 text-center font-black text-slate-800 border-r border-slate-50 tabular-nums text-base">
+                                                    {insuranceSummary.bhxh ? insuranceSummary.bhxh.employeeRate.toFixed(2) : '8.00'}
+                                                </td>
+                                                <td className="px-4 py-5 text-center font-black text-slate-800 border-r border-slate-50 tabular-nums text-base">
+                                                    {insuranceSummary.bhyt ? insuranceSummary.bhyt.employeeRate.toFixed(2) : '1.50'}
+                                                </td>
+                                                <td className="px-4 py-5 text-center font-black text-slate-800 border-r border-slate-100 tabular-nums text-base">
+                                                    {insuranceSummary.bhtn ? insuranceSummary.bhtn.employeeRate.toFixed(2) : '1.00'}
+                                                </td>
+                                                
+                                                {/* Doanh nghiệp */}
+                                                <td className="px-4 py-5 text-center font-black text-indigo-700 border-r border-slate-50 tabular-nums text-base">
+                                                    {insuranceSummary.bhxh ? insuranceSummary.bhxh.employerRate.toFixed(2) : '17.50'}
+                                                </td>
+                                                <td className="px-4 py-5 text-center font-black text-indigo-700 border-r border-slate-50 tabular-nums text-base">
+                                                    {insuranceSummary.bhyt ? insuranceSummary.bhyt.employerRate.toFixed(2) : '3.00'}
+                                                </td>
+                                                <td className="px-4 py-5 text-center font-black text-indigo-700 border-r border-slate-50 tabular-nums text-base">
+                                                    {insuranceSummary.bhtn ? insuranceSummary.bhtn.employerRate.toFixed(2) : '1.00'}
+                                                </td>
+                                                <td className="px-4 py-5 text-center font-black text-indigo-700 tabular-nums text-base">
+                                                    {insuranceSummary.kpcd ? insuranceSummary.kpcd.employerRate.toFixed(2) : '2.00'}
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
-                                </div>
-                                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3">
-                                    <Info className="text-amber-500 w-5 h-5 flex-shrink-0" />
-                                    <p className="text-[10px] text-amber-700 font-bold uppercase leading-relaxed">Lưu ý: Tỷ lệ bảo hiểm được tính trên mức lương đóng bảo hiểm (thường là Lương hợp đồng + Các khoản phụ cấp chịu bảo hiểm).</p>
                                 </div>
                             </div>
                         </div>
@@ -543,6 +623,14 @@ export default function SalaryConfigPage() {
                                         <Calculator size={20} />
                                     </div>
                                     <h3 className="text-xl font-black text-slate-800">Giảm trừ Gia cảnh</h3>
+                                    {!isDeductionEditing && (
+                                        <button onClick={() => {
+                                            setOriginalDeductions({...deductions});
+                                            setIsDeductionEditing(true);
+                                        }} className="text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 flex items-center">
+                                            <Pencil size={12} className="mr-1" /> Chỉnh sửa
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="p-8 rounded-3xl bg-slate-50 border border-slate-200 space-y-6">
                                     <div className="flex items-center justify-between px-2">
@@ -555,36 +643,42 @@ export default function SalaryConfigPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Giảm trừ Bản thân</label>
-                                        <Input type="number" min={0} className="h-12 rounded-xl" value={deductions.personalDeduction} onChange={e => {
+                                        <Input type="number" min={0} className="h-12 rounded-xl" value={deductions.personalDeduction} disabled={!isDeductionEditing} onChange={e => {
                                             e.target.value = e.target.value.replace(/^0+(?!$)/, '');
                                             setDeductions({...deductions, personalDeduction: Math.max(0, Number(e.target.value))});
                                         }} />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Giảm trừ Phụ thuộc</label>
-                                        <Input type="number" min={0} className="h-12 rounded-xl" value={deductions.dependentDeduction} onChange={e => {
+                                        <Input type="number" min={0} className="h-12 rounded-xl" value={deductions.dependentDeduction} disabled={!isDeductionEditing} onChange={e => {
                                             e.target.value = e.target.value.replace(/^0+(?!$)/, '');
                                             setDeductions({...deductions, dependentDeduction: Math.max(0, Number(e.target.value))});
                                         }} />
                                     </div>
-                                    {(deductions.status === 'PENDING' && (userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN"))) ? (
-                                        <div className="flex flex-col gap-2">
-                                            <Button onClick={approveTax} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase shadow-lg shadow-emerald-200">
-                                                PHÊ DUYỆT
-                                            </Button>
-                                            <Button onClick={rejectTax} variant="outline" className="w-full h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50 font-black text-xs uppercase">
-                                                TỪ CHỐI
-                                            </Button>
+                                    {isDeductionEditing && (
+                                        <div className="flex gap-2">
+                                            {(deductions.status === 'PENDING' && (userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN"))) ? (
+                                                <div className="flex flex-col w-full gap-2">
+                                                    <Button onClick={approveTax} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase shadow-lg shadow-emerald-200">
+                                                        PHÊ DUYỆT
+                                                    </Button>
+                                                    <Button onClick={rejectTax} variant="outline" className="w-full h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50 font-black text-xs uppercase">
+                                                        TỪ CHỐI
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <Button variant="outline" onClick={cancelDeductionEdit} className="flex-1 h-12 rounded-xl font-black text-xs uppercase">HỦY</Button>
+                                                    <Button onClick={saveDeductions} className="flex-1 h-12 rounded-xl bg-[#111827] text-white font-black text-xs uppercase shadow-lg shadow-slate-200">
+                                                        {userRoles.includes("ROLE_ADMIN") ? "LƯU NGAY" : "GỬI ĐỀ XUẤT"}
+                                                    </Button>
+                                                </>
+                                            )}
                                         </div>
-                                    ) : (
-                                        <Button onClick={saveTax} className="w-full h-12 rounded-xl bg-[#111827] text-white font-black text-xs uppercase shadow-lg shadow-slate-200">
-                                            {userRoles.includes("ROLE_ADMIN") ? "LƯU CẤU HÌNH NGAY" : "GỬI ĐỀ XUẤT CẬP NHẬT"}
-                                        </Button>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Tax Tiers Table */}
                             <div className="lg:col-span-2 space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -596,63 +690,283 @@ export default function SalaryConfigPage() {
                                             <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-200">Dữ liệu nháp</span>
                                         )}
                                     </div>
-                                    <Button variant="outline" onClick={() => setTaxTiers([...taxTiers, { lowerBound: 0, upperBound: 0, taxRate: 0, tierLevel: taxTiers.length + 1, status: 'PENDING' }])} className="rounded-xl font-black text-[10px] uppercase gap-2 h-9">
-                                        <Plus size={14}/> Thêm bậc
-                                    </Button>
+                                    {isPitEditing && (
+                                        <div className="flex items-center gap-2">
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={() => setTaxTiers([
+                                                    { lowerBound: 0, upperBound: 5000000, taxRate: 5, tierLevel: 1, status: 'PENDING' },
+                                                    { lowerBound: 5000000, upperBound: 10000000, taxRate: 10, tierLevel: 2, status: 'PENDING' },
+                                                    { lowerBound: 10000000, upperBound: 18000000, taxRate: 15, tierLevel: 3, status: 'PENDING' },
+                                                    { lowerBound: 18000000, upperBound: 32000000, taxRate: 20, tierLevel: 4, status: 'PENDING' },
+                                                    { lowerBound: 32000000, upperBound: 52000000, taxRate: 25, tierLevel: 5, status: 'PENDING' },
+                                                    { lowerBound: 52000000, upperBound: 80000000, taxRate: 30, tierLevel: 6, status: 'PENDING' },
+                                                    { lowerBound: 80000000, upperBound: 999999999, taxRate: 35, tierLevel: 7, status: 'PENDING' }
+                                                ])} 
+                                                className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-blue-100 text-blue-600 hover:bg-blue-50"
+                                            >
+                                                <RefreshCw size={14}/> Khôi phục chuẩn 7 bậc
+                                            </Button>
+                                            <Button variant="outline" onClick={() => setTaxTiers([...taxTiers, { lowerBound: 0, upperBound: 0, taxRate: 0, tierLevel: taxTiers.length + 1, status: 'PENDING' }])} className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-slate-200 hover:bg-slate-50">
+                                                <Plus size={14}/> Thêm bậc
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                                     <table className="w-full text-xs">
                                         <thead className="bg-slate-50 border-b border-slate-200">
+                                            <tr className="border-b border-slate-100">
+                                                <th rowSpan={2} className="px-6 py-4 font-black uppercase text-slate-500 text-center w-16">Bậc thuế</th>
+                                                <th colSpan={2} className="px-6 py-3 font-black uppercase text-slate-500 text-center border-x border-slate-100">Phần thu nhập tính thuế/năm (VND)</th>
+                                                <th colSpan={2} className="px-6 py-3 font-black uppercase text-slate-500 text-center">Phần thu nhập tính thuế/tháng (VND)</th>
+                                                <th rowSpan={2} className="px-6 py-4 font-black uppercase text-slate-500 text-center w-32 border-l border-slate-100">Thuế suất (%)</th>
+                                            </tr>
                                             <tr>
-                                                <th className="px-6 py-4 font-black uppercase text-slate-500 text-center w-20">Bậc</th>
-                                                <th className="px-6 py-4 font-black uppercase text-slate-500">Cận dưới (VNĐ)</th>
-                                                <th className="px-6 py-4 font-black uppercase text-slate-500">Cận trên (VNĐ)</th>
-                                                <th className="px-6 py-4 font-black uppercase text-slate-500 text-center w-32">Thuế (%)</th>
-                                                <th className="px-6 py-4 text-center w-20"></th>
+                                                <th className="px-6 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 w-1/4 text-[10px]">Trên</th>
+                                                <th className="px-6 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 w-1/4 text-[10px]">Đến</th>
+                                                <th className="px-6 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 w-1/4 text-[10px]">Trên</th>
+                                                <th className="px-6 py-2 font-black uppercase text-slate-400 text-center w-1/4 text-[10px]">Đến</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {taxTiers.map((t, i) => (
-                                                <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-6 py-3 text-center font-black text-slate-400">#{i+1}</td>
-                                                    <td className="px-6 py-3">
-                                                        <Input type="number" min={0} className="h-9 border-none bg-transparent font-black text-slate-700" value={t.lowerBound} onChange={e => {
-                                                            e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                                            const n = [...taxTiers]; n[i].lowerBound = Math.max(0, Number(e.target.value)); setTaxTiers(n);
-                                                        }} />
+                                            {[...taxTiers].sort((a,b)=>a.tierLevel - b.tierLevel).map((t) => (
+                                                <tr key={t.tierLevel} className="hover:bg-slate-50/50 transition-colors text-[11px]">
+                                                    <td className="px-6 py-4 text-center font-black text-slate-600 border-r border-slate-100 bg-slate-50/20">{t.tierLevel}</td>
+                                                    {/* Thu nhập Năm */}
+                                                    <td className="px-6 py-4 text-right font-black text-slate-800 border-r border-slate-100 tabular-nums uppercase">
+                                                        {isPitEditing ? (
+                                                            <Input 
+                                                                type="number" 
+                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0" 
+                                                                value={Math.round(t.lowerBound * 12)} 
+                                                                disabled={t.tierLevel > 1} // Chỉ Bậc 1 được sửa Trên (thực tế luôn là 0)
+                                                                onChange={e => {
+                                                                    const val = Number(e.target.value);
+                                                                    const n = taxTiers.map(tier => 
+                                                                        tier.tierLevel === t.tierLevel ? { ...tier, lowerBound: Math.round(val / 12) } : tier
+                                                                    );
+                                                                    setTaxTiers(n);
+                                                                }} 
+                                                            />
+                                                        ) : (
+                                                            (t.lowerBound === 0 && t.tierLevel === 1) ? '-' : (t.lowerBound === 0 ? '0' : (t.lowerBound * 12).toLocaleString('vi-VN', { minimumFractionDigits: 0 }))
+                                                        )}
                                                     </td>
-                                                    <td className="px-6 py-3">
-                                                        <Input type="number" min={0} className="h-9 border-none bg-transparent font-black text-slate-700" value={t.upperBound} onChange={e => {
-                                                            e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                                            const n = [...taxTiers]; n[i].upperBound = Math.max(0, Number(e.target.value)); setTaxTiers(n);
-                                                        }} />
+                                                    <td className="px-6 py-4 text-right font-black text-slate-800 border-r border-slate-100 tabular-nums">
+                                                        {isPitEditing ? (
+                                                            <Input 
+                                                                type="number" 
+                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0" 
+                                                                value={Math.round(t.upperBound * 12)} 
+                                                                onChange={e => {
+                                                                    const val = Number(e.target.value);
+                                                                    const monthlyUpper = Math.round(val / 12);
+                                                                    const n = taxTiers.map(tier => {
+                                                                        if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: monthlyUpper };
+                                                                        if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: monthlyUpper };
+                                                                        return tier;
+                                                                    });
+                                                                    setTaxTiers(n);
+                                                                }} 
+                                                            />
+                                                        ) : (
+                                                            t.upperBound > 900000000 ? '-' : (t.upperBound * 12).toLocaleString('vi-VN', { minimumFractionDigits: 0 })
+                                                        )}
                                                     </td>
-                                                    <td className="px-6 py-3">
+                                                    {/* Thu nhập Tháng */}
+                                                    <td className="px-6 py-4 text-right font-black text-slate-800 bg-blue-50/10 border-r border-slate-100 tabular-nums">
+                                                        {isPitEditing ? (
+                                                            <Input 
+                                                                type="number" 
+                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0" 
+                                                                value={t.lowerBound} 
+                                                                disabled={t.tierLevel > 1}
+                                                                onChange={e => {
+                                                                    const val = Number(e.target.value);
+                                                                    const n = taxTiers.map(tier => 
+                                                                        tier.tierLevel === t.tierLevel ? { ...tier, lowerBound: val } : tier
+                                                                    );
+                                                                    setTaxTiers(n);
+                                                                }} 
+                                                            />
+                                                        ) : (
+                                                            (t.lowerBound === 0 && t.tierLevel === 1) ? '-' : (t.lowerBound === 0 ? '0' : t.lowerBound.toLocaleString('vi-VN', { minimumFractionDigits: 0 }))
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-black text-slate-800 bg-blue-50/10 border-r border-slate-100 tabular-nums">
+                                                        {isPitEditing ? (
+                                                            <Input 
+                                                                type="number" 
+                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0" 
+                                                                value={t.upperBound} 
+                                                                onChange={e => {
+                                                                    const val = Number(e.target.value);
+                                                                    const n = taxTiers.map(tier => {
+                                                                        if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: val };
+                                                                        if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: val };
+                                                                        return tier;
+                                                                    });
+                                                                    setTaxTiers(n);
+                                                                }} 
+                                                            />
+                                                        ) : (
+                                                            t.upperBound > 900000000 ? '-' : t.upperBound.toLocaleString('vi-VN', { minimumFractionDigits: 0 })
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
                                                         <div className="flex items-center gap-2 justify-center">
-                                                            <Input type="number" min={0} className="h-9 w-16 border-none bg-slate-100/50 rounded-lg text-center font-black text-blue-600" value={t.taxRate} onChange={e => {
-                                                                e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                                                const n = [...taxTiers]; n[i].taxRate = Math.max(0, Number(e.target.value)); setTaxTiers(n);
-                                                            }} />
-                                                            <span className="font-black text-slate-400">%</span>
+                                                            <Input 
+                                                                type="number" 
+                                                                className={`h-8 w-16 border-none bg-slate-100/50 rounded-lg text-center font-black text-blue-600 p-0 ${!isPitEditing && 'opacity-70 bg-transparent'}`} 
+                                                                value={t.taxRate} 
+                                                                disabled={!isPitEditing} 
+                                                                onChange={e => {
+                                                                    const val = Number(e.target.value);
+                                                                    const n = taxTiers.map(tier => 
+                                                                        tier.tierLevel === t.tierLevel ? { ...tier, taxRate: val } : tier
+                                                                    );
+                                                                    setTaxTiers(n);
+                                                                }} 
+                                                            />
+                                                            <span className="font-black text-slate-400 text-[10px]">%</span>
+                                                            {isPitEditing && (
+                                                                <button onClick={() => setTaxTiers(taxTiers.filter(x => x.tierLevel !== t.tierLevel))} className="ml-2 text-red-300 hover:text-red-500 transition-colors">
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            )}
                                                         </div>
-                                                    </td>
-                                                    <td className="px-6 py-3 text-center">
-                                                        <button onClick={() => setTaxTiers(taxTiers.filter((_, idx)=>idx!==i))} className="text-red-300 hover:text-red-500 transition-colors">
-                                                            <Trash2 size={16} />
-                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
-                                <div className="flex items-center justify-between pt-4">
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase italic">* Nhập 0 cho Cận trên để hiểu là "Vô cực" (Bậc trên cùng)</p>
-                                    <Button onClick={saveTax} className="h-12 px-10 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs shadow-lg shadow-orange-500/20">
-                                        LƯU BIỂU THUẾ TNCN
-                                    </Button>
+                                <div className="flex items-center justify-end pt-4 gap-3">
+                                    {!isPitEditing ? (
+                                        <Button onClick={() => {
+                                            setOriginalTaxTiers([...taxTiers]);
+                                            setIsPitEditing(true);
+                                        }} className="h-12 px-8 rounded-xl bg-slate-800 hover:bg-black text-white font-black text-xs uppercase shadow-lg shadow-slate-200 flex items-center gap-2">
+                                            <Pencil size={14} /> CHỈNH SỬA BIỂU THUẾ
+                                        </Button>
+                                    ) : (
+                                        <>
+                                            <Button variant="outline" onClick={cancelPitEdit} className="h-12 px-8 rounded-xl font-black text-xs uppercase border-slate-200">
+                                                HỦY BỎ
+                                            </Button>
+                                            <Button onClick={savePitTiers} className="h-12 px-10 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase shadow-lg shadow-orange-500/20">
+                                                LƯU & CẬP NHẬT BIỂU THUẾ
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === "pit_rules" && (
+                    <div className="space-y-10">
+                        <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
+                                <CheckCircle2 size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-800">Thuế suất của nhân viên</h3>
+                                <p className="text-muted-foreground text-xs font-medium italic">Thiết lập phương thức tính thuế TNCN riêng biệt cho từng loại hình nhân sự</p>
+                            </div>
+                        </div>
+
+                        <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-100">
+                                        <th className="px-8 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400">Loại nhân sự</th>
+                                        <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Miễn thuế</th>
+                                        <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">10%</th>
+                                        <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Theo biểu lũy tiến</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {[
+                                        { type: "PROBATION", label: "Thử việc" },
+                                        { type: "TRAINEE", label: "Học việc" },
+                                        { type: "OTHER", label: "Khác" },
+                                        { type: "INTERN", label: "Thực tập sinh" },
+                                        { type: "FULL_TIME", label: "Chính thức" }
+                                    ].map((row) => {
+                                        const config = taxRules.find(r => r.employeeType === row.type) || { employeeType: row.type as any, taxMethod: "PROGRESSIVE" };
+                                        const updateMethod = (method: "EXEMPT" | "FIXED_10" | "PROGRESSIVE") => {
+                                            const newRules = [...taxRules];
+                                            const idx = newRules.findIndex(r => r.employeeType === row.type);
+                                            if (idx > -1) {
+                                                newRules[idx] = { ...newRules[idx], taxMethod: method };
+                                            } else {
+                                                newRules.push({ employeeType: row.type as any, taxMethod: method });
+                                            }
+                                            setTaxRules(newRules);
+                                        };
+
+                                        return (
+                                            <tr key={row.type} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-8 py-5 font-bold text-slate-700">{row.label} :</td>
+                                                <td className="px-6 py-5 text-center">
+                                                    <label className="inline-flex items-center cursor-pointer group">
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                            config.taxMethod === "EXEMPT" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
+                                                        }`}>
+                                                            <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "EXEMPT"} onChange={() => updateMethod("EXEMPT")} className="hidden" />
+                                                            {config.taxMethod === "EXEMPT" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
+                                                        </div>
+                                                        <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "EXEMPT" ? "text-slate-900" : "text-slate-400"}`}>Miễn thuế</span>
+                                                    </label>
+                                                </td>
+                                                <td className="px-6 py-5 text-center">
+                                                    <label className="inline-flex items-center cursor-pointer group">
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                            config.taxMethod === "FIXED_10" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
+                                                        }`}>
+                                                            <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "FIXED_10"} onChange={() => updateMethod("FIXED_10")} className="hidden" />
+                                                            {config.taxMethod === "FIXED_10" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
+                                                        </div>
+                                                        <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "FIXED_10" ? "text-slate-900" : "text-slate-400"}`}>10%</span>
+                                                    </label>
+                                                </td>
+                                                <td className="px-6 py-5 text-center">
+                                                    <label className="inline-flex items-center cursor-pointer group">
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                            config.taxMethod === "PROGRESSIVE" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
+                                                        }`}>
+                                                            <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "PROGRESSIVE"} onChange={() => updateMethod("PROGRESSIVE")} className="hidden" />
+                                                            {config.taxMethod === "PROGRESSIVE" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
+                                                        </div>
+                                                        <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "PROGRESSIVE" ? "text-slate-900" : "text-slate-400"}`}>Theo biểu lũy tiến</span>
+                                                    </label>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                            <button className="flex items-center gap-2 text-emerald-600 font-black text-sm hover:text-emerald-700 w-fit">
+                                <Plus size={18} /> Thêm
+                            </button>
+
+                            <div className="pt-6 flex items-center gap-4 border-t border-slate-100">
+                                {taxRules.some(r => r.status === 'PENDING') && (userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN")) ? (
+                                    <Button onClick={approveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-black text-sm">
+                                        <CheckCircle2 size={18} /> PHÊ DUYỆT CẤU HÌNH THUẾ
+                                    </Button>
+                                ) : (
+                                    <Button onClick={saveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm">
+                                        <Save size={18} /> {userRoles.includes("ROLE_ADMIN") ? "LƯU CẤU HÌNH THUẾ NGAY" : "GỬI ĐỀ XUẤT CẤU HÌNH THUẾ"}
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -695,8 +1009,8 @@ export default function SalaryConfigPage() {
                     className="h-12 rounded-xl font-bold text-blue-600"
                     value={editingRate.employeeRate}
                     onChange={e => {
-                        e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                        setEditingRate({...editingRate, employeeRate: Math.max(0, Number(e.target.value))});
+                        const val = Math.max(0, Number(e.target.value));
+                        setEditingRate(prev => prev ? {...prev, employeeRate: val} : null);
                     }}
                   />
                 </div>
@@ -708,8 +1022,8 @@ export default function SalaryConfigPage() {
                     className="h-12 rounded-xl font-bold text-indigo-600"
                     value={editingRate.employerRate}
                     onChange={e => {
-                        e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                        setEditingRate({...editingRate, employerRate: Math.max(0, Number(e.target.value))});
+                        const val = Math.max(0, Number(e.target.value));
+                        setEditingRate(prev => prev ? {...prev, employerRate: val} : null);
                     }}
                   />
                 </div>
@@ -719,17 +1033,13 @@ export default function SalaryConfigPage() {
                     type="date"
                     className="h-12 rounded-xl"
                     value={editingRate.effectiveDate}
-                    onChange={e => setEditingRate({...editingRate, effectiveDate: e.target.value})}
+                    onChange={e => {
+                        const val = e.target.value;
+                        setEditingRate(prev => prev ? {...prev, effectiveDate: val} : null);
+                    }}
                   />
                 </div>
               </div>
-
-              {userRoles.includes("ROLE_KE_TOAN_LUONG") && !userRoles.includes("ROLE_KE_TOAN_TRUONG") && !userRoles.includes("ROLE_ADMIN") && (
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex gap-3 text-amber-700">
-                  <AlertTriangle size={20} className="shrink-0" />
-                  <p className="text-[10px] font-bold leading-relaxed uppercase tracking-wider">Lưu ý: Thay đổi của bạn sẽ được gửi tới Kế toán trưởng phê duyệt trước khi có hiệu lực.</p>
-                </div>
-              )}
 
               <div className="flex gap-4 pt-2">
                 <Button variant="outline" className="flex-1 h-12 rounded-xl font-black text-xs uppercase" onClick={() => setIsEditModalOpen(false)}>

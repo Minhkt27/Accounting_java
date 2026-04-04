@@ -73,6 +73,7 @@ public class EmployeeController {
         emp.setPhone(details.getPhone());
         emp.setEmail(details.getEmail());
         emp.setHometown(details.getHometown());
+        emp.setDepartment(details.getDepartment());
         return employeeRepository.save(emp);
     }
 

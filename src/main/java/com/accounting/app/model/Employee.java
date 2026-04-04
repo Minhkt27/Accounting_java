@@ -33,6 +33,7 @@ public class Employee {
 
     private String email;
     private String hometown;
+    private String department;
     private String contractFilePath; 
 
     private Double positionCoefficient = 0.0; // Hệ số chức vụ: 0.4 - 1.0 (nhân lương tối thiểu)

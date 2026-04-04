@@ -4,42 +4,51 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    --background: 210 40% 98%; /* Slate 50 */
+    --foreground: 222 47% 11%; /* Slate 900 */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
-    --primary: 240 100% 50%; /* Pure Blue */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 90%;
-    --secondary-foreground: 0 0% 0%;
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 0 0% 90%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 100% 50%; /* Pure Red */
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 0%; /* Black borders */
-    --input: 0 0% 0%;
-    --ring: 0 0% 0%;
-    --radius: 0px; /* Sharp corners */
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%; /* Blue 600 */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%; /* Slate 100 */
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%; /* Slate 500 */
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%; /* Red 600 */
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%; /* Slate 200 */
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    --radius: 0.75rem;
   }
 }
 
 @layer base {
   * {
-    @apply border-black;
-    font-family: "Arial", sans-serif;
+    @apply border-border;
   }
   body {
-    @apply bg-white text-black;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
-  h1, h2, h3 {
-    @apply font-bold text-blue-700;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight text-slate-900;
   }
 }
 
 @layer utilities {
-  /* No more hidden scrollbars for beginners! */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-800/50 rounded-full;
+  }
 }
+

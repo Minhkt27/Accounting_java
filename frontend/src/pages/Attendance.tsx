@@ -115,6 +115,7 @@ export default function AttendancePage() {
   }
 
   const handleSave = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn lưu bảng chấm công này? Dữ liệu sẽ được dùng để tính lương.")) return
     try {
       await axios.post("/api/attendance", attendances, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
@@ -185,9 +186,10 @@ export default function AttendancePage() {
             </Button>
             <Button 
               onClick={handleSave} 
-              disabled={year * 12 + month >= (new Date().getFullYear() * 12 + new Date().getMonth() + 1)}
+              disabled={year * 12 + month < (new Date().getFullYear() * 12 + new Date().getMonth() + 1)}
               className="gap-2 h-8" 
               size="default"
+              title={year * 12 + month < (new Date().getFullYear() * 12 + new Date().getMonth() + 1) ? "Không thể chỉnh sửa dữ liệu tháng cũ" : ""}
             >
                 <Save className="w-4 h-4" /> Lưu
             </Button>
@@ -200,12 +202,12 @@ export default function AttendancePage() {
               <tr>
                 <th className="px-6 py-4 font-medium">Mã NV</th>
                 <th className="px-6 py-4 font-medium">Họ tên nhân viên</th>
-                <th className="px-6 py-4 font-medium text-center bg-primary/90">Ngày công thực tế (Công mặt)</th>
-                <th className="px-6 py-4 font-medium text-center bg-primary/80">Nghỉ hưởng lương (Phép/Lễ)</th>
-                <th className="px-6 py-4 font-medium text-center bg-primary/70">OT Thường</th>
-                <th className="px-6 py-4 font-medium text-center bg-primary/60">OT Cuối tuần</th>
-                <th className="px-6 py-4 font-medium text-center bg-primary/50">OT Lễ Tết</th>
-                <th className="px-6 py-4 font-medium">Tổng cộng (Tính lương)</th>
+                <th className="px-6 py-4 font-medium text-center bg-primary/90">Ngày công thực tế (ngày)</th>
+                <th className="px-6 py-4 font-medium text-center bg-primary/80">Nghỉ hưởng lương (ngày)</th>
+                <th className="px-6 py-4 font-medium text-center bg-primary/70">OT Thường (giờ)</th>
+                <th className="px-6 py-4 font-medium text-center bg-primary/60">OT Cuối tuần (giờ)</th>
+                <th className="px-6 py-4 font-medium text-center bg-primary/50">OT Lễ Tết (giờ)</th>
+                <th className="px-6 py-4 font-medium">Tổng cộng (ngày)</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -306,9 +308,6 @@ export default function AttendancePage() {
           </table>
         </div>
       
-      <p className="text-xs text-muted-foreground italic">
-        * Lưu ý: Cột "Tổng cộng (Tính lương)" = Ngày công thực tế + Ngày nghỉ hưởng lương. Đây là con số sẽ được dùng để nhân với đơn giá lương ngày.
-      </p>
     </div>
   )
 }

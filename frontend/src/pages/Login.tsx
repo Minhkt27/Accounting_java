@@ -1,15 +1,20 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
+import { motion } from "framer-motion"
+import { ShieldCheck, Lock, User, AlertCircle, Loader2 } from "lucide-react"
 
 export default function Login() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsLoading(true)
+    setError("")
     try {
       const res = await axios.post("/api/auth/login", {
         username,
@@ -17,67 +22,116 @@ export default function Login() {
       })
       localStorage.setItem("token", res.data.token)
       localStorage.setItem("user", JSON.stringify(res.data))
-      navigate("/")
+      setTimeout(() => navigate("/"), 500)
     } catch {
-      setError("SAI TÀI KHOẢN HOẶC MẬT KHẨU RỒI!")
+      setError("Tài khoản hoặc mật khẩu không chính xác. Vui lòng thử lại.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div style={{ background: "#eee", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "Arial" }}>
-      <div style={{ background: "white", padding: "40px", border: "5px solid black", width: "350px", textAlign: "center" }}>
-        <h1 style={{ color: "blue", margin: "0 0 20px 0" }}>ĐĂNG NHẬP</h1>
-        <p style={{ fontWeight: "bold" }}>Hệ Thống Kế Toán Tiền Lương</p>
-        
-        {error && (
-          <div style={{ background: "red", color: "white", padding: "10px", margin: "10px 0", border: "2px solid black", fontWeight: "bold" }}>
-            {error}
-          </div>
-        )}
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans overflow-hidden relative">
+      {/* Decorative Elements */}
+      <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-indigo-50/50 rounded-full blur-[120px] -z-10" />
+      <div className="absolute bottom-0 left-0 w-1/4 h-1/4 bg-blue-50/50 rounded-full blur-[100px] -z-10" />
 
-        <form onSubmit={handleLogin} style={{ textAlign: "left", marginTop: "20px" }}>
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ fontWeight: "bold", display: "block" }}>Tên đăng nhập:</label>
-            <input 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-              placeholder="nhập tên vào đây" 
-              required 
-              style={{ padding: "10px", width: "100%", border: "2px solid black", marginTop: "5px" }}
-            />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-sm"
+      >
+        <div className="bg-white/80 backdrop-blur-xl border border-slate-100 p-10 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] relative">
+          
+          <div className="text-center space-y-8">
+            <motion.div 
+              initial={{ y: -10 }}
+              animate={{ y: 0 }}
+              className="inline-flex items-center justify-center w-20 h-20 bg-indigo-600 rounded-3xl shadow-2xl shadow-indigo-200 mb-2"
+            >
+              <ShieldCheck className="text-white w-10 h-10" />
+            </motion.div>
+            
+            <div className="space-y-1">
+              <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+                PHUC ANH
+              </h1>
+              <p className="text-slate-400 text-[10px] font-black tracking-[0.2em] uppercase">
+                Accounting OS / v2.0
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} className="text-left space-y-6">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tên đăng nhập</label>
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" size={18} />
+                  <input 
+                    value={username} 
+                    onChange={(e) => setUsername(e.target.value)} 
+                    placeholder="Nhập tên đăng nhập..." 
+                    required 
+                    className="w-full bg-slate-50 border-transparent text-slate-900 pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all placeholder:text-slate-300 font-bold text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mật khẩu</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" size={18} />
+                  <input 
+                    type="password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    placeholder="••••••••" 
+                    required 
+                    className="w-full bg-slate-50 border-transparent text-slate-900 pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all placeholder:text-slate-300 font-bold text-sm"
+                  />
+                </div>
+                {error && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-[11px] text-red-500 font-bold italic ml-1 mt-2 flex items-center gap-1.5"
+                  >
+                    <AlertCircle size={12} />
+                    {error}
+                  </motion.p>
+                )}
+              </div>
+
+              <motion.button 
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                type="submit" 
+                disabled={isLoading}
+                className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.1em] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 group relative h-14"
+              >
+                {isLoading ? (
+                  <Loader2 className="animate-spin w-5 h-5 text-white/50" />
+                ) : (
+                  <>
+                    Xác thực truy cập
+                    <motion.div
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      →
+                    </motion.div>
+                  </>
+                )}
+              </motion.button>
+            </form>
+            
+            <p className="text-slate-300 text-[9px] font-bold uppercase tracking-widest pt-4">
+              Secure authentication layer • phuc anh tech group
+            </p>
           </div>
-          <div style={{ marginBottom: "20px" }}>
-            <label style={{ fontWeight: "bold", display: "block" }}>Mật khẩu:</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              placeholder="vào đây nữa" 
-              required 
-              style={{ padding: "10px", width: "100%", border: "2px solid black", marginTop: "5px" }}
-            />
-          </div>
-          <button 
-            type="submit" 
-            style={{ 
-                background: "blue", 
-                color: "white", 
-                width: "100%", 
-                padding: "15px", 
-                border: "3px solid black", 
-                fontWeight: "bold", 
-                cursor: "pointer",
-                fontSize: "16px"
-            }}
-          >
-            BẤM ĐỂ ĐĂNG NHẬP
-          </button>
-        </form>
-        
-        <p style={{ marginTop: "20px", fontSize: "12px", color: "gray" }}>
-            Lưu ý: Nếu không đăng nhập được hãy báo Admin
-        </p>
-      </div>
+        </div>
+      </motion.div>
     </div>
   )
 }
+

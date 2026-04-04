@@ -146,7 +146,7 @@ export default function Layout() {
     { label: "Dữ liệu tính lương", icon: <Database size={18} />, children: [
         { to: "/employees", label: "Hồ sơ nhân sự", functionCode: "HR_EMPLOYEE" },
         { to: "/attendance", label: "Chấm công tháng", functionCode: "HR_ATTENDANCE" },
-        { to: "/leaves", label: "Đăng ký nghỉ phép", functionCode: "HR_LEAVE" },
+        { to: "/leaves", label: "Danh sách nghỉ phép", functionCode: "HR_LEAVE" },
         { to: "/salary-changes", label: "Biến động lương", functionCode: "HR_SALARY_CHANGE" },
         { to: "/hr-tracking", label: "Biến động nhân sự", functionCode: "HR_EMPLOYEE" },
     ]},
@@ -178,21 +178,21 @@ export default function Layout() {
   }, [roles])
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans antialiased text-slate-900 print:bg-white print:block">
-      <aside className="w-72 bg-[#111827] flex flex-col shadow-2xl relative z-20 no-print">
-        <div className="p-8 pb-4">
+    <div className="flex h-screen bg-background font-sans antialiased text-foreground print:bg-white print:block">
+      <aside className="w-72 bg-slate-950 flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] relative z-20 no-print border-r border-white/5">
+        <div className="p-8 pb-6">
              <div className="flex items-center gap-3 px-2">
-                <div className="w-10 h-10 bg-primary/20 flex items-center justify-center rounded-xl border border-primary/30">
-                    <ShieldCheck className="text-primary w-6 h-6" />
+                <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-2xl border border-primary/20 shadow-inner">
+                    <ShieldCheck className="text-primary w-7 h-7" />
                 </div>
                 <div>
-                   <h1 className="text-white font-black text-lg leading-tight uppercase tracking-tighter">PHUC ANH COMPANY</h1>
-                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Accounting OS</p>
+                   <h1 className="text-white font-black text-xl leading-none uppercase italic tracking-tighter">PHUC ANH</h1>
+                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Accounting OS</p>
                 </div>
              </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => {
             if (item.functionCode && !hasPermission(item.functionCode)) return null;
             if (item.children && !item.children.some(c => hasPermission(c.functionCode))) return null;
@@ -211,15 +211,15 @@ export default function Layout() {
           })}
         </nav>
 
-        <div className="p-4 mt-auto">
-            <div className="bg-slate-800/40 border border-slate-800 p-4 rounded-2xl">
-                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-blue-400 flex items-center justify-center text-white font-black text-xs shadow-lg">
+        <div className="p-6 mt-auto">
+            <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem] backdrop-blur-sm shadow-xl">
+                 <div className="flex items-center gap-3 mb-5">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary to-blue-400 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-primary/20">
                         {username.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-slate-100 truncate">{username}</p>
-                        <p className="text-[10px] text-slate-500 font-medium truncate">{roleLabel}</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">{roleLabel}</p>
                     </div>
                  </div>
                  <button 
@@ -228,35 +228,45 @@ export default function Layout() {
                     localStorage.removeItem("user");
                     navigate("/login");
                   }}
-                  className="flex w-full items-center justify-center gap-2 py-2 text-red-400 hover:text-white hover:bg-red-500/10 rounded-xl text-xs font-bold transition-all border border-red-500/20 hover:border-red-500/40"
+                  className="flex w-full items-center justify-center gap-2 py-3 text-red-400 hover:text-white hover:bg-red-500/10 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border border-red-500/20 hover:border-red-500/40"
                  >
-                    <LogOut className="w-3 h-3" /> Đăng xuất
+                    <LogOut className="w-3.5 h-3.5" /> Log Out
                  </button>
             </div>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 bg-white relative print:block print:w-full">
-        <header className="h-16 flex items-center justify-between px-10 border-b border-slate-100 sticky top-0 bg-white/80 backdrop-blur-md z-10 no-print">
+      <main className="flex-1 flex flex-col min-w-0 bg-background relative print:block print:w-full">
+        <header className="h-20 flex items-center justify-between px-10 border-b border-slate-200/60 sticky top-0 bg-background/80 backdrop-blur-xl z-10 no-print">
            <div className="flex items-center gap-4">
-              <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{location.pathname.split('/').pop() || 'Dashboard'}</span>
+              <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{location.pathname.split('/').pop() || 'Summary Overview'}</span>
            </div>
-           <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 border-r pr-6 border-slate-100 text-xs font-bold text-slate-400">
-                  <CalendarCheck size={14} />
+           <div className="flex items-center gap-8">
+              <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <CalendarCheck size={14} className="text-primary/60" />
                   {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </div>
-              <button className="p-2 hover:bg-slate-50 rounded-full transition-colors relative">
-                  <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
-                  <Users className="w-5 h-5 text-slate-400" />
-              </button>
+              <div className="flex items-center gap-3">
+                <button className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-2xl transition-all relative border border-transparent hover:border-slate-200 group">
+                    <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white z-10"></div>
+                    <Users className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+                </button>
+                <div className="h-8 w-[1px] bg-slate-200 mx-2"></div>
+                <div className="flex items-center gap-3 pl-2 group cursor-pointer">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-xs font-black text-slate-900 leading-none">{username}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{roleLabel}</p>
+                    </div>
+                </div>
+              </div>
            </div>
         </header>
-        <div className="flex-1 p-10 overflow-auto print:p-0 print:overflow-visible">
+        <div className="flex-1 p-10 overflow-auto custom-scrollbar print:p-0 print:overflow-visible">
             <Outlet />
         </div>
       </main>
     </div>
+
   )
 }

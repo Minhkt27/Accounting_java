@@ -18,6 +18,7 @@ public class SystemConfigController {
     @Autowired private SalaryParameterRepository salaryRepo;
     @Autowired private TaxTierRepository taxRepo;
     @Autowired private DeductionSettingRepository deductionRepo;
+    @Autowired private EmployeeTaxConfigRepository taxConfigRepo;
 
     // UC 02: Insurance
     @GetMapping("/insurance")
@@ -41,6 +42,7 @@ public class SystemConfigController {
 
     @PostMapping("/insurance/{id}/approve")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("null")
     public InsuranceRate approveInsurance(@PathVariable Long id) {
         InsuranceRate rate = insuranceRepo.findById(id).orElseThrow();
         // Không xóa bảo hiểm cũ vì có thể có nhiều loại (BHXH, BHYT...)
@@ -50,6 +52,7 @@ public class SystemConfigController {
 
     @PostMapping("/insurance/{id}/reject")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("null")
     public void rejectInsurance(@PathVariable Long id) {
         InsuranceRate rate = insuranceRepo.findById(id).orElseThrow();
         if ("PENDING".equals(rate.getStatus())) {
@@ -59,6 +62,7 @@ public class SystemConfigController {
 
     @PutMapping("/insurance/{id}")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("null")
     public InsuranceRate updateInsurance(@PathVariable Long id, @RequestBody InsuranceRate rate) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
@@ -106,6 +110,7 @@ public class SystemConfigController {
 
     @PostMapping("/params/{id}/approve")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("null")
     public SalaryParameter approveParam(@PathVariable Long id) {
         SalaryParameter param = salaryRepo.findById(id).orElseThrow();
         // Xóa tất cả các bản APPROVED cũ để chỉ giữ 1 bản duy nhất
@@ -119,6 +124,7 @@ public class SystemConfigController {
 
     @PostMapping("/params/{id}/reject")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("null")
     public void rejectParam(@PathVariable Long id) {
         SalaryParameter param = salaryRepo.findById(id).orElseThrow();
         if ("PENDING".equals(param.getStatus())) {
@@ -146,17 +152,19 @@ public class SystemConfigController {
         
         for (TaxTier tier : tiers) {
             tier.setStatus(status);
+            // Luôn reset ID để tránh xung đột khi thay thế bộ thuế mới
+            tier.setId(null);
         }
         
         if ("APPROVED".equals(status)) {
             taxRepo.deleteAll();
         } else {
-            // Xóa các PENDING cũ trước khi lưu PENDING mới
+            // Xóa các PENDING cũ trước khi lưu bộ PENDING mới
             List<TaxTier> oldPending = taxRepo.findAll().stream().filter(t -> "PENDING".equals(t.getStatus())).toList();
             taxRepo.deleteAll(oldPending);
         }
         
-        return taxRepo.saveAll(tiers);
+        return taxRepo.saveAll((Iterable<TaxTier>) tiers);
     }
 
     @PostMapping("/tax/approve")
@@ -171,7 +179,7 @@ public class SystemConfigController {
         for (TaxTier t : pending) {
             t.setStatus("APPROVED");
         }
-        return taxRepo.saveAll(pending);
+        return taxRepo.saveAll((Iterable<TaxTier>) pending);
     }
 
     @PostMapping("/tax/reject")
@@ -197,12 +205,14 @@ public class SystemConfigController {
             setting.setStatus("APPROVED");
         } else {
             setting.setStatus("PENDING");
+            setting.setId(null); // Tạo bản ghi nháp mới, không ghi đè Approved
         }
         return deductionRepo.save(setting); 
     }
 
     @PostMapping("/deductions/{id}/approve")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("null")
     public DeductionSetting approveDeduction(@PathVariable Long id) {
         DeductionSetting setting = deductionRepo.findById(id).orElseThrow();
         // Xóa tất cả các bản APPROVED cũ
@@ -216,10 +226,58 @@ public class SystemConfigController {
 
     @PostMapping("/deductions/{id}/reject")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("null")
     public void rejectDeduction(@PathVariable Long id) {
         DeductionSetting setting = deductionRepo.findById(id).orElseThrow();
         if ("PENDING".equals(setting.getStatus())) {
             deductionRepo.delete(setting);
         }
+    }
+
+    // New: Employee Tax Config (Radio button rules)
+    @GetMapping("/tax-rules")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    public List<EmployeeTaxConfig> getTaxRules() {
+        return taxConfigRepo.findAll();
+    }
+
+    @PostMapping("/tax-rules")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("unchecked")
+    public List<EmployeeTaxConfig> saveTaxRules(@RequestBody List<EmployeeTaxConfig> rules) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        String status = (isAdmin || isChief) ? "APPROVED" : "PENDING";
+        
+        for (EmployeeTaxConfig rule : rules) {
+            rule.setStatus(status);
+        }
+
+        if ("APPROVED".equals(status)) {
+            taxConfigRepo.deleteAll();
+        } else {
+            List<EmployeeTaxConfig> oldPending = taxConfigRepo.findAll().stream().filter(r -> "PENDING".equals(r.getStatus())).toList();
+            taxConfigRepo.deleteAll(oldPending);
+        }
+        
+        return taxConfigRepo.saveAll((Iterable<EmployeeTaxConfig>) rules);
+    }
+
+    @PostMapping("/tax-rules/approve")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @SuppressWarnings("unchecked")
+    public List<EmployeeTaxConfig> approveTaxRules() {
+        // Clear all APPROVED
+        List<EmployeeTaxConfig> oldApproved = taxConfigRepo.findAll().stream().filter(r -> "APPROVED".equals(r.getStatus())).toList();
+        taxConfigRepo.deleteAll(oldApproved);
+        
+        // Approve all PENDING
+        List<EmployeeTaxConfig> pending = taxConfigRepo.findAll().stream().filter(r -> "PENDING".equals(r.getStatus())).toList();
+        for (EmployeeTaxConfig r : pending) {
+            r.setStatus("APPROVED");
+        }
+        return taxConfigRepo.saveAll((Iterable<EmployeeTaxConfig>) pending);
     }
 }

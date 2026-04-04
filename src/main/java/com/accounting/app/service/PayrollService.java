@@ -27,6 +27,7 @@ public class PayrollService {
     @Autowired private AccountCategoryRepository accountRepo;
     @Autowired private InsuranceRateRepository insuranceRepo;
     @Autowired private DeductionSettingRepository deductionRepo;
+    @Autowired private EmployeeTaxConfigRepository taxConfigRepo;
 
     @Transactional
     public void approveMonthlyPayroll(Integer month, Integer year) {
@@ -207,9 +208,12 @@ public class PayrollService {
             payroll.setMealAllowance(mealAllowance);
             payroll.setPositionAllowance(positionAllowance);
             payroll.setSeniorityAllowance(seniorityAllowance);
-            payroll.setOtherAllowances(0.0);
-            payroll.setBonus(0.0);
-            payroll.setPenalty(0.0);
+            // Giữ nguyên Bonus, Penalty, OtherAllowances nếu đã được nhập từ trước
+            if (payroll.getOtherAllowances() == null) payroll.setOtherAllowances(0.0);
+            if (payroll.getBonus() == null) payroll.setBonus(0.0);
+            if (payroll.getPenalty() == null) payroll.setPenalty(0.0);
+            if (payroll.getCharityDeduction() == null) payroll.setCharityDeduction(0.0);
+
 
             // Bước 4: Tính OT (3 loại hệ số: 1.5, 2.0, 3.0)
             Double hourlyRate = (emp.getContractSalary() != null ? emp.getContractSalary() : 0.0) / (standardDays * 8);
@@ -235,8 +239,11 @@ public class PayrollService {
             payroll.setOtPremiumPay(otPremiumExempt);
 
             // Tổng thu nhập
-            Double grossIncome = baseSalary + mealAllowance + positionAllowance + seniorityAllowance + payroll.getOtPay();
+            Double grossIncome = baseSalary + mealAllowance + positionAllowance + seniorityAllowance + 
+                                payroll.getOtherAllowances() + payroll.getBonus() + payroll.getOtPay() - payroll.getPenalty();
+            if (grossIncome < 0) grossIncome = 0.0;
             payroll.setGrossIncome(grossIncome);
+
 
             // Bước 5: Tính bảo hiểm dựa trên cấu hình InsuranceRate (chỉ lấy APPROVED)
             List<InsuranceRate> currentRates = insuranceRepo.findAll().stream()
@@ -288,12 +295,24 @@ public class PayrollService {
             Double dDep = (emp.getDependentCount() != null ? emp.getDependentCount() : 0) * (deductions.getDependentDeduction() != null ? deductions.getDependentDeduction() : 0.0);
             
             Double totalInsEE = payroll.getTotalInsurance() != null ? payroll.getTotalInsurance() : 0.0;
-            Double taxableIncome = taxableIncomeBase - dSelf - dDep - totalInsEE;
+            Double charity = payroll.getCharityDeduction() != null ? payroll.getCharityDeduction() : 0.0;
+            Double taxableIncome = taxableIncomeBase - dSelf - dDep - totalInsEE - charity;
             if (taxableIncome < 0) taxableIncome = 0.0;
+
             
-            Double taxAmount = calculatePIT(taxableIncome);
-            if (emp.getEmployeeType() == EmployeeType.INTERN && grossIncome >= 2000000) {
-                taxAmount = (double) Math.round(grossIncome * 0.1);
+            Double taxAmount = 0.0;
+            EmployeeTaxConfig taxConfig = taxConfigRepo.findByEmployeeType(emp.getEmployeeType())
+                .orElse(new EmployeeTaxConfig(null, emp.getEmployeeType(), TaxMethod.PROGRESSIVE, "APPROVED"));
+            
+            if (taxConfig.getTaxMethod() == TaxMethod.PROGRESSIVE) {
+                taxAmount = calculatePIT(taxableIncome);
+            } else if (taxConfig.getTaxMethod() == TaxMethod.FIXED_10) {
+                // Áp dụng ngưỡng 2 triệu nếu là 10% (giữ logic cũ nhưng mở rộng cho các loại khác)
+                if (grossIncome >= 2000000) {
+                    taxAmount = (double) Math.round(grossIncome * 0.1);
+                }
+            } else {
+                taxAmount = 0.0; // EXEMPT
             }
             
             payroll.setTaxableIncome(taxableIncome);

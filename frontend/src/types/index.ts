@@ -23,11 +23,23 @@ export interface InsuranceRate {
     status?: "APPROVED" | "PENDING";
 }
 
+export type EmployeeType = "FULL_TIME" | "OFFICIAL" | "PROBATION" | "INTERN" | "TRAINEE" | "OTHER";
+export type TaxMethod = "EXEMPT" | "FIXED_10" | "PROGRESSIVE";
+
+export interface EmployeeTaxConfig {
+    id?: number;
+    employeeType: EmployeeType;
+    taxMethod: TaxMethod;
+    status?: "APPROVED" | "PENDING";
+}
+
 export interface SalaryParameter {
     id?: number;
     standardWorkDays: number;
     standardWorkDayMode: "FIXED" | "MONTHLY";
+    baseSalary: number;
     minimumWage: number;
+    insuranceCeiling: number;
     mealAllowance: number;
     status?: "APPROVED" | "PENDING";
 }
@@ -41,12 +53,13 @@ export interface AccountCategory {
 }
 
 export interface Employee {
-    id: number;
+    id: number | string;
     code: string;
     fullName: string;
-    baseSalary: number;
+    contractSalary: number;
     dependents: number;
-    type: "FULL_TIME" | "PART_TIME" | "PROBATION" | "INTERN";
+    type: "OFFICIAL" | "PROBATION";
+    department?: string;
     dob?: string;
     positionCoefficient?: number;
     seniorityAllowance?: number;

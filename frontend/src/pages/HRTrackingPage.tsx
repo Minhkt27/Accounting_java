@@ -25,7 +25,7 @@ export default function HRTrackingPage() {
 
   const activeCount = employees.filter(e => e.active).length
   const inactiveCount = employees.filter(e => !e.active).length
-  const avgSalary = employees.length > 0 ? employees.reduce((a, b) => a + (b.baseSalary || 0), 0) / employees.length : 0
+  const avgSalary = employees.length > 0 ? employees.reduce((a, b) => a + (b.contractSalary || 0), 0) / employees.length : 0
 
   const maternityCount = leaves.filter(l => l.leaveType === 'MATERNITY').length
   const sickCount = leaves.filter(l => l.leaveType === 'SICK').length
@@ -77,7 +77,7 @@ export default function HRTrackingPage() {
                           </div>
                           <div className="text-right">
                               <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded">MỚI</span>
-                              <p className="font-black text-xs mt-1 text-slate-600">{formatVND(e.baseSalary || 0)}</p>
+                              <p className="font-black text-xs mt-1 text-slate-600">{formatVND(e.contractSalary || 0)}</p>
                           </div>
                       </div>
                   ))}

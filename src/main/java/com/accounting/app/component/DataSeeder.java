@@ -25,6 +25,7 @@ public class DataSeeder implements CommandLineRunner {
     @Autowired private EmployeeRepository employeeRepo;
     @Autowired private AccountCategoryRepository accountRepo;
     @Autowired private RolePermissionRepository permRepo;
+    @Autowired private EmployeeTaxConfigRepository taxConfigRepo;
     @Autowired private PasswordEncoder encoder;
 
     @jakarta.transaction.Transactional
@@ -118,6 +119,8 @@ public class DataSeeder implements CommandLineRunner {
             p.setStandardWorkDays(26.0);
             p.setStandardWorkDayMode("FIXED");
             p.setMinimumWage(1800000.0);
+            p.setBaseSalary(1800000.0);
+            p.setInsuranceCeiling(36000000.0);
             p.setMealAllowance(25000.0);
             p.setStatus("APPROVED");
             salaryRepo.save(p);
@@ -125,7 +128,7 @@ public class DataSeeder implements CommandLineRunner {
 
         // Seed UC 04/05: Tax Tiers
         if (taxRepo.count() == 0) {
-            taxRepo.saveAll(List.of(
+            taxRepo.saveAll((Iterable<TaxTier>) List.of(
                 createTier(0.0, 5000000.0, 5.0, 1),
                 createTier(5000000.0, 10000000.0, 10.0, 2),
                 createTier(10000000.0, 18000000.0, 15.0, 3),
@@ -145,12 +148,21 @@ public class DataSeeder implements CommandLineRunner {
             deductionRepo.save(d);
         }
 
+        // Seed UC: Employee Tax Rules (New section requested)
+        if (taxConfigRepo.count() == 0) {
+            taxConfigRepo.save(new EmployeeTaxConfig(null, EmployeeType.FULL_TIME, TaxMethod.PROGRESSIVE, "APPROVED"));
+            taxConfigRepo.save(new EmployeeTaxConfig(null, EmployeeType.INTERN, TaxMethod.FIXED_10, "APPROVED"));
+            taxConfigRepo.save(new EmployeeTaxConfig(null, EmployeeType.OTHER, TaxMethod.EXEMPT, "APPROVED"));
+            System.out.println("Seeded Default Employee Tax Rules");
+        }
+
         // Seed Nhóm 2: Test Employees
         if (employeeRepo.count() == 0) {
             Employee e1 = new Employee("NV001", "Nguyễn Văn Anh", 25000000.0, 1, EmployeeType.FULL_TIME);
             e1.setDob(LocalDate.of(1990, 5, 20));
             e1.setPositionCoefficient(0.8);
             e1.setSeniorityAllowance(500000.0);
+            e1.setDepartment("Kế toán");
             e1.setActive(true);
             employeeRepo.save(e1);
 
@@ -158,11 +170,13 @@ public class DataSeeder implements CommandLineRunner {
             e2.setDob(LocalDate.of(1995, 10, 15));
             e2.setPositionCoefficient(0.4);
             e2.setSeniorityAllowance(0.0);
+            e2.setDepartment("Nhân sự");
             e2.setActive(true);
             employeeRepo.save(e2);
 
             Employee e3 = new Employee("NV003", "Lê Văn Cường", 5000000.0, 0, EmployeeType.INTERN);
             e3.setDob(LocalDate.of(2002, 1, 1));
+            e3.setDepartment("Kinh doanh");
             e3.setActive(true);
             employeeRepo.save(e3);
         }
