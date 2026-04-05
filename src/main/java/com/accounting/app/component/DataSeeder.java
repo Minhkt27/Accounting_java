@@ -133,9 +133,7 @@ public class DataSeeder implements CommandLineRunner {
                 createTier(5000000.0, 10000000.0, 10.0, 2),
                 createTier(10000000.0, 18000000.0, 15.0, 3),
                 createTier(18000000.0, 32000000.0, 20.0, 4),
-                createTier(32000000.0, 52000000.0, 25.0, 5),
-                createTier(52000000.0, 80000000.0, 30.0, 6),
-                createTier(80000000.0, 999999999.0, 35.0, 7)
+                createTier(32000000.0, 999999999.0, 25.0, 5)
             ));
         }
 

@@ -61,9 +61,13 @@ public class Payroll {
     private Double totalEmployerInsurance = 0.0;
 
     // Thuế TNCN
-    private Double taxableIncome = 0.0;
+    private Double taxableIncomeBase = 0.0;    // Thu nhập chịu thuế (Gross - Miễn thuế)
+    private Double personalDeduction = 0.0;    // Giảm trừ bản thân (VD: 11tr)
+    private Double dependentDeduction = 0.0;   // Tổng giảm trừ gia cảnh (VD: count * 4.4tr)
+    private Integer dependentCount = 0;        // Số người phụ thuộc tại thời điểm tính
+    private Double taxableIncome = 0.0;        // Thu nhập tính thuế (Base - Ins - Deductions)
     private Double taxAmount = 0.0;
-    private Double charityDeduction = 0.0; // Các khoản đóng góp từ thiện, nhân đạo
+    private Double charityDeduction = 0.0;     // Các khoản đóng góp từ thiện, nhân đạo
 
 
     // Lương thực lĩnh (Net)

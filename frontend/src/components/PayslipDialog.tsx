@@ -118,8 +118,9 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
               <div className="flex justify-between"><span>Làm thêm giờ (OT):</span> <span className="font-bold">{formatVND(payroll.otPay)}</span></div>
               <div className="text-[10px] text-green-600 bg-green-50/50 p-1 rounded italic flex justify-between">
                 <span>- Trong đó miễn thuế TNCN:</span>
-                <span className="font-bold">{formatVND(payroll.otPremiumPay)}</span>
+                <span className="font-bold">{formatVND(payroll.otPremiumPay + payroll.mealAllowance)}</span>
               </div>
+              <p className="text-[8px] text-slate-400 italic mt-0.5">(Gồm Phụ cấp ăn ca và Phần vượt trội OT)</p>
               <div className="flex justify-between bg-primary/5 p-2 px-3 font-black border-t text-base mt-2 rounded-lg">
                 <span className="uppercase">TỔNG THU NHẬP (GROSS):</span> 
                 <span>{formatVND(payroll.grossIncome)}</span>
@@ -134,8 +135,13 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
               <div className="flex justify-between text-[11px]"><span>BHYT (1.5%):</span> <span className="text-red-600">-{formatVND(payroll.bhytNhanVien)}</span></div>
               <div className="flex justify-between text-[11px]"><span>BHTN (1%):</span> <span className="text-red-600">-{formatVND(payroll.bhtnNhanVien)}</span></div>
               <div className="flex justify-between font-bold text-red-500 border-t pt-1"><span>TỔNG TRÍCH BH (10.5%):</span> <span className="tabular-nums">-{formatVND(payroll.totalInsurance)}</span></div>
+              <div className="flex justify-between text-xs text-slate-500"><span>Thu nhập chịu thuế:</span> <span className="font-bold">{formatVND(payroll.taxableIncomeBase)}</span></div>
+              <div className="flex justify-between text-xs text-slate-500"><span>Giảm trừ bản thân:</span> <span>-{formatVND(payroll.personalDeduction)}</span></div>
+              <div className="flex justify-between text-xs text-slate-500"><span>Giảm trừ gia cảnh ({payroll.dependentCount} NTT):</span> <span>-{formatVND(payroll.dependentDeduction)}</span></div>
+              <div className="flex justify-between text-xs text-slate-500"><span>Giảm trừ bảo hiểm (10.5%):</span> <span>-{formatVND(payroll.totalInsurance)}</span></div>
+              <div className="flex justify-between text-xs text-blue-600 font-bold border-b border-dotted pb-1 mb-1"><span>Thu nhập tính thuế:</span> <span>{formatVND(payroll.taxableIncome)}</span></div>
               <div className="flex justify-between group relative cursor-help">
-                <span className="underline decoration-dotted decoration-red-300">THUẾ TNCN:</span>
+                <span className="underline decoration-dotted decoration-red-300 font-bold">THUẾ TNCN:</span>
                 <span className="font-bold text-red-500">-{formatVND(payroll.taxAmount)}</span>
                 <div className="absolute bottom-full left-0 hidden group-hover:block bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg z-50 w-48 mb-1">
                   TN tính thuế = Gross - Ăn trưa - BH - Giảm trừ - OT miễn thuế

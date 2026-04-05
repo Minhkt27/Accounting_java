@@ -14,6 +14,19 @@ export interface DeductionSetting {
     status?: "APPROVED" | "PENDING";
 }
 
+export interface InsuranceConfig {
+    id?: number;
+    bhxhEmployee: number;
+    bhytEmployee: number;
+    bhtnEmployee: number;
+    bhxhEmployer: number;
+    bhytEmployer: number;
+    bhtnEmployer: number;
+    kpcdEmployer: number;
+    effectiveDate: string;
+    status?: "APPROVED" | "PENDING";
+}
+
 export interface InsuranceRate {
     id?: number;
     type: string;

@@ -172,9 +172,9 @@ export default function Layout() {
   }
 
   const roleLabel = useMemo(() => {
-    if (roles.includes("ROLE_ADMIN")) return "Administrator"
+    if (roles.includes("ROLE_ADMIN")) return "Quản trị viên"
     if (roles.includes("ROLE_KE_TOAN_TRUONG")) return "Kế toán Trưởng"
-    return "User"
+    return "Nhân viên"
   }, [roles])
 
   return (
@@ -230,7 +230,7 @@ export default function Layout() {
                   }}
                   className="flex w-full items-center justify-center gap-2 py-3 text-red-400 hover:text-white hover:bg-red-500/10 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border border-red-500/20 hover:border-red-500/40"
                  >
-                    <LogOut className="w-3.5 h-3.5" /> Log Out
+                    <LogOut className="w-3.5 h-3.5" /> Đăng xuất
                  </button>
             </div>
         </div>
@@ -240,7 +240,7 @@ export default function Layout() {
         <header className="h-20 flex items-center justify-between px-10 border-b border-slate-200/60 sticky top-0 bg-background/80 backdrop-blur-xl z-10 no-print">
            <div className="flex items-center gap-4">
               <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{location.pathname.split('/').pop() || 'Summary Overview'}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{location.pathname.split('/').pop() || 'Tổng quan hệ thống'}</span>
            </div>
            <div className="flex items-center gap-8">
               <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">

@@ -200,9 +200,7 @@ public class PayrollService {
 
             // Bước 3: Tính phụ cấp
             Double mealAllowance = (double) Math.round((params.getMealAllowance() != null ? params.getMealAllowance() : 0.0) * realDays);
-            Double posCoef = emp.getPositionCoefficient() != null ? emp.getPositionCoefficient() : 0.0;
-            Double minWage = params.getMinimumWage() != null ? params.getMinimumWage() : 0.0;
-            Double positionAllowance = (double) Math.round(posCoef * minWage);
+            Double positionAllowance = 0.0;
             Double seniorityAllowance = emp.getSeniorityAllowance() != null ? emp.getSeniorityAllowance() : 0.0;
             
             payroll.setMealAllowance(mealAllowance);
@@ -287,7 +285,7 @@ public class PayrollService {
             // Bước 6: Tính thuế TNCN (Lấy cấu hình giảm trừ APPROVED)
             DeductionSetting deductions = deductionRepo.findAll().stream()
                 .filter(d -> "APPROVED".equals(d.getStatus()))
-                .findFirst().orElse(new DeductionSetting(null, 15500000.0, 6200000.0, "APPROVED")); 
+                .findFirst().orElse(new DeductionSetting(null, 11000000.0, 4400000.0, "APPROVED")); 
             
             Double otPremium = payroll.getOtPremiumPay() != null ? payroll.getOtPremiumPay() : 0.0;
             Double taxableIncomeBase = grossIncome - mealAllowance - otPremium;
@@ -299,6 +297,10 @@ public class PayrollService {
             Double taxableIncome = taxableIncomeBase - dSelf - dDep - totalInsEE - charity;
             if (taxableIncome < 0) taxableIncome = 0.0;
 
+            payroll.setTaxableIncomeBase(taxableIncomeBase);
+            payroll.setPersonalDeduction(dSelf);
+            payroll.setDependentDeduction(dDep);
+            payroll.setDependentCount(emp.getDependentCount() != null ? emp.getDependentCount() : 0);
             
             Double taxAmount = 0.0;
             EmployeeTaxConfig taxConfig = taxConfigRepo.findByEmployeeType(emp.getEmployeeType())
@@ -307,7 +309,6 @@ public class PayrollService {
             if (taxConfig.getTaxMethod() == TaxMethod.PROGRESSIVE) {
                 taxAmount = calculatePIT(taxableIncome);
             } else if (taxConfig.getTaxMethod() == TaxMethod.FIXED_10) {
-                // Áp dụng ngưỡng 2 triệu nếu là 10% (giữ logic cũ nhưng mở rộng cho các loại khác)
                 if (grossIncome >= 2000000) {
                     taxAmount = (double) Math.round(grossIncome * 0.1);
                 }

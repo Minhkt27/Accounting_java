@@ -3,7 +3,7 @@ import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { 
-  TrendingUp, Plus, CheckCircle, XCircle, FileSpreadsheet, 
+  Plus, CheckCircle, XCircle, FileSpreadsheet, 
   ArrowUpDown, Award, AlertTriangle, DollarSign, Pencil, Trash2, Clock,
   type LucideIcon 
 } from "lucide-react"
@@ -211,7 +211,7 @@ export default function SalaryChangePage() {
   }
 
   const formatVND = (val: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(val || 0)
+    new Intl.NumberFormat('vi-VN').format(Math.round(val || 0))
 
   const pendingCount = changes.filter(c => c.status === "PENDING").length
 
@@ -279,14 +279,20 @@ export default function SalaryChangePage() {
             {(formChangeType !== 'REWARD' && formChangeType !== 'DISCIPLINE') && (
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-500">Lương cũ</label>
-                <Input type="number" value={formOldValue} onChange={e => setFormOldValue(Number(e.target.value))} />
+                <Input type="text" value={formatVND(formOldValue)} onChange={e => {
+                  const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                  setFormOldValue(Number(raw))
+                }} />
               </div>
             )}
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-slate-500">
                 {formChangeType === 'REWARD' ? 'Số tiền thưởng' : formChangeType === 'DISCIPLINE' ? 'Số tiền phạt' : 'Lương mới'}
               </label>
-              <Input type="number" value={formNewValue} onChange={e => setFormNewValue(Number(e.target.value))} />
+              <Input type="text" value={formatVND(formNewValue)} onChange={e => {
+                const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                setFormNewValue(Number(raw))
+              }} />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-slate-500">Lý do</label>

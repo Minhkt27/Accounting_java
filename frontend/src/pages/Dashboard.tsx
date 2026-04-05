@@ -101,7 +101,7 @@ export default function DashboardPage() {
           transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
           className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full"
         />
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Initializing Dashboard...</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Đang tải dữ liệu...</p>
       </div>
     )
   }
@@ -112,19 +112,19 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
             <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                Analytics <span className="text-primary italic">Engine</span>
+                Báo cáo <span className="text-primary italic">Tổng quan</span>
             </h1>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                 <Calendar size={14} className="text-primary/60" />
-                Data period: {summary?.month}/{summary?.year}
+                Kỳ dữ liệu: {summary?.month}/{summary?.year}
             </p>
         </div>
         <div className="flex gap-3">
             <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-                Export Ledger
+                Xuất Sổ cái
             </button>
             <button className="px-6 py-2.5 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
-                Update Report
+                Cập nhật báo cáo
             </button>
         </div>
       </div>
@@ -132,33 +132,33 @@ export default function DashboardPage() {
       {/* Summary Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card 
-          title="Total Employees" 
+          title="Tổng nhân sự" 
           value={summary?.employeeCount || '0'} 
-          subtitle="All active workforce" 
+          subtitle="Toàn bộ lao động" 
           icon={Users} 
           color="blue"
           delay={0.1}
         />
         <Card 
-          title="Total Net Pay" 
+          title="Tổng thực lĩnh" 
           value={formatVND(summary?.totalNetPay || 0)} 
-          subtitle="Expenditure on salary" 
+          subtitle="Chi phí lương thực trả" 
           icon={Wallet} 
           color="green"
           delay={0.2}
         />
         <Card 
-          title="Insurance (Comp)" 
+          title="Bảo hiểm (DN)" 
           value={formatVND(summary?.totalEmployerInsurance || 0)} 
-          subtitle="Corporate obligations" 
+          subtitle="Trách nhiệm doanh nghiệp" 
           icon={ShieldAlert} 
           color="orange"
           delay={0.3}
         />
         <Card 
-          title="Income Tax" 
+          title="Thuế TNCN" 
           value={formatVND(summary?.totalTax || 0)} 
-          subtitle="Tax withholding" 
+          subtitle="Số khấu trừ tạm tính" 
           icon={BadgePercent} 
           color="red"
           delay={0.4}
@@ -176,8 +176,8 @@ export default function DashboardPage() {
         >
             <div className="flex items-center justify-between mb-10">
                 <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic">Spending <span className="text-primary italic">Matrix</span></h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 px-1">Monetary distribution across sectors</p>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic">Cơ cấu <span className="text-primary italic">Chi phí</span></h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 px-1">Phân bổ nguồn vốn theo các hạng mục</p>
                 </div>
                 <div className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-2xl text-slate-400 group cursor-pointer hover:bg-primary/10 transition-colors">
                     <Info size={18} className="group-hover:text-primary transition-colors" />
@@ -220,8 +220,8 @@ export default function DashboardPage() {
             transition={{ delay: 0.6 }}
             className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] flex flex-col"
         >
-            <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic mb-2">Cost <span className="text-primary italic">Split</span></h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Percentage breakdown</p>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic mb-2">Tỷ trọng <span className="text-primary italic">Chi</span></h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Phần trăm phân bổ</p>
             
             <div className="h-[250px] w-full my-auto">
                 <ResponsiveContainer width="100%" height="100%">
@@ -270,8 +270,8 @@ export default function DashboardPage() {
       >
         <div className="p-8 border-b border-slate-50 flex items-center justify-between">
             <div>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic">Raw <span className="text-primary italic">Dataset</span></h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Comprehensive data log for {summary?.month}/{summary?.year}</p>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic">Dữ liệu <span className="text-primary italic">Chi tiết</span></h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Báo cáo tổng hợp số liệu kỳ {summary?.month}/{summary?.year}</p>
             </div>
             <button className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-colors">
                 <BadgePercent size={20} />
@@ -281,9 +281,9 @@ export default function DashboardPage() {
             <table className="w-full">
                 <thead>
                     <tr className="bg-slate-50/50">
-                        <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Metric Identifier</th>
-                        <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Absolute Value</th>
-                        <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Relative Weight</th>
+                        <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Chỉ số thống kê</th>
+                        <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Giá trị (VNĐ)</th>
+                        <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Tỷ trọng</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -303,10 +303,10 @@ export default function DashboardPage() {
                             <td className="px-8 py-6 text-right">
                                 {row.type === 'currency' ? (
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-                                        Weight: {((row.raw || 0) / (summary?.totalNetPay || 1) * 100).toFixed(1)}%
+                                        Tỷ trọng: {((row.raw || 0) / (summary?.totalNetPay || 1) * 100).toFixed(1)}%
                                     </div>
                                 ) : (
-                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">Core Metric</span>
+                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">Chỉ số gốc</span>
                                 )}
                             </td>
                         </motion.tr>
@@ -319,7 +319,7 @@ export default function DashboardPage() {
       <footer className="pt-10 flex items-center justify-between px-4">
         <div className="flex items-center gap-3 text-slate-300">
             <ShieldAlert size={14} />
-            <p className="text-[9px] font-black uppercase tracking-[0.2em]">Automated data synchronization active</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em]">Hệ thống đồng bộ dữ liệu thời gian thực</p>
         </div>
         <p className="text-[9px] font-bold text-slate-300 italic uppercase tracking-widest">
             Generated by Phuc Anh OS Engine &copy; 2026

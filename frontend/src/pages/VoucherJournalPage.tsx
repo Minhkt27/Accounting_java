@@ -69,7 +69,7 @@ export default function VoucherJournalPage() {
 
 
   const formatVND = (val: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0)
+    new Intl.NumberFormat('vi-VN').format(val || 0)
 
   const totalJournalDebit = journal.reduce((sum, j) => sum + j.amount, 0)
 

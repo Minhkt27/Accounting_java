@@ -35,13 +35,18 @@ public class AttendanceController {
         
         if (!attendances.isEmpty()) {
             Attendance first = attendances.get(0);
+            /* Temporarily disabled for testing
             LocalDate now = LocalDate.now();
             int currentMonthValue = now.getYear() * 12 + now.getMonthValue();
             int targetMonthValue = first.getYear() * 12 + first.getMonth();
 
             if (targetMonthValue >= currentMonthValue) {
-                throw new RuntimeException("Không thể chốt công cho tháng đang diễn ra hoặc chưa tới.");
+                throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, 
+                    "Không thể chốt công cho tháng đang diễn ra hoặc chưa tới."
+                );
             }
+            */
         }
 
         for (Attendance att : attendances) {

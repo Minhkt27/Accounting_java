@@ -7,10 +7,10 @@ import {
     AlertCircle, CheckCircle2, RefreshCw
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import type { SalaryParameter, InsuranceRate, TaxTier, DeductionSetting, EmployeeTaxConfig } from "../types"
+import type { SalaryParameter, TaxTier, DeductionSetting, EmployeeTaxConfig, InsuranceConfig } from "../types"
 
 export default function SalaryConfigPage() {
-  const [activeTab, setActiveTab] = useState<"params" | "insurance" | "tax" | "pit_rules">("params")
+  const [activeTab, setActiveTab] = useState<"params" | "insurance" | "tax">("params")
   const headers = useMemo(() => ({ 
     Authorization: `Bearer ${localStorage.getItem("token")}` 
   }), [])
@@ -25,11 +25,12 @@ export default function SalaryConfigPage() {
     mealAllowance: 25000 
   })
   
-  // --- State for Insurance Rates ---
-  const [rates, setRates] = useState<InsuranceRate[]>([])
-  const [newRate, setNewRate] = useState<Omit<InsuranceRate, "id">>({ type: "", employeeRate: 0, employerRate: 0, effectiveDate: "" })
-  const [editingRate, setEditingRate] = useState<InsuranceRate | null>(null)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  // --- State for Insurance Config ---
+  const [insuranceConfig, setInsuranceConfig] = useState<InsuranceConfig>({
+    bhxhEmployee: 8.0, bhytEmployee: 1.5, bhtnEmployee: 1.0,
+    bhxhEmployer: 17.5, bhytEmployer: 3.0, bhtnEmployer: 1.0, kpcdEmployer: 2.0,
+    effectiveDate: new Date().toISOString().split('T')[0]
+  })
   
   // --- State for Tax Config ---
   const [taxTiers, setTaxTiers] = useState<TaxTier[]>([])
@@ -41,8 +42,10 @@ export default function SalaryConfigPage() {
   const [message, setMessage] = useState<{ text: string, type: "success" | "info" | "error" } | null>(null)
   const [isDeductionEditing, setIsDeductionEditing] = useState(false)
   const [isPitEditing, setIsPitEditing] = useState(false)
+  const [isInsuranceEditing, setIsInsuranceEditing] = useState(false)
   const [originalDeductions, setOriginalDeductions] = useState<DeductionSetting | null>(null)
   const [originalTaxTiers, setOriginalTaxTiers] = useState<TaxTier[] | null>(null)
+  const [originalInsuranceConfig, setOriginalInsuranceConfig] = useState<InsuranceConfig | null>(null)
 
   const showMsg = useCallback((text: string, type: "success" | "info" | "error" = "success") => {
     setMessage({ text, type })
@@ -56,9 +59,9 @@ export default function SalaryConfigPage() {
       const payload = JSON.parse(atob(token!.split(".")[1]))
       setUserRoles(payload.roles || [])
 
-      const [resParams, resRates, resTax, resDed, resTaxRules] = await Promise.all([
+      const [resParams, resInsurance, resTax, resDed, resTaxRules] = await Promise.all([
         axios.get("/api/config/params", { headers }),
-        axios.get("/api/config/insurance", { headers }),
+        axios.get("/api/config/insurance-config", { headers }),
         axios.get("/api/config/tax", { headers }),
         axios.get("/api/config/deductions", { headers }),
         axios.get("/api/config/tax-rules", { headers })
@@ -82,7 +85,10 @@ export default function SalaryConfigPage() {
         })
       }
       
-      setRates(resRates.data)
+      const currentInsurance = resInsurance.data.find((x: InsuranceConfig) => x.status === 'PENDING') || resInsurance.data.find((x: InsuranceConfig) => x.status === 'APPROVED')
+      if (currentInsurance) {
+        setInsuranceConfig(currentInsurance)
+      }
       
       const allTax = resTax.data
       const hasPendingTax = allTax.some((x: TaxTier) => x.status === 'PENDING')
@@ -109,15 +115,6 @@ export default function SalaryConfigPage() {
     }
   }, [headers, showMsg])
 
-  const insuranceSummary = useMemo(() => {
-    const findRate = (pattern: string) => rates.find(r => r.type.toUpperCase().includes(pattern))
-    return {
-      bhxh: findRate('XH'),
-      bhyt: findRate('YT'),
-      bhtn: findRate('TN'),
-      kpcd: findRate('CD') || findRate('CĐ')
-    }
-  }, [rates])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -161,16 +158,15 @@ export default function SalaryConfigPage() {
     }
   }
 
-  const saveRate = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const saveInsuranceConfig = async () => {
     try {
-      const res = await axios.post("/api/config/insurance", newRate, { headers })
-      setNewRate({ type: "", employeeRate: 0, employerRate: 0, effectiveDate: "" })
+      const res = await axios.post("/api/config/insurance-config", insuranceConfig, { headers })
       if (res.data.status === 'PENDING') {
-        showMsg("Đã gửi đề xuất thêm bảo hiểm. Chờ phê duyệt.", "info")
+        showMsg("Đã gửi đề xuất thay đổi tỷ lệ bảo hiểm. Chờ phê duyệt.", "info")
       } else {
-        showMsg("Thêm tỷ lệ bảo hiểm mới thành công!")
+        showMsg("Cập nhật tỷ lệ bảo hiểm thành công!")
       }
+      setIsInsuranceEditing(false)
       fetchData()
     } catch (err: unknown) { 
         const message = err instanceof Error ? err.message : String(err)
@@ -178,9 +174,17 @@ export default function SalaryConfigPage() {
     }
   }
 
-  const approveRate = async (id: number) => {
+  const cancelInsuranceEdit = () => {
+    if (originalInsuranceConfig) {
+      setInsuranceConfig(originalInsuranceConfig)
+    }
+    setIsInsuranceEditing(false)
+  }
+
+  const approveInsuranceConfig = async (id?: number) => {
+    if (!id) return
     try {
-        await axios.post(`/api/config/insurance/${id}/approve`, {}, { headers })
+        await axios.post(`/api/config/insurance-config/${id}/approve`, {}, { headers })
         showMsg("Đã phê duyệt tỷ lệ bảo hiểm!")
         fetchData()
     } catch (err: unknown) { 
@@ -189,44 +193,11 @@ export default function SalaryConfigPage() {
     }
   }
 
-  const rejectRate = async (id: number) => {
+  const rejectInsuranceConfig = async (id?: number) => {
+    if (!id) return
     try {
-        await axios.post(`/api/config/insurance/${id}/reject`, {}, { headers })
+        await axios.post(`/api/config/insurance-config/${id}/reject`, {}, { headers })
         showMsg("Đã bác bỏ thay đổi tỷ lệ bảo hiểm!", "info")
-        fetchData()
-    } catch (err: unknown) { 
-        const message = err instanceof Error ? err.message : String(err)
-        showMsg(message, "error") 
-    }
-  }
-
-  const deleteRate = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa tỷ lệ bảo hiểm này?")) return
-    try {
-        await axios.delete(`/api/config/insurance/${id}`, { headers })
-        showMsg("Đã xóa tỷ lệ bảo hiểm!")
-        fetchData()
-    } catch (err: unknown) { 
-        const message = err instanceof Error ? err.message : String(err)
-        showMsg(message, "error") 
-    }
-  }
-
-  const handleEditRate = (rate: InsuranceRate) => {
-    setEditingRate({ ...rate })
-    setIsEditModalOpen(true)
-  }
-
-  const updateRate = async () => {
-    if (!editingRate?.id) return
-    try {
-        const res = await axios.put(`/api/config/insurance/${editingRate.id}`, editingRate, { headers })
-        setIsEditModalOpen(false)
-        if (res.data.status === 'PENDING') {
-            showMsg("Đã gửi đề xuất cập nhật bảo hiểm. Chờ phê duyệt.", "info")
-        } else {
-            showMsg("Cập nhật tỷ lệ bảo hiểm thành công!")
-        }
         fetchData()
     } catch (err: unknown) { 
         const message = err instanceof Error ? err.message : String(err)
@@ -378,8 +349,7 @@ export default function SalaryConfigPage() {
         {[
             { id: "params", label: "Tham số Hệ thống", icon: Settings },
             { id: "insurance", label: "Tỷ lệ Bảo hiểm", icon: ShieldCheck },
-            { id: "pit_rules", label: "Thuế TNCN", icon: Calculator },
-            { id: "tax", label: "Biểu thuế Lũy tiến", icon: Calculator }
+            { id: "tax", label: "Biểu thuế luỹ tiến", icon: Calculator }
         ].map(t => (
             <button
                 key={t.id}
@@ -426,16 +396,6 @@ export default function SalaryConfigPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Chế độ tính công chuẩn</label>
-                                <button 
-                                    type="button"
-                                    className={`flex items-center justify-between px-4 py-3 rounded-xl bg-white shadow-md text-primary w-full border border-slate-100`}
-                                >
-                                    <span className="text-xs font-black uppercase tracking-tight">Cố định (26 ngày)</span>
-                                    <CheckCircle2 size={16} />
-                                </button>
-                            </div>
 
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Số công chuẩn (ngày)</label>
@@ -522,92 +482,140 @@ export default function SalaryConfigPage() {
 
                 {activeTab === "insurance" && (
                     <div className="space-y-10">
-                        <div className="flex flex-col md:flex-row gap-10 items-start">
-                            <form onSubmit={saveRate} className="w-full md:w-80 p-8 rounded-3xl bg-slate-50 border border-slate-200 space-y-6 shadow-sm">
-                                <h4 className="font-black text-sm uppercase text-slate-500 tracking-tight flex items-center gap-2">
-                                    <Plus size={16} className="text-primary"/> Thêm loại bảo hiểm
-                                </h4>
-                                <div className="space-y-4">
-                                    <div className="space-y-1.5 text-xs">
-                                        <label className="font-bold text-slate-600 pl-1">Loại bảo hiểm</label>
-                                        <Input className="h-11 rounded-1.5xl bg-white" value={newRate.type} onChange={e => setNewRate({...newRate, type: e.target.value})} placeholder="BHXH, BHYT..." required />
+                        <div className="flex flex-col gap-8">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
+                                        <ShieldCheck size={24} />
                                     </div>
-                                    <div className="space-y-1.5 text-xs">
-                                        <label className="font-bold text-slate-600 pl-1">NLĐ đóng (%)</label>
-                                        <Input type="number" min={0} step="0.1" className="h-11 rounded-1.5xl bg-white" value={newRate.employeeRate} onChange={e => {
-                                            e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                            setNewRate({...newRate, employeeRate: Math.max(0, Number(e.target.value))});
-                                        }} required />
-                                    </div>
-                                    <div className="space-y-1.5 text-xs">
-                                        <label className="font-bold text-slate-600 pl-1">Doanh nghiệp đóng (%)</label>
-                                        <Input type="number" min={0} step="0.1" className="h-11 rounded-1.5xl bg-white" value={newRate.employerRate} onChange={e => {
-                                            e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                            setNewRate({...newRate, employerRate: Math.max(0, Number(e.target.value))});
-                                        }} required />
-                                    </div>
-                                    <div className="space-y-1.5 text-xs">
-                                        <label className="font-bold text-slate-600 pl-1">Ngày hiệu lực</label>
-                                        <Input type="date" className="h-11 rounded-1.5xl bg-white" value={newRate.effectiveDate} onChange={e => setNewRate({...newRate, effectiveDate: e.target.value})} required />
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-2xl font-black text-slate-800 tracking-tight uppercase italic">Tỷ lệ trích nộp</h3>
+                                            {insuranceConfig.status === 'PENDING' ? (
+                                                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-200">Chờ duyệt</span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-200">Đang áp dụng</span>
+                                            )}
+                                            {!isInsuranceEditing && (
+                                                <button onClick={() => {
+                                                    setOriginalInsuranceConfig({...insuranceConfig});
+                                                    setIsInsuranceEditing(true);
+                                                }} className="ml-2 text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 flex items-center transition-all hover:scale-105">
+                                                    <Pencil size={12} className="mr-1" /> Chỉnh sửa
+                                                </button>
+                                            )}
+                                        </div>
+                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Cấu hình tỷ lệ đóng BHXH, BHYT, BHTN & KPCĐ</p>
                                     </div>
                                 </div>
-                                <Button type="submit" className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
-                                    Lưu thiết lập
-                                </Button>
-                            </form>
 
-                            <div className="flex-1 space-y-6">
                                 <div className="flex items-center gap-3">
-                                    <ShieldCheck className="text-emerald-500 w-6 h-6" />
-                                    <h3 className="text-xl font-black text-slate-800">Danh sách tỷ lệ trích nộp</h3>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngày hiệu lực:</label>
+                                    <Input 
+                                        type="date" 
+                                        readOnly={!isInsuranceEditing}
+                                        className={`h-10 w-44 rounded-xl font-black text-sm transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default' : 'bg-slate-50 border-slate-200 focus:bg-white text-primary'}`}
+                                        value={insuranceConfig.effectiveDate}
+                                        onChange={e => setInsuranceConfig({...insuranceConfig, effectiveDate: e.target.value})}
+                                    />
                                 </div>
-                                <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm bg-white">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="bg-[#111827] text-white border-b border-slate-700">
-                                                <th colSpan={3} className="px-4 py-3 font-black uppercase text-[11px] tracking-widest text-center border-r border-slate-700">Người lao động đóng</th>
-                                                <th colSpan={4} className="px-4 py-3 font-black uppercase text-[11px] tracking-widest text-center">Doanh nghiệp đóng</th>
-                                            </tr>
-                                            <tr className="bg-slate-50 text-slate-500 border-b border-slate-100">
-                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHXH (%)</th>
-                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHYT (%)</th>
-                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHTN (%)</th>
-                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHXH (%)</th>
-                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHYT (%)</th>
-                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center border-r border-slate-100">BHTN (%)</th>
-                                                <th className="px-4 py-2 font-black uppercase text-[10px] tracking-tight text-center">KPCĐ (%)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            <tr className="hover:bg-slate-50/50 transition-colors">
-                                                {/* Người lao động */}
-                                                <td className="px-4 py-5 text-center font-black text-slate-800 border-r border-slate-50 tabular-nums text-base">
-                                                    {insuranceSummary.bhxh ? insuranceSummary.bhxh.employeeRate.toFixed(2) : '8.00'}
-                                                </td>
-                                                <td className="px-4 py-5 text-center font-black text-slate-800 border-r border-slate-50 tabular-nums text-base">
-                                                    {insuranceSummary.bhyt ? insuranceSummary.bhyt.employeeRate.toFixed(2) : '1.50'}
-                                                </td>
-                                                <td className="px-4 py-5 text-center font-black text-slate-800 border-r border-slate-100 tabular-nums text-base">
-                                                    {insuranceSummary.bhtn ? insuranceSummary.bhtn.employeeRate.toFixed(2) : '1.00'}
-                                                </td>
-                                                
-                                                {/* Doanh nghiệp */}
-                                                <td className="px-4 py-5 text-center font-black text-indigo-700 border-r border-slate-50 tabular-nums text-base">
-                                                    {insuranceSummary.bhxh ? insuranceSummary.bhxh.employerRate.toFixed(2) : '17.50'}
-                                                </td>
-                                                <td className="px-4 py-5 text-center font-black text-indigo-700 border-r border-slate-50 tabular-nums text-base">
-                                                    {insuranceSummary.bhyt ? insuranceSummary.bhyt.employerRate.toFixed(2) : '3.00'}
-                                                </td>
-                                                <td className="px-4 py-5 text-center font-black text-indigo-700 border-r border-slate-50 tabular-nums text-base">
-                                                    {insuranceSummary.bhtn ? insuranceSummary.bhtn.employerRate.toFixed(2) : '1.00'}
-                                                </td>
-                                                <td className="px-4 py-5 text-center font-black text-indigo-700 tabular-nums text-base">
-                                                    {insuranceSummary.kpcd ? insuranceSummary.kpcd.employerRate.toFixed(2) : '2.00'}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                {/* Employee Contribution */}
+                                <div className="p-8 rounded-[2rem] bg-indigo-50/30 border border-indigo-100/50 space-y-6">
+                                    <h4 className="text-sm font-black text-indigo-900 uppercase tracking-widest flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-indigo-500" /> Người lao động đóng (%)
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {[
+                                            { label: "BHXH", key: "bhxhEmployee" as const },
+                                            { label: "BHYT", key: "bhytEmployee" as const },
+                                            { label: "BHTN", key: "bhtnEmployee" as const }
+                                        ].map(item => (
+                                            <div key={item.key} className="space-y-2">
+                                                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-1">{item.label}</label>
+                                                <div className="relative">
+                                                    <Input 
+                                                        type="number" min={0} step="0.01" 
+                                                        readOnly={!isInsuranceEditing}
+                                                        className={`h-14 rounded-2xl text-lg font-black pr-10 transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default select-none' : 'bg-white border-indigo-100 focus:ring-indigo-500/10 text-indigo-900'}`}
+                                                        value={insuranceConfig[item.key]}
+                                                        onChange={e => setInsuranceConfig({...insuranceConfig, [item.key]: Number(e.target.value)})}
+                                                    />
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-indigo-300">%</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
+
+                                {/* Employer Contribution */}
+                                <div className="p-8 rounded-[2rem] bg-emerald-50/30 border border-emerald-100/50 space-y-6">
+                                    <h4 className="text-sm font-black text-emerald-900 uppercase tracking-widest flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500" /> Doanh nghiệp đóng (%)
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {[
+                                            { label: "BHXH", key: "bhxhEmployer" as const },
+                                            { label: "BHYT", key: "bhytEmployer" as const },
+                                            { label: "BHTN", key: "bhtnEmployer" as const },
+                                            { label: "KPCĐ", key: "kpcdEmployer" as const }
+                                        ].map(item => (
+                                            <div key={item.key} className="space-y-2">
+                                                <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest pl-1">{item.label}</label>
+                                                <div className="relative">
+                                                    <Input 
+                                                        type="number" min={0} step="0.01" 
+                                                        readOnly={!isInsuranceEditing}
+                                                        className={`h-14 rounded-2xl text-lg font-black pr-10 transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default select-none' : 'bg-white border-emerald-100 focus:ring-emerald-500/10 text-emerald-900'}`}
+                                                        value={insuranceConfig[item.key]}
+                                                        onChange={e => setInsuranceConfig({...insuranceConfig, [item.key]: Number(e.target.value)})}
+                                                    />
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-300">%</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                {isInsuranceEditing ? (
+                                    <div className="flex gap-4">
+                                        <Button 
+                                            onClick={saveInsuranceConfig}
+                                            className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm flex items-center transition-all hover:scale-105 active:scale-95"
+                                        >
+                                            <Save size={18} /> {userRoles.includes("ROLE_ADMIN") ? "LƯU THAY ĐỔI NGAY" : "GỬI ĐỀ XUẤT THAY ĐỔI"}
+                                        </Button>
+                                        <Button 
+                                            onClick={cancelInsuranceEdit}
+                                            variant="outline"
+                                            className="gap-2 h-14 px-10 rounded-2xl border-slate-200 text-slate-600 hover:bg-slate-50 font-black text-sm transition-all hover:scale-105 active:scale-95"
+                                        >
+                                            Hủy bỏ
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    (insuranceConfig.status === 'PENDING' && (userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN"))) && (
+                                        <div className="flex gap-4">
+                                            <Button 
+                                                onClick={() => approveInsuranceConfig(insuranceConfig.id)} 
+                                                className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-black text-sm transition-all hover:scale-105 active:scale-95"
+                                            >
+                                                <CheckCircle2 size={18} /> PHÊ DUYỆT CẤU HÌNH
+                                            </Button>
+                                            <Button 
+                                                onClick={() => rejectInsuranceConfig(insuranceConfig.id)} 
+                                                variant="outline"
+                                                className="gap-2 h-14 px-10 rounded-2xl border-red-200 text-red-600 hover:bg-red-50 font-black text-sm transition-all hover:scale-105 active:scale-95"
+                                            >
+                                                <AlertCircle size={18} /> TỪ CHỐI
+                                            </Button>
+                                        </div>
+                                    )
+                                )}
                             </div>
                         </div>
                     </div>
@@ -643,16 +651,16 @@ export default function SalaryConfigPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Giảm trừ Bản thân</label>
-                                        <Input type="number" min={0} className="h-12 rounded-xl" value={deductions.personalDeduction} disabled={!isDeductionEditing} onChange={e => {
-                                            e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                            setDeductions({...deductions, personalDeduction: Math.max(0, Number(e.target.value))});
+                                        <Input type="text" className="h-12 rounded-xl" value={new Intl.NumberFormat('vi-VN').format(deductions.personalDeduction || 0)} disabled={!isDeductionEditing} onChange={e => {
+                                            const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                                            setDeductions({...deductions, personalDeduction: Math.max(0, Number(raw))});
                                         }} />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Giảm trừ Phụ thuộc</label>
-                                        <Input type="number" min={0} className="h-12 rounded-xl" value={deductions.dependentDeduction} disabled={!isDeductionEditing} onChange={e => {
-                                            e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                                            setDeductions({...deductions, dependentDeduction: Math.max(0, Number(e.target.value))});
+                                        <Input type="text" className="h-12 rounded-xl" value={new Intl.NumberFormat('vi-VN').format(deductions.dependentDeduction || 0)} disabled={!isDeductionEditing} onChange={e => {
+                                            const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                                            setDeductions({...deductions, dependentDeduction: Math.max(0, Number(raw))});
                                         }} />
                                     </div>
                                     {isDeductionEditing && (
@@ -699,13 +707,11 @@ export default function SalaryConfigPage() {
                                                     { lowerBound: 5000000, upperBound: 10000000, taxRate: 10, tierLevel: 2, status: 'PENDING' },
                                                     { lowerBound: 10000000, upperBound: 18000000, taxRate: 15, tierLevel: 3, status: 'PENDING' },
                                                     { lowerBound: 18000000, upperBound: 32000000, taxRate: 20, tierLevel: 4, status: 'PENDING' },
-                                                    { lowerBound: 32000000, upperBound: 52000000, taxRate: 25, tierLevel: 5, status: 'PENDING' },
-                                                    { lowerBound: 52000000, upperBound: 80000000, taxRate: 30, tierLevel: 6, status: 'PENDING' },
-                                                    { lowerBound: 80000000, upperBound: 999999999, taxRate: 35, tierLevel: 7, status: 'PENDING' }
+                                                    { lowerBound: 32000000, upperBound: 999999999, taxRate: 25, tierLevel: 5, status: 'PENDING' }
                                                 ])} 
                                                 className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-blue-100 text-blue-600 hover:bg-blue-50"
                                             >
-                                                <RefreshCw size={14}/> Khôi phục chuẩn 7 bậc
+                                                <RefreshCw size={14}/> Khôi phục chuẩn 5 bậc
                                             </Button>
                                             <Button variant="outline" onClick={() => setTaxTiers([...taxTiers, { lowerBound: 0, upperBound: 0, taxRate: 0, tierLevel: taxTiers.length + 1, status: 'PENDING' }])} className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-slate-200 hover:bg-slate-50">
                                                 <Plus size={14}/> Thêm bậc
@@ -724,29 +730,31 @@ export default function SalaryConfigPage() {
                                                 <th rowSpan={2} className="px-6 py-4 font-black uppercase text-slate-500 text-center w-32 border-l border-slate-100">Thuế suất (%)</th>
                                             </tr>
                                             <tr>
-                                                <th className="px-6 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 w-1/4 text-[10px]">Trên</th>
-                                                <th className="px-6 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 w-1/4 text-[10px]">Đến</th>
-                                                <th className="px-6 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 w-1/4 text-[10px]">Trên</th>
-                                                <th className="px-6 py-2 font-black uppercase text-slate-400 text-center w-1/4 text-[10px]">Đến</th>
+                                                <th className="px-3 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 text-[10px]">Trên</th>
+                                                <th className="px-3 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 text-[10px]">Đến</th>
+                                                <th className="px-3 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 text-[10px]">Trên</th>
+                                                <th className="px-3 py-2 font-black uppercase text-slate-400 text-center text-[10px]">Đến</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {[...taxTiers].sort((a,b)=>a.tierLevel - b.tierLevel).map((t) => (
                                                 <tr key={t.tierLevel} className="hover:bg-slate-50/50 transition-colors text-[11px]">
-                                                    <td className="px-6 py-4 text-center font-black text-slate-600 border-r border-slate-100 bg-slate-50/20">{t.tierLevel}</td>
+                                                    <td className="px-3 py-4 text-center font-black text-slate-600 border-r border-slate-100 bg-slate-50/20">{t.tierLevel}</td>
                                                     {/* Thu nhập Năm */}
-                                                    <td className="px-6 py-4 text-right font-black text-slate-800 border-r border-slate-100 tabular-nums uppercase">
+                                                    <td className="px-3 py-4 text-right font-black text-slate-800 border-r border-slate-100 tabular-nums uppercase whitespace-nowrap">
                                                         {isPitEditing ? (
                                                             <Input 
                                                                 type="number" 
-                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0" 
+                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
                                                                 value={Math.round(t.lowerBound * 12)} 
-                                                                disabled={t.tierLevel > 1} // Chỉ Bậc 1 được sửa Trên (thực tế luôn là 0)
                                                                 onChange={e => {
                                                                     const val = Number(e.target.value);
-                                                                    const n = taxTiers.map(tier => 
-                                                                        tier.tierLevel === t.tierLevel ? { ...tier, lowerBound: Math.round(val / 12) } : tier
-                                                                    );
+                                                                    const monthlyLower = Math.round(val / 12);
+                                                                    const n = taxTiers.map(tier => {
+                                                                        if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: monthlyLower };
+                                                                        if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: monthlyLower };
+                                                                        return tier;
+                                                                    });
                                                                     setTaxTiers(n);
                                                                 }} 
                                                             />
@@ -754,11 +762,11 @@ export default function SalaryConfigPage() {
                                                             (t.lowerBound === 0 && t.tierLevel === 1) ? '-' : (t.lowerBound === 0 ? '0' : (t.lowerBound * 12).toLocaleString('vi-VN', { minimumFractionDigits: 0 }))
                                                         )}
                                                     </td>
-                                                    <td className="px-6 py-4 text-right font-black text-slate-800 border-r border-slate-100 tabular-nums">
+                                                    <td className="px-3 py-4 text-right font-black text-slate-800 border-r border-slate-100 tabular-nums whitespace-nowrap">
                                                         {isPitEditing ? (
                                                             <Input 
                                                                 type="number" 
-                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0" 
+                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
                                                                 value={Math.round(t.upperBound * 12)} 
                                                                 onChange={e => {
                                                                     const val = Number(e.target.value);
@@ -776,18 +784,19 @@ export default function SalaryConfigPage() {
                                                         )}
                                                     </td>
                                                     {/* Thu nhập Tháng */}
-                                                    <td className="px-6 py-4 text-right font-black text-slate-800 bg-blue-50/10 border-r border-slate-100 tabular-nums">
+                                                    <td className="px-3 py-4 text-right font-black text-slate-800 bg-blue-50/10 border-r border-slate-100 tabular-nums whitespace-nowrap">
                                                         {isPitEditing ? (
                                                             <Input 
                                                                 type="number" 
-                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0" 
+                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
                                                                 value={t.lowerBound} 
-                                                                disabled={t.tierLevel > 1}
                                                                 onChange={e => {
                                                                     const val = Number(e.target.value);
-                                                                    const n = taxTiers.map(tier => 
-                                                                        tier.tierLevel === t.tierLevel ? { ...tier, lowerBound: val } : tier
-                                                                    );
+                                                                    const n = taxTiers.map(tier => {
+                                                                        if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: val };
+                                                                        if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: val };
+                                                                        return tier;
+                                                                    });
                                                                     setTaxTiers(n);
                                                                 }} 
                                                             />
@@ -795,11 +804,11 @@ export default function SalaryConfigPage() {
                                                             (t.lowerBound === 0 && t.tierLevel === 1) ? '-' : (t.lowerBound === 0 ? '0' : t.lowerBound.toLocaleString('vi-VN', { minimumFractionDigits: 0 }))
                                                         )}
                                                     </td>
-                                                    <td className="px-6 py-4 text-right font-black text-slate-800 bg-blue-50/10 border-r border-slate-100 tabular-nums">
+                                                    <td className="px-3 py-4 text-right font-black text-slate-800 bg-blue-50/10 border-r border-slate-100 tabular-nums whitespace-nowrap">
                                                         {isPitEditing ? (
                                                             <Input 
                                                                 type="number" 
-                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0" 
+                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
                                                                 value={t.upperBound} 
                                                                 onChange={e => {
                                                                     const val = Number(e.target.value);
@@ -815,7 +824,7 @@ export default function SalaryConfigPage() {
                                                             t.upperBound > 900000000 ? '-' : t.upperBound.toLocaleString('vi-VN', { minimumFractionDigits: 0 })
                                                         )}
                                                     </td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-3 py-4">
                                                         <div className="flex items-center gap-2 justify-center">
                                                             <Input 
                                                                 type="number" 
@@ -864,109 +873,103 @@ export default function SalaryConfigPage() {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
 
-                {activeTab === "pit_rules" && (
-                    <div className="space-y-10">
-                        <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
-                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
-                                <CheckCircle2 size={24} />
+                        {/* Employee Tax Rules Section (Formerly pit_rules) */}
+                        <div className="space-y-8 pt-10 border-t border-slate-100">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
+                                    <CheckCircle2 size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-800 uppercase italic underline decoration-emerald-200 decoration-4 underline-offset-8">Thuế TNCN</h3>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-black text-slate-800">Thuế suất của nhân viên</h3>
-                                <p className="text-muted-foreground text-xs font-medium italic">Thiết lập phương thức tính thuế TNCN riêng biệt cho từng loại hình nhân sự</p>
+
+                            <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="bg-slate-50 border-b border-slate-100">
+                                            <th className="px-8 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400">Loại nhân sự</th>
+                                            <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Miễn thuế</th>
+                                            <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">10% Cố định</th>
+                                            <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Biểu thuế lũy tiến</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {[
+                                            { type: "PROBATION", label: "Thử việc" },
+                                            { type: "TRAINEE", label: "Học việc" },
+                                            { type: "OTHER", label: "Khác" },
+                                            { type: "INTERN", label: "Thực tập sinh" },
+                                            { type: "FULL_TIME", label: "Chính thức" }
+                                        ].map((row) => {
+                                            const config = taxRules.find(r => r.employeeType === row.type) || { employeeType: row.type as any, taxMethod: "PROGRESSIVE" };
+                                            const updateMethod = (method: "EXEMPT" | "FIXED_10" | "PROGRESSIVE") => {
+                                                const newRules = [...taxRules];
+                                                const idx = newRules.findIndex(r => r.employeeType === row.type);
+                                                if (idx > -1) {
+                                                    newRules[idx] = { ...newRules[idx], taxMethod: method };
+                                                } else {
+                                                    newRules.push({ employeeType: row.type as any, taxMethod: method });
+                                                }
+                                                setTaxRules(newRules);
+                                            };
+
+                                            return (
+                                                <tr key={row.type} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-8 py-5 font-bold text-slate-700">{row.label} :</td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <label className="inline-flex items-center cursor-pointer group">
+                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                                config.taxMethod === "EXEMPT" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
+                                                            }`}>
+                                                                <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "EXEMPT"} onChange={() => updateMethod("EXEMPT")} className="hidden" />
+                                                                {config.taxMethod === "EXEMPT" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
+                                                            </div>
+                                                            <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "EXEMPT" ? "text-slate-900" : "text-slate-400"}`}>Miễn thuế</span>
+                                                        </label>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <label className="inline-flex items-center cursor-pointer group">
+                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                                config.taxMethod === "FIXED_10" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
+                                                            }`}>
+                                                                <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "FIXED_10"} onChange={() => updateMethod("FIXED_10")} className="hidden" />
+                                                                {config.taxMethod === "FIXED_10" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
+                                                            </div>
+                                                            <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "FIXED_10" ? "text-slate-900" : "text-slate-400"}`}>10%</span>
+                                                        </label>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <label className="inline-flex items-center cursor-pointer group">
+                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                                config.taxMethod === "PROGRESSIVE" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
+                                                            }`}>
+                                                                <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "PROGRESSIVE"} onChange={() => updateMethod("PROGRESSIVE")} className="hidden" />
+                                                                {config.taxMethod === "PROGRESSIVE" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
+                                                            </div>
+                                                            <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "PROGRESSIVE" ? "text-slate-900" : "text-slate-400"}`}>Theo biểu lũy tiến</span>
+                                                        </label>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
 
-                        <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-slate-50 border-b border-slate-100">
-                                        <th className="px-8 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400">Loại nhân sự</th>
-                                        <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Miễn thuế</th>
-                                        <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">10%</th>
-                                        <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Theo biểu lũy tiến</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {[
-                                        { type: "PROBATION", label: "Thử việc" },
-                                        { type: "TRAINEE", label: "Học việc" },
-                                        { type: "OTHER", label: "Khác" },
-                                        { type: "INTERN", label: "Thực tập sinh" },
-                                        { type: "FULL_TIME", label: "Chính thức" }
-                                    ].map((row) => {
-                                        const config = taxRules.find(r => r.employeeType === row.type) || { employeeType: row.type as any, taxMethod: "PROGRESSIVE" };
-                                        const updateMethod = (method: "EXEMPT" | "FIXED_10" | "PROGRESSIVE") => {
-                                            const newRules = [...taxRules];
-                                            const idx = newRules.findIndex(r => r.employeeType === row.type);
-                                            if (idx > -1) {
-                                                newRules[idx] = { ...newRules[idx], taxMethod: method };
-                                            } else {
-                                                newRules.push({ employeeType: row.type as any, taxMethod: method });
-                                            }
-                                            setTaxRules(newRules);
-                                        };
-
-                                        return (
-                                            <tr key={row.type} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-8 py-5 font-bold text-slate-700">{row.label} :</td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <label className="inline-flex items-center cursor-pointer group">
-                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                                                            config.taxMethod === "EXEMPT" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
-                                                        }`}>
-                                                            <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "EXEMPT"} onChange={() => updateMethod("EXEMPT")} className="hidden" />
-                                                            {config.taxMethod === "EXEMPT" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
-                                                        </div>
-                                                        <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "EXEMPT" ? "text-slate-900" : "text-slate-400"}`}>Miễn thuế</span>
-                                                    </label>
-                                                </td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <label className="inline-flex items-center cursor-pointer group">
-                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                                                            config.taxMethod === "FIXED_10" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
-                                                        }`}>
-                                                            <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "FIXED_10"} onChange={() => updateMethod("FIXED_10")} className="hidden" />
-                                                            {config.taxMethod === "FIXED_10" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
-                                                        </div>
-                                                        <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "FIXED_10" ? "text-slate-900" : "text-slate-400"}`}>10%</span>
-                                                    </label>
-                                                </td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <label className="inline-flex items-center cursor-pointer group">
-                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                                                            config.taxMethod === "PROGRESSIVE" ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-200" : "border-slate-300 group-hover:border-slate-400"
-                                                        }`}>
-                                                            <input type="radio" name={`tax_${row.type}`} checked={config.taxMethod === "PROGRESSIVE"} onChange={() => updateMethod("PROGRESSIVE")} className="hidden" />
-                                                            {config.taxMethod === "PROGRESSIVE" && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
-                                                        </div>
-                                                        <span className={`ml-3 text-xs font-bold transition-colors ${config.taxMethod === "PROGRESSIVE" ? "text-slate-900" : "text-slate-400"}`}>Theo biểu lũy tiến</span>
-                                                    </label>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="flex flex-col gap-4">
-                            <button className="flex items-center gap-2 text-emerald-600 font-black text-sm hover:text-emerald-700 w-fit">
-                                <Plus size={18} /> Thêm
-                            </button>
-
-                            <div className="pt-6 flex items-center gap-4 border-t border-slate-100">
-                                {taxRules.some(r => r.status === 'PENDING') && (userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN")) ? (
-                                    <Button onClick={approveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-black text-sm">
-                                        <CheckCircle2 size={18} /> PHÊ DUYỆT CẤU HÌNH THUẾ
-                                    </Button>
-                                ) : (
-                                    <Button onClick={saveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm">
-                                        <Save size={18} /> {userRoles.includes("ROLE_ADMIN") ? "LƯU CẤU HÌNH THUẾ NGAY" : "GỬI ĐỀ XUẤT CẤU HÌNH THUẾ"}
-                                    </Button>
-                                )}
+                            <div className="flex flex-col gap-4">
+                                <div className="pt-2 flex items-center gap-4">
+                                    {taxRules.some(r => r.status === 'PENDING') && (userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN")) ? (
+                                        <Button onClick={approveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-black text-sm">
+                                            <CheckCircle2 size={18} /> PHÊ DUYỆT PHƯƠNG THỨC TÍNH THUẾ
+                                        </Button>
+                                    ) : (
+                                        <Button onClick={saveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm">
+                                            <Save size={18} /> {userRoles.includes("ROLE_ADMIN") ? "LƯU CẤU HÌNH THUẾ NGAY" : "GỬI ĐỀ XUẤT CẤU HÌNH THUẾ"}
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -975,84 +978,6 @@ export default function SalaryConfigPage() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Modal Chỉnh sửa Tỉ lệ Bảo hiểm */}
-      {isEditModalOpen && editingRate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="bg-[#111827] text-white p-8">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
-                  <Pencil size={20} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black">Chỉnh sửa Tỷ lệ Bảo hiểm</h3>
-                  <p className="text-slate-400 text-xs font-medium">Cập nhật thông số đóng bảo hiểm</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Loại (VD: XH, YT, TN)</label>
-                  <Input 
-                    className="h-12 rounded-xl"
-                    value={editingRate.type}
-                    onChange={e => setEditingRate({...editingRate, type: e.target.value.toUpperCase()})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">NLĐ đóng (%)</label>
-                  <Input 
-                    type="number"
-                    min={0}
-                    className="h-12 rounded-xl font-bold text-blue-600"
-                    value={editingRate.employeeRate}
-                    onChange={e => {
-                        const val = Math.max(0, Number(e.target.value));
-                        setEditingRate(prev => prev ? {...prev, employeeRate: val} : null);
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Doanh nghiệp đóng (%)</label>
-                  <Input 
-                    type="number"
-                    min={0}
-                    className="h-12 rounded-xl font-bold text-indigo-600"
-                    value={editingRate.employerRate}
-                    onChange={e => {
-                        const val = Math.max(0, Number(e.target.value));
-                        setEditingRate(prev => prev ? {...prev, employerRate: val} : null);
-                    }}
-                  />
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Ngày hiệu lực</label>
-                  <Input 
-                    type="date"
-                    className="h-12 rounded-xl"
-                    value={editingRate.effectiveDate}
-                    onChange={e => {
-                        const val = e.target.value;
-                        setEditingRate(prev => prev ? {...prev, effectiveDate: val} : null);
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-2">
-                <Button variant="outline" className="flex-1 h-12 rounded-xl font-black text-xs uppercase" onClick={() => setIsEditModalOpen(false)}>
-                  Hủy bỏ
-                </Button>
-                <Button className="flex-1 h-12 rounded-xl bg-[#111827] text-white font-black text-xs uppercase shadow-lg shadow-slate-200" onClick={updateRate}>
-                  Lưu thay đổi
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

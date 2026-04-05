@@ -19,25 +19,57 @@ public class SystemConfigController {
     @Autowired private TaxTierRepository taxRepo;
     @Autowired private DeductionSettingRepository deductionRepo;
     @Autowired private EmployeeTaxConfigRepository taxConfigRepo;
+    @Autowired private InsuranceConfigRepository insuranceConfigRepo;
 
     // UC 02: Insurance
     @GetMapping("/insurance")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
     public List<InsuranceRate> getInsurance() { return insuranceRepo.findAll(); }
 
-    @PostMapping("/insurance")
+    // NEW: Unified Insurance Config
+    @GetMapping("/insurance-config")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public InsuranceRate saveInsurance(@RequestBody InsuranceRate rate) { 
+    public List<InsuranceConfig> getInsuranceConfig() { return insuranceConfigRepo.findAll(); }
+
+    @PostMapping("/insurance-config")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    public InsuranceConfig saveInsuranceConfig(@RequestBody InsuranceConfig config) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
         boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-        if (isAdmin || isChief) {
-            rate.setStatus("APPROVED");
-        } else {
-            rate.setStatus("PENDING");
+        String status = (isAdmin || isChief) ? "APPROVED" : "PENDING";
+        config.setStatus(status);
+
+        // Delete existing of same status
+        List<InsuranceConfig> existing = insuranceConfigRepo.findAll().stream()
+                .filter(c -> status.equals(c.getStatus())).toList();
+        insuranceConfigRepo.deleteAll(existing);
+
+        config.setId(null);
+        return insuranceConfigRepo.save(config);
+    }
+
+    @PostMapping("/insurance-config/{id}/approve")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    public InsuranceConfig approveInsuranceConfig(@PathVariable Long id) {
+        InsuranceConfig config = insuranceConfigRepo.findById(id).orElseThrow();
+        // Clear all APPROVED
+        List<InsuranceConfig> oldApproved = insuranceConfigRepo.findAll().stream()
+                .filter(c -> "APPROVED".equals(c.getStatus())).toList();
+        insuranceConfigRepo.deleteAll(oldApproved);
+        
+        config.setStatus("APPROVED");
+        return insuranceConfigRepo.save(config);
+    }
+
+    @PostMapping("/insurance-config/{id}/reject")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    public void rejectInsuranceConfig(@PathVariable Long id) {
+        InsuranceConfig config = insuranceConfigRepo.findById(id).orElseThrow();
+        if ("PENDING".equals(config.getStatus())) {
+            insuranceConfigRepo.delete(config);
         }
-        return insuranceRepo.save(rate); 
     }
 
     @PostMapping("/insurance/{id}/approve")
@@ -100,11 +132,17 @@ public class SystemConfigController {
         boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
         boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-        if (isAdmin || isChief) {
-            param.setStatus("APPROVED");
-        } else {
-            param.setStatus("PENDING");
-        }
+        String status = (isAdmin || isChief) ? "APPROVED" : "PENDING";
+        param.setStatus(status);
+        
+        // Luôn đảm bảo chỉ có tối đa 1 bản ghi cho mỗi trạng thái
+        List<SalaryParameter> existing = salaryRepo.findAll().stream()
+                .filter(p -> status.equals(p.getStatus())).toList();
+        salaryRepo.deleteAll(existing);
+        
+        // Reset ID để luôn là bản ghi mới (overwrite)
+        param.setId(null);
+        
         return salaryRepo.save(param); 
     }
 

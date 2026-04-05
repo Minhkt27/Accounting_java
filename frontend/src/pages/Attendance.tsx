@@ -121,9 +121,9 @@ export default function AttendancePage() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       alert("Đã lưu bảng chấm công!")
-    } catch (err: unknown) { 
-        const message = err instanceof Error ? err.message : String(err)
-        alert("Lỗi khi lưu bảng công: " + message) 
+    } catch (err: any) { 
+        const serverMsg = err.response?.data?.message || err.message
+        alert("Lỗi khi lưu bảng công: " + serverMsg) 
     }
   }
 
@@ -165,7 +165,7 @@ export default function AttendancePage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <CalendarDays className="w-6 h-6" /> Chấm công & Ngoài giờ (UC10-12)
+          <CalendarDays className="w-6 h-6" /> Chấm công & Ngoài giờ
         </h1>
         <div className="flex flex-wrap items-center gap-3 bg-muted/50 p-2 rounded-lg border">
             <div className="flex items-center gap-2 border-r pr-4 mr-2">
@@ -186,10 +186,10 @@ export default function AttendancePage() {
             </Button>
             <Button 
               onClick={handleSave} 
-              disabled={year * 12 + month < (new Date().getFullYear() * 12 + new Date().getMonth() + 1)}
+              disabled={false}
               className="gap-2 h-8" 
               size="default"
-              title={year * 12 + month < (new Date().getFullYear() * 12 + new Date().getMonth() + 1) ? "Không thể chỉnh sửa dữ liệu tháng cũ" : ""}
+              title=""
             >
                 <Save className="w-4 h-4" /> Lưu
             </Button>

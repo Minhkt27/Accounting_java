@@ -42,6 +42,10 @@ export interface Payroll {
   bhtnCongTy: number
   kpcdCongTy: number
   totalEmployerInsurance: number
+  taxableIncomeBase: number
+  personalDeduction: number
+  dependentDeduction: number
+  dependentCount: number
   taxableIncome: number
   taxAmount: number
   netPay: number
@@ -82,9 +86,9 @@ export default function PayrollPage() {
       })
       alert(`Đã tính lương xong cho tháng ${month}/${year}`)
       fetchPayrolls()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      alert(message || "Lỗi khi tính lương")
+    } catch (err: any) {
+      const serverMsg = err.response?.data?.message || err.message
+      alert("Lỗi khi tính lương: " + serverMsg)
     } finally {
       setLoading(false)
     }
@@ -98,9 +102,9 @@ export default function PayrollPage() {
       })
       alert("Đã chốt lương thành công!")
       fetchPayrolls()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      alert(message || "Lỗi khi chốt")
+    } catch (err: any) {
+      const serverMsg = err.response?.data?.message || err.message
+      alert("Lỗi khi chốt: " + serverMsg)
     }
   }
 
@@ -111,9 +115,9 @@ export default function PayrollPage() {
       })
       alert("Đã thanh toán lương và tự động sinh chứng từ kế toán thành công!")
       fetchPayrolls()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      alert(message || "Lỗi khi thanh toán")
+    } catch (err: any) {
+      const serverMsg = err.response?.data?.message || err.message
+      alert("Lỗi khi thanh toán: " + serverMsg)
     }
   }
 
@@ -130,9 +134,9 @@ export default function PayrollPage() {
       setShowRejectDialog(false)
       setRejectReason("")
       fetchPayrolls()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      alert(message || "Lỗi khi từ chối")
+    } catch (err: any) {
+      const serverMsg = err.response?.data?.message || err.message
+      alert("Lỗi khi từ chối: " + serverMsg)
     }
   }
 
@@ -147,7 +151,6 @@ export default function PayrollPage() {
       paidLeaveDays: p.paidLeaveDays,
       baseSalaryPay: p.baseSalaryPay,
       mealAllowance: p.mealAllowance,
-      positionAllowance: p.positionAllowance,
       seniorityAllowance: p.seniorityAllowance,
       otPay: p.otPay,
       grossIncome: p.grossIncome,
@@ -173,7 +176,6 @@ export default function PayrollPage() {
         paidLeaveDays: "Ngày phép",
         baseSalaryPay: "Lương thời gian",
         mealAllowance: "Phụ cấp ăn",
-        positionAllowance: "Phụ cấp CV",
         seniorityAllowance: "Phụ cấp TN",
         otPay: "Tiền OT",
         grossIncome: "Tổng thu nhập",
@@ -189,7 +191,7 @@ export default function PayrollPage() {
 
 
   const formatVND = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0)
+    return new Intl.NumberFormat('vi-VN').format(Math.round(val || 0))
   }
 
   const isCurrentOrFuture = year * 12 + month >= (new Date().getFullYear() * 12 + new Date().getMonth() + 1);
@@ -202,7 +204,7 @@ export default function PayrollPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Calculator className="w-6 h-6 text-primary" /> Quản lý Lương (Payroll)
+          <Calculator className="w-6 h-6 text-primary" /> Quản lý Tiền lương
         </h1>
         
         <div className="flex flex-nowrap items-center gap-3 bg-muted/30 p-2 rounded-xl border shadow-sm overflow-x-auto scrollbar-hide flex-shrink-0">
@@ -269,7 +271,7 @@ export default function PayrollPage() {
                 <th className="px-4 py-4 font-medium text-right bg-primary/95">Ngày phép</th>
                 <th className="px-4 py-4 font-medium text-right">Lương thời gian</th>
                 <th className="px-4 py-4 font-medium text-right">Phụ cấp/OT</th>
-                <th className="px-4 py-4 font-bold text-right text-blue-300">Tổng thu nhâp</th>
+                <th className="px-4 py-4 font-black text-blue-300 text-right">Tổng thu nhập</th>
                 <th className="px-4 py-4 font-medium text-right text-red-300">Bảo hiểm</th>
                 <th className="px-4 py-4 font-medium text-right text-red-300">Thuế TNCN</th>
               </tr>
@@ -306,10 +308,10 @@ export default function PayrollPage() {
                   <td className="px-4 py-4 text-right font-medium text-slate-500 tabular-nums bg-muted/20">{p.realWorkDays}</td>
                   <td className="px-4 py-4 text-right font-bold text-green-600 tabular-nums bg-muted/20">+{p.paidLeaveDays || 0}</td>
                   <td className="px-4 py-4 text-right font-bold tabular-nums text-primary/80">{formatVND(p.baseSalaryPay)}</td>
-                  <td className="px-4 py-4 text-right tabular-nums">{formatVND(p.mealAllowance + p.otPay)}</td>
+                  <td className="px-4 py-4 text-right tabular-nums">{formatVND(p.mealAllowance + p.otPay + (p.seniorityAllowance || 0))}</td>
                   <td className="px-4 py-4 text-right font-black text-blue-600 dark:text-blue-400 tabular-nums">{formatVND(p.grossIncome)}</td>
-                  <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">-{formatVND(p.totalInsurance)}</td>
-                  <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">-{formatVND(p.taxAmount)}</td>
+                  <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">{formatVND(Math.abs(p.totalInsurance))}</td>
+                  <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">{formatVND(Math.abs(p.taxAmount))}</td>
                 </tr>
               ))}
               {payrolls.length === 0 && (

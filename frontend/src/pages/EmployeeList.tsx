@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Plus, UserRoundCheck, Edit, Trash2, Eye, X, FileUp, FileText, FileSpreadsheet, Mail, Phone, MapPin, Calendar } from "lucide-react"
+import { Plus, UserRoundCheck, Edit, Trash2, Eye, X, FileUp, FileText, FileSpreadsheet, Mail, Phone, MapPin } from "lucide-react"
 import { ExportService } from "../utils/ExportService"
 
 interface Employee {
@@ -143,7 +143,7 @@ export default function EmployeeList() {
     setShowForm(false)
     setIsEditing(false)
     setViewOnly(false)
-    setCurrentEmp({ id: "", fullName: "", contractSalary: 0, dependentCount: 0, positionCoefficient: 0.0, seniorityAllowance: 0.0, employeeType: "FULL_TIME", active: true, dob: "", phone: "", email: "", hometown: "", department: "Kế toán" })
+    setCurrentEmp({ id: "", fullName: "", contractSalary: 0, dependentCount: 0, seniorityAllowance: 0.0, employeeType: "FULL_TIME", active: true, dob: "", phone: "", email: "", hometown: "", department: "Kế toán" })
     setSelectedFile(null)
   }
 
@@ -242,19 +242,18 @@ export default function EmployeeList() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Lương hợp đồng (VNĐ)</label>
                 <Input 
-                type="number" 
-                min={0}
-                value={currentEmp.contractSalary ?? ""} 
+                type="text" 
+                value={new Intl.NumberFormat('vi-VN').format(currentEmp.contractSalary || 0)} 
                 onChange={e => {
-                  e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                  setCurrentEmp({...currentEmp, contractSalary: e.target.value === "" ? 0 : Number(e.target.value)})
+                  const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                  setCurrentEmp({...currentEmp, contractSalary: raw === "" ? 0 : Number(raw)})
                 }} 
                 disabled={viewOnly}
                 required 
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Người phụ thuộc</label>
+              <label className="text-sm font-medium">Số người phụ thuộc</label>
               <Input 
                 type="number" 
                 min={0}
@@ -266,32 +265,16 @@ export default function EmployeeList() {
                 disabled={viewOnly}
               /></div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Hệ số chức vụ (0.4-1.0)</label>
-                <Input 
-                  type="number" 
-                  min={0}
-                  step="0.1"
-                  value={currentEmp.positionCoefficient ?? ""} 
-                  onChange={e => {
-                    e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                    setCurrentEmp({...currentEmp, positionCoefficient: e.target.value === "" ? 0 : Number(e.target.value)})
-                  }} 
-                  disabled={viewOnly}
-                  placeholder="0.8"
-                />
-              </div>
-              <div className="space-y-2">
                 <label className="text-sm font-medium">Phụ cấp thâm niên (VNĐ)</label>
                 <Input 
-                  type="number" 
-                  min={0}
-                  value={currentEmp.seniorityAllowance ?? ""} 
+                  type="text" 
+                  value={new Intl.NumberFormat('vi-VN').format(currentEmp.seniorityAllowance || 0)} 
                   onChange={e => {
-                    e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                    setCurrentEmp({...currentEmp, seniorityAllowance: e.target.value === "" ? 0 : Number(e.target.value)})
+                    const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                    setCurrentEmp({...currentEmp, seniorityAllowance: raw === "" ? 0 : Number(raw)})
                   }} 
                   disabled={viewOnly}
-                  placeholder="500,000"
+                  placeholder="0"
                 />
               </div>
               <div className="space-y-2">
