@@ -8,8 +8,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * PermissionService — kiểm tra quyền truy cập động từ Database.
@@ -28,14 +26,16 @@ public class PermissionService {
      */
     public boolean check(String functionCode) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return false;
+        if (auth == null || !auth.isAuthenticated())
+            return false;
 
         Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
 
         // ADMIN bypass — luôn có mọi quyền
         boolean isAdmin = authorities.stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        if (isAdmin) return true;
+        if (isAdmin)
+            return true;
 
         // Kiểm tra từng role của user với functionCode
         for (GrantedAuthority authority : authorities) {

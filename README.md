@@ -89,6 +89,14 @@ A modern, high-performance desktop-style web application for comprehensive payro
     docker compose up --build -d
     ```
 
+    > [!TIP]
+    > **Troubleshooting Database Errors after Pull**:
+    > If you pull new code and experience database errors (e.g., missing columns/tables), it is likely due to schema changes. You can reset your local database environment with:
+    > ```bash
+    > docker compose down -v  # Stop and REMOVE all data volumes
+    > docker compose up -d    # Recreate and re-seed clean database
+    > ```
+
 3.  **Access the Application**:
     *   Frontend: [http://localhost:3000](http://localhost:3000)
     *   Backend API Docs (Optional): [http://localhost:8888/swagger-ui.html](http://localhost:8888/swagger-ui.html) (if enabled)
