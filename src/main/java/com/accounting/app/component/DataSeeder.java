@@ -35,12 +35,12 @@ public class DataSeeder implements CommandLineRunner {
         
         // Seed UC 01: Account Categories (Standard Accounting)
         if (accountRepo.count() == 0) {
-            accountRepo.save(new AccountCategory("642", "Chi phí quản lý doanh nghiệp", "DEBIT"));
-            accountRepo.save(new AccountCategory("334", "Phải trả người lao động", "CREDIT"));
-            accountRepo.save(new AccountCategory("111", "Tiền mặt", "CREDIT"));
-            accountRepo.save(new AccountCategory("112", "Tiền gửi ngân hàng", "CREDIT"));
-            accountRepo.save(new AccountCategory("338", "Phải trả, phải nộp khác (BH)", "CREDIT"));
-            accountRepo.save(new AccountCategory("3335", "Thuế TNCN phải nộp", "CREDIT"));
+            accountRepo.save(new AccountCategory("642", "Chi phí quản lý doanh nghiệp", "Nợ"));
+            accountRepo.save(new AccountCategory("334", "Phải trả người lao động", "Có"));
+            accountRepo.save(new AccountCategory("111", "Tiền mặt", "Có"));
+            accountRepo.save(new AccountCategory("112", "Tiền gửi ngân hàng", "Có"));
+            accountRepo.save(new AccountCategory("338", "Phải trả, phải nộp khác (BH)", "Có"));
+            accountRepo.save(new AccountCategory("3335", "Thuế TNCN phải nộp", "Có"));
             
             // Tự động approve các tài khoản mẫu
             accountRepo.findAll().forEach(a -> a.setStatus("APPROVED"));

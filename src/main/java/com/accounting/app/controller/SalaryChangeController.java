@@ -11,7 +11,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,8 +19,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/salary-changes")
 public class SalaryChangeController {
 
-    @Autowired private SalaryChangeRepository changeRepo;
-    @Autowired private EmployeeRepository employeeRepo;
+    @Autowired
+    private SalaryChangeRepository changeRepo;
+    @Autowired
+    private EmployeeRepository employeeRepo;
 
     /**
      * Lấy danh sách tất cả biến động (hỗ trợ filter theo status)
@@ -91,7 +92,7 @@ public class SalaryChangeController {
                 change.setStatus("APPROVED");
                 change.setApprovedBy(auth.getName());
                 change.setApprovedAt(java.time.LocalDateTime.now());
-                
+
                 // Tự động cập nhật lương nếu là Điều chỉnh lương hoặc Thăng chức
                 if ("SALARY_ADJUSTMENT".equals(change.getChangeType()) || "PROMOTION".equals(change.getChangeType())) {
                     emp.setContractSalary(change.getNewValue());
@@ -101,9 +102,10 @@ public class SalaryChangeController {
 
             changeRepo.save(change);
             return ResponseEntity.ok(Map.of(
-                "message", change.getStatus().equals("APPROVED") ? "Đã cập nhật biến động thành công!" : "Đã tạo đề xuất biến động thành công", 
-                "status", change.getStatus()
-            ));
+                    "message",
+                    change.getStatus().equals("APPROVED") ? "Đã cập nhật biến động thành công!"
+                            : "Đã tạo đề xuất biến động thành công",
+                    "status", change.getStatus()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi: " + e.getMessage()));
         }
@@ -125,11 +127,12 @@ public class SalaryChangeController {
             change.setReason((String) body.get("reason"));
             change.setEffectiveDate(java.time.LocalDate.parse((String) body.get("effectiveDate")));
 
-            // Nếu HR hoặc Admin sửa => đảm bảo trạng thái APPROVED và cập nhật lương nhân viên
+            // Nếu HR hoặc Admin sửa => đảm bảo trạng thái APPROVED và cập nhật lương nhân
+            // viên
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
             boolean isHR = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_NHAN_SU"));
-            
+
             if (isAdmin || isHR) {
                 change.setStatus("APPROVED");
                 if ("SALARY_ADJUSTMENT".equals(change.getChangeType()) || "PROMOTION".equals(change.getChangeType())) {
@@ -163,8 +166,10 @@ public class SalaryChangeController {
     }
 
     private Double toDouble(Object val) {
-        if (val == null) return 0.0;
-        if (val instanceof Number) return ((Number) val).doubleValue();
+        if (val == null)
+            return 0.0;
+        if (val instanceof Number)
+            return ((Number) val).doubleValue();
         return Double.parseDouble(val.toString());
     }
 }

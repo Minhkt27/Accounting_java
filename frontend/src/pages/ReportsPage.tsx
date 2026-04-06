@@ -134,24 +134,61 @@ export default function ReportsPage() {
   const formatVND = (val: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(val || 0).replace('₫', 'đ')
 
-  const chartData = useMemo(() => {
-    if (!data) return []
-    return [
-      { name: 'Thực lĩnh', value: data.totalNetPay },
-      { name: 'BH (DN)', value: data.totalEmployerInsurance },
-      { name: 'Thuế TNCN', value: data.totalTax },
-      { name: 'BH (NLĐ)', value: data.totalInsurance },
-    ]
-  }, [data])
+  // Filter details to only include APPROVED or PAID statuses
+  const lockedDetails = useMemo(() => {
+    if (!data) return [];
+    return data.details.filter(d => d.status === 'APPROVED' || d.status === 'PAID');
+  }, [data]);
 
-  const insuranceDetailsData = useMemo(() => {
-      if (!data) return []
+  const lockedInsuranceDetails = useMemo(() => {
+    if (!insuranceData) return [];
+    return insuranceData.details.filter(d => d.status === 'APPROVED' || d.status === 'PAID');
+  }, [insuranceData]);
+
+  const lockedTaxDetails = useMemo(() => {
+    if (!taxData) return [];
+    return taxData.details.filter(d => d.status === 'APPROVED' || d.status === 'PAID');
+  }, [taxData]);
+
+  const lockedUnionDetails = useMemo(() => {
+    if (!unionData) return [];
+    return unionData.details.filter(d => d.status === 'APPROVED' || d.status === 'PAID');
+  }, [unionData]);
+
+  // Derived stats based on LOCKED data only
+  const stats = useMemo(() => {
+    const list = lockedDetails;
+    return {
+      count: list.length,
+      totalNetPay: list.reduce((sum, d) => sum + d.netPay, 0),
+      totalInsurance: list.reduce((sum, d) => sum + d.totalInsurance, 0),
+      totalEmployerInsurance: list.reduce((sum, d) => sum + d.totalEmployerInsurance, 0),
+      totalTax: list.reduce((sum, d) => sum + d.taxAmount, 0),
+      totalGross: list.reduce((sum, d) => sum + d.grossIncome, 0),
+      totalBHXH: list.reduce((sum, d) => sum + (d.bhxh || 0), 0),
+      totalBHYT: list.reduce((sum, d) => sum + (d.bhyt || 0), 0),
+      totalBHTN: list.reduce((sum, d) => sum + (d.bhtn || 0), 0),
+    };
+  }, [lockedDetails]);
+
+  const chartData = useMemo(() => {
+    if (stats.count === 0) return []
+    return [
+      { name: 'Thực lĩnh', value: stats.totalNetPay },
+      { name: 'BH (DN)', value: stats.totalEmployerInsurance },
+      { name: 'Thuế TNCN', value: stats.totalTax },
+      { name: 'BH (NLĐ)', value: stats.totalInsurance },
+    ]
+  }, [stats])
+
+  const insuranceChartsData = useMemo(() => {
+      if (stats.count === 0) return []
       return [
-          { name: 'BHXH (17.5%+8%)', value: data.totalBHXH },
-          { name: 'BHYT (3%+1.5%)', value: data.totalBHYT },
-          { name: 'BHTN (1%+1%)', value: data.totalBHTN }
+          { name: 'BHXH', value: stats.totalBHXH },
+          { name: 'BHYT', value: stats.totalBHYT },
+          { name: 'BHTN', value: stats.totalBHTN }
       ]
-  }, [data])
+  }, [stats])
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -170,7 +207,7 @@ export default function ReportsPage() {
                 <input 
                     type="number" 
                     value={month} 
-                    onChange={e => setMonth(Number(e.target.value))} 
+                    onChange={e => setMonth(Math.max(1, Math.min(12, Number(e.target.value))))} 
                     className="pl-10 pr-4 py-2.5 w-24 bg-slate-50 rounded-xl font-black text-sm border-none focus:ring-2 focus:ring-primary/20 transition-all"
                     placeholder="MM"
                 />
@@ -180,7 +217,7 @@ export default function ReportsPage() {
                 <input 
                     type="number" 
                     value={year} 
-                    onChange={e => setYear(Number(e.target.value))} 
+                    onChange={e => setYear(Math.max(2000, Number(e.target.value)))} 
                     className="pl-10 pr-4 py-2.5 w-32 bg-slate-50 rounded-xl font-black text-sm border-none focus:ring-2 focus:ring-primary/20 transition-all"
                     placeholder="YYYY"
                 />
@@ -212,6 +249,16 @@ export default function ReportsPage() {
           ))}
       </div>
 
+      {stats.count === 0 && (
+          <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-sm">
+                <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-6">
+                    <Shield size={48} />
+                </div>
+                <h3 className="text-2xl font-black text-slate-800 italic uppercase">Chưa có báo cáo kỳ này</h3>
+                <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-2">Báo cáo chỉ hiển thị sau khi bảng lương đã được phê duyệt</p>
+          </div>
+      )}
+
       <AnimatePresence mode="wait">
         <motion.div
             key={activeTab}
@@ -220,15 +267,15 @@ export default function ReportsPage() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
         >
-          {activeTab === "summary" && data && (
+          {activeTab === "summary" && stats.count > 0 && (
             <div className="space-y-10">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                        { label: 'Nhân sự', value: `${data.employeeCount} Người`, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { label: 'BH Doanh nghiệp', value: formatVND(data.totalEmployerInsurance), icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-50' },
-                        { label: 'Thuế TNCN', value: formatVND(data.totalTax), icon: Wallet, color: 'text-red-600', bg: 'bg-red-50' },
-                        { label: 'Tổng CP Lương', value: formatVND(data.totalGrossIncome + data.totalEmployerInsurance), icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+                        { label: 'Nhân sự', value: `${stats.count} Người`, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+                        { label: 'BH Doanh nghiệp', value: formatVND(stats.totalEmployerInsurance), icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-50' },
+                        { label: 'Thuế TNCN', value: formatVND(stats.totalTax), icon: Wallet, color: 'text-red-600', bg: 'bg-red-50' },
+                        { label: 'Tổng CP Lương', value: formatVND(stats.totalGross + stats.totalEmployerInsurance), icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' }
                     ].map((s, i) => (
                         <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
                             <div className={`w-12 h-12 ${s.bg} rounded-2xl flex items-center justify-center ${s.color}`}>
@@ -266,8 +313,8 @@ export default function ReportsPage() {
                         <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={insuranceDetailsData} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value" stroke="none">
-                                        {insuranceDetailsData.map((_entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b'][index % 3]} />)}
+                                    <Pie data={insuranceChartsData} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value" stroke="none">
+                                        {insuranceChartsData.map((_entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b'][index % 3]} />)}
                                     </Pie>
                                     <Tooltip contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }} />
                                     <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }} />
@@ -307,15 +354,29 @@ export default function ReportsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {data.details.filter(d => d.fullName.toLowerCase().includes(searchTerm.toLowerCase())).map(d => (
+                                {lockedDetails.filter(d => d.fullName.toLowerCase().includes(searchTerm.toLowerCase())).map(d => (
                                     <tr key={d.employeeId} className="group hover:bg-slate-50/50 transition-all">
                                         <td className="px-8 py-6 pl-10">
                                             <span className="font-black text-slate-400 text-xs uppercase">#{d.employeeId}</span>
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="font-black text-slate-800 text-sm">{d.fullName}</div>
-                                            <div className="text-[10px] font-bold text-emerald-500 uppercase flex items-center gap-1">
-                                                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> Đã chốt lương
+                                            <div className={`text-[10px] font-bold uppercase flex items-center gap-1 ${
+                                                d.status === 'PAID' ? 'text-indigo-500' :
+                                                d.status === 'APPROVED' ? 'text-emerald-500' :
+                                                d.status === 'REJECTED' ? 'text-red-500' :
+                                                'text-slate-400'
+                                            }`}>
+                                                <div className={`w-1 h-1 rounded-full animate-pulse ${
+                                                    d.status === 'PAID' ? 'bg-indigo-500' :
+                                                    d.status === 'APPROVED' ? 'bg-emerald-500' :
+                                                    d.status === 'REJECTED' ? 'bg-red-500' :
+                                                    'bg-slate-400'
+                                                }`} />
+                                                {d.status === 'PAID' ? 'Đã thanh toán' : 
+                                                 d.status === 'APPROVED' ? 'Đã chốt lương' :
+                                                 d.status === 'REJECTED' ? 'Bị từ chối' :
+                                                 'Bản nháp (Chưa chốt)'}
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
@@ -326,7 +387,6 @@ export default function ReportsPage() {
                                         </td>
                                         <td className="px-8 py-6 text-right pr-10">
                                             <div className="font-black text-red-500 text-sm">{formatVND(d.taxAmount)}</div>
-                                            {d.taxAmount > 0 && <span className="text-[10px] font-black text-red-300 uppercase tracking-tighter">Bậc {Math.ceil(Math.random()*7)}</span>}
                                         </td>
                                     </tr>
                                 ))}
@@ -337,7 +397,7 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {activeTab === "insurance" && insuranceData && (
+          {activeTab === "insurance" && lockedInsuranceDetails.length > 0 && (
               <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden">
                   <div className="p-8 border-b border-slate-50 flex items-center justify-between">
                         <div>
@@ -357,7 +417,7 @@ export default function ReportsPage() {
                               </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
-                              {insuranceData.details.map((item: InsuranceDetail) => (
+                               {lockedInsuranceDetails.map((item: InsuranceDetail) => (
                                   <tr key={item.employeeId} className="hover:bg-slate-50 transition-colors">
                                       <td className="px-8 py-6 pl-10 text-xs font-black text-slate-400">#{item.employeeId}</td>
                                       <td className="px-8 py-6 font-black text-slate-800 text-sm">{item.fullName}</td>
@@ -372,7 +432,7 @@ export default function ReportsPage() {
               </div>
           )}
 
-          {activeTab === "tax" && taxData && (
+          {activeTab === "tax" && lockedTaxDetails.length > 0 && (
               <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden">
                   <div className="p-8 border-b border-slate-50 flex items-center justify-between">
                         <div>
@@ -392,7 +452,7 @@ export default function ReportsPage() {
                               </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
-                              {taxData.details.map((item: TaxDetail) => (
+                               {lockedTaxDetails.map((item: TaxDetail) => (
                                   <tr key={item.employeeId} className="hover:bg-slate-50 transition-colors">
                                       <td className="px-8 py-6 pl-10 text-xs font-black text-slate-400">#{item.employeeId}</td>
                                       <td className="px-8 py-6 font-black text-slate-800 text-sm">{item.fullName}</td>
@@ -407,7 +467,7 @@ export default function ReportsPage() {
               </div>
           )}
 
-          {activeTab === "union" && unionData && (
+          {activeTab === "union" && lockedUnionDetails.length > 0 && (
               <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden">
                   <div className="p-8 border-b border-slate-50 flex items-center justify-between">
                         <div>
@@ -426,7 +486,7 @@ export default function ReportsPage() {
                               </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
-                              {unionData.details.map((item: UnionDetail) => (
+                               {lockedUnionDetails.map((item: UnionDetail) => (
                                   <tr key={item.employeeId} className="hover:bg-slate-50 transition-colors">
                                       <td className="px-8 py-6 pl-10 text-xs font-black text-slate-400">#{item.employeeId}</td>
                                       <td className="px-8 py-6 font-black text-slate-800 text-sm">{item.fullName}</td>

@@ -119,14 +119,6 @@ export default function DashboardPage() {
                 Kỳ dữ liệu: {summary?.month}/{summary?.year}
             </p>
         </div>
-        <div className="flex gap-3">
-            <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-                Xuất Sổ cái
-            </button>
-            <button className="px-6 py-2.5 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
-                Cập nhật báo cáo
-            </button>
-        </div>
       </div>
 
       {/* Summary Cards Grid */}

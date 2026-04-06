@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { 
   Plus, Search, ShieldAlert, CheckCircle2, 
-  BookOpen, Hash, Type, Activity
+  BookOpen, Hash, Type, Activity, Pencil, Trash2, X,
+  Check, Ban, AlertCircle
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "../components/ui/button"
@@ -15,6 +16,15 @@ interface AccountCategory {
   status: string;
 }
 
+function useCurrentUser() {
+  try {
+    const raw = localStorage.getItem("user")
+    if (!raw) return { username: "?", roles: [] as string[] }
+    const data = JSON.parse(raw)
+    return { username: data.username || "?", roles: (data.roles || []) as string[] }
+  } catch { return { username: "?", roles: [] as string[] } }
+}
+
 export default function AccountCategoryPage() {
   const [accounts, setAccounts] = useState<AccountCategory[]>([])
   const [id, setId] = useState("")
@@ -22,6 +32,10 @@ export default function AccountCategoryPage() {
   const [type, setType] = useState("Nợ")
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState("")
+  const [isEditing, setIsEditing] = useState(false)
+
+  const { roles } = useCurrentUser()
+  const isApprover = roles.includes("ROLE_ADMIN") || roles.includes("ROLE_KE_TOAN_TRUONG")
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -48,16 +62,74 @@ export default function AccountCategoryPage() {
     e.preventDefault()
     try {
       const token = localStorage.getItem("token")
-      await axios.post("/api/config/accounts", { id, name, type }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      if (isEditing) {
+        await axios.put(`/api/config/accounts/${id}`, { name, type }, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      } else {
+        await axios.post("/api/config/accounts", { id, name, type }, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      }
       fetchAccounts()
-      setId("")
-      setName("")
+      cancelEdit()
       setError("")
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       setError("Lỗi lưu dữ liệu: " + message)
+    }
+  }
+
+  const handleEdit = (acc: AccountCategory) => {
+    setId(acc.id)
+    setName(acc.name)
+    setType(acc.type === 'DEBIT' ? 'Nợ' : acc.type === 'CREDIT' ? 'Có' : acc.type)
+    setIsEditing(true)
+  }
+
+  const handleDelete = async (accountId: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa tài khoản ${accountId}?`)) return
+    try {
+      const token = localStorage.getItem("token")
+      await axios.delete(`/api/config/accounts/${accountId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      fetchAccounts()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      setError("Không thể xóa tài khoản. Lưu ý: Tài khoản đã phát sinh giao dịch sẽ không thể xóa.")
+    }
+  }
+
+  const cancelEdit = () => {
+    setId("")
+    setName("")
+    setType("Nợ")
+    setIsEditing(false)
+  }
+
+  const handleApprove = async (accountId: string) => {
+    try {
+      const token = localStorage.getItem("token")
+      await axios.put(`/api/config/accounts/${accountId}/approve`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      fetchAccounts()
+    } catch (err: unknown) {
+      setError("Lỗi phê duyệt: " + (err instanceof Error ? err.message : String(err)))
+    }
+  }
+
+  const handleReject = async (accountId: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn từ chối tài khoản ${accountId}?`)) return
+    try {
+      const token = localStorage.getItem("token")
+      await axios.put(`/api/config/accounts/${accountId}/reject`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      fetchAccounts()
+    } catch (err: unknown) {
+      setError("Lỗi từ chối: " + (err instanceof Error ? err.message : String(err)))
     }
   }
 
@@ -68,7 +140,6 @@ export default function AccountCategoryPage() {
             <h1 className="text-4xl font-black tracking-tighter text-slate-800 flex items-center gap-3 uppercase">
                 <BookOpen className="w-10 h-10 text-primary" /> Hệ thống Tài khoản
             </h1>
-            <p className="text-muted-foreground font-medium text-sm">Quản lý danh mục tài khoản kế toán doanh nghiệp (UC01)</p>
         </div>
       </div>
 
@@ -99,7 +170,8 @@ export default function AccountCategoryPage() {
                             onChange={(e) => setId(e.target.value)} 
                             placeholder="Ví dụ: 334, 642..." 
                             required 
-                            className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800"
+                            disabled={isEditing}
+                            className={`h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800 ${isEditing ? 'opacity-50' : ''}`}
                         />
                     </div>
                     
@@ -138,9 +210,17 @@ export default function AccountCategoryPage() {
                         </div>
                     </div>
 
-                    <Button type="submit" className="w-full h-14 rounded-2xl bg-[#111827] text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95 mt-4">
-                        <Plus className="w-4 h-4 mr-2"/> Lưu tài khoản
-                    </Button>
+                    <div className="flex gap-3">
+                        <Button type="submit" className="flex-1 h-14 rounded-2xl bg-[#111827] text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95 mt-4">
+                            {isEditing ? <Pencil className="w-4 h-4 mr-2"/> : <Plus className="w-4 h-4 mr-2"/>}
+                            {isEditing ? 'Cập nhật' : 'Lưu tài khoản'}
+                        </Button>
+                        {isEditing && (
+                            <Button type="button" onClick={cancelEdit} className="h-14 mt-4 px-6 rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all font-black text-xs uppercase tracking-widest">
+                                <X className="w-4 h-4" />
+                            </Button>
+                        )}
+                    </div>
                 </form>
 
             </div>
@@ -171,8 +251,9 @@ export default function AccountCategoryPage() {
                             <tr className="bg-slate-50/50">
                                 <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest pl-10">Mã TK</th>
                                 <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Tên tài khoản</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Tư thế</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center pr-10">Trạng thái</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Loại</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Trạng thái</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right pr-10">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -200,18 +281,23 @@ export default function AccountCategoryPage() {
                                     </td>
                                     <td className="px-8 py-6 text-center">
                                         <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                                            acc.type === 'Nợ' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                                            acc.type === 'Có' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-600 border-slate-100'
+                                            (acc.type === 'Nợ' || acc.type === 'DEBIT') ? 'bg-blue-50 text-blue-600 border-blue-100' : 
+                                            (acc.type === 'Có' || acc.type === 'CREDIT') ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-600 border-slate-100'
                                         }`}>
-                                            {acc.type}
+                                            {acc.type === 'DEBIT' ? 'Nợ' : acc.type === 'CREDIT' ? 'Có' : acc.type}
                                         </span>
                                     </td>
-                                    <td className="px-8 py-6 text-center pr-10">
+                                    <td className="px-8 py-6 text-center">
                                         <div className="flex flex-col items-center gap-1">
                                             {acc.status === 'APPROVED' ? (
                                                 <div className="flex items-center gap-1 text-emerald-500">
                                                     <CheckCircle2 size={14} />
                                                     <span className="text-[10px] font-bold uppercase tracking-widest">Đã duyệt</span>
+                                                </div>
+                                            ) : acc.status === 'REJECTED' ? (
+                                                <div className="flex items-center gap-1 text-red-500">
+                                                    <AlertCircle size={14} />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Từ chối</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-1 text-amber-500">
@@ -219,6 +305,40 @@ export default function AccountCategoryPage() {
                                                     <span className="text-[10px] font-bold uppercase tracking-widest">Đang chờ</span>
                                                 </div>
                                             )}
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6 text-right pr-10">
+                                        <div className="flex items-center justify-end gap-2 text-slate-300">
+                                            {acc.status === 'PENDING' && isApprover && (
+                                                <>
+                                                    <button 
+                                                        onClick={() => handleApprove(acc.id)}
+                                                        className="p-2 hover:bg-emerald-50 rounded-xl hover:text-emerald-500 transition-all"
+                                                        title="Phê duyệt"
+                                                    >
+                                                        <Check size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleReject(acc.id)}
+                                                        className="p-2 hover:bg-red-50 rounded-xl hover:text-red-500 transition-all"
+                                                        title="Từ chối"
+                                                    >
+                                                        <Ban size={16} />
+                                                    </button>
+                                                </>
+                                            )}
+                                            <button 
+                                                onClick={() => handleEdit(acc)}
+                                                className="p-2 hover:bg-slate-100 rounded-xl hover:text-primary transition-all"
+                                            >
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDelete(acc.id)}
+                                                className="p-2 hover:bg-red-50 rounded-xl hover:text-red-500 transition-all"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

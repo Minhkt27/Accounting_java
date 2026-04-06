@@ -174,11 +174,11 @@ export default function AttendancePage() {
             </div>
             <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase text-muted-foreground">T{month}</span>
-                <Input type="number" className="w-16 h-8" value={month} onChange={e => setMonth(Number(e.target.value))} />
+                <Input type="number" className="w-16 h-8" value={month} onChange={e => setMonth(Math.max(1, Math.min(12, Number(e.target.value))))} />
             </div>
             <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase text-muted-foreground">/</span>
-                <Input type="number" className="w-20 h-8" value={year} onChange={e => setYear(Number(e.target.value))} />
+                <Input type="number" className="w-20 h-8" value={year} onChange={e => setYear(Math.max(2000, Number(e.target.value)))} />
             </div>
             <div className="w-[1px] h-6 bg-slate-300 mx-1" />
             <Button variant="outline" onClick={handleExportExcel} className="gap-2 h-8 border-green-600 text-green-600 hover:bg-green-50">
@@ -186,10 +186,10 @@ export default function AttendancePage() {
             </Button>
             <Button 
               onClick={handleSave} 
-              disabled={false}
+              disabled={year * 12 + month < (new Date().getFullYear() * 12 + new Date().getMonth() + 1)}
               className="gap-2 h-8" 
               size="default"
-              title=""
+              title={year * 12 + month < (new Date().getFullYear() * 12 + new Date().getMonth() + 1) ? "Không thể chỉnh sửa dữ liệu tháng cũ" : ""}
             >
                 <Save className="w-4 h-4" /> Lưu
             </Button>
@@ -280,7 +280,7 @@ export default function AttendancePage() {
                           type="number"
                           className="w-16 mx-auto text-center" 
                           value={att.otNormalHours || 0} 
-                          onChange={e => handleUpdateLine(idx, "otNormalHours", Number(e.target.value))} 
+                          onChange={e => handleUpdateLine(idx, "otNormalHours", Math.max(0, Number(e.target.value)))} 
                       />
                   </td>
                   <td className="px-4 py-4 text-center">
@@ -288,7 +288,7 @@ export default function AttendancePage() {
                           type="number"
                           className="w-16 mx-auto text-center" 
                           value={att.otWeekendHours || 0} 
-                          onChange={e => handleUpdateLine(idx, "otWeekendHours", Number(e.target.value))} 
+                          onChange={e => handleUpdateLine(idx, "otWeekendHours", Math.max(0, Number(e.target.value)))} 
                       />
                   </td>
                   <td className="px-4 py-4 text-center">
@@ -296,7 +296,7 @@ export default function AttendancePage() {
                           type="number"
                           className="w-16 mx-auto text-center" 
                           value={att.otHolidayHours || 0} 
-                          onChange={e => handleUpdateLine(idx, "otHolidayHours", Number(e.target.value))} 
+                          onChange={e => handleUpdateLine(idx, "otHolidayHours", Math.max(0, Number(e.target.value)))} 
                       />
                   </td>
                   <td className="px-6 py-4 text-center font-black text-primary text-base">

@@ -87,9 +87,9 @@ export default function GeneralLedgerPage() {
             <div className="hidden lg:block h-6 w-[1px] bg-border"></div>
 
             <div className="flex items-center gap-2 px-2">
-              <Input type="number" className="w-16 h-8 text-center bg-white font-medium shadow-sm transition-all focus:border-primary" value={month} onChange={e => setMonth(Number(e.target.value))} />
+              <Input type="number" className="w-16 h-8 text-center bg-white font-medium shadow-sm transition-all focus:border-primary" value={month} onChange={e => setMonth(Math.max(1, Math.min(12, Number(e.target.value))))} />
               <span className="text-muted-foreground font-bold">/</span>
-              <Input type="number" className="w-20 h-8 text-center bg-white font-medium shadow-sm transition-all focus:border-primary" value={year} onChange={e => setYear(Number(e.target.value))} />
+              <Input type="number" className="w-20 h-8 text-center bg-white font-medium shadow-sm transition-all focus:border-primary" value={year} onChange={e => setYear(Math.max(2000, Number(e.target.value)))} />
             </div>
             
             <div className="hidden lg:block h-6 w-[1px] bg-border"></div>

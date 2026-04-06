@@ -210,9 +210,9 @@ export default function PayrollPage() {
         <div className="flex flex-nowrap items-center gap-3 bg-muted/30 p-2 rounded-xl border shadow-sm overflow-x-auto scrollbar-hide flex-shrink-0">
           <div className="flex items-center gap-2 border-r pr-3">
             <span className="text-[10px] font-black uppercase text-muted-foreground mr-1">Kỳ lương</span>
-            <Input type="number" className="w-16 h-8 text-center font-bold" value={month} onChange={e => setMonth(Number(e.target.value))} />
+            <Input type="number" className="w-16 h-8 text-center font-bold" value={month} onChange={e => setMonth(Math.max(1, Math.min(12, Number(e.target.value))))} />
             <span className="text-muted-foreground">/</span>
-            <Input type="number" className="w-20 h-8 text-center font-bold" value={year} onChange={e => setYear(Number(e.target.value))} />
+            <Input type="number" className="w-20 h-8 text-center font-bold" value={year} onChange={e => setYear(Math.max(2000, Number(e.target.value)))} />
           </div>
 
           <Button variant="outline" onClick={handleExportExcel} className="gap-2 h-8 border-green-600 text-green-600 hover:bg-green-50 shadow-sm">

@@ -541,7 +541,7 @@ export default function SalaryConfigPage() {
                                                         readOnly={!isInsuranceEditing}
                                                         className={`h-14 rounded-2xl text-lg font-black pr-10 transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default select-none' : 'bg-white border-indigo-100 focus:ring-indigo-500/10 text-indigo-900'}`}
                                                         value={insuranceConfig[item.key]}
-                                                        onChange={e => setInsuranceConfig({...insuranceConfig, [item.key]: Number(e.target.value)})}
+                                                        onChange={e => setInsuranceConfig({...insuranceConfig, [item.key]: Math.max(0, Number(e.target.value))})}
                                                     />
                                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-indigo-300">%</span>
                                                 </div>
@@ -570,7 +570,7 @@ export default function SalaryConfigPage() {
                                                         readOnly={!isInsuranceEditing}
                                                         className={`h-14 rounded-2xl text-lg font-black pr-10 transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default select-none' : 'bg-white border-emerald-100 focus:ring-emerald-500/10 text-emerald-900'}`}
                                                         value={insuranceConfig[item.key]}
-                                                        onChange={e => setInsuranceConfig({...insuranceConfig, [item.key]: Number(e.target.value)})}
+                                                        onChange={e => setInsuranceConfig({...insuranceConfig, [item.key]: Math.max(0, Number(e.target.value))})}
                                                     />
                                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-300">%</span>
                                                 </div>
@@ -748,7 +748,7 @@ export default function SalaryConfigPage() {
                                                                 className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
                                                                 value={Math.round(t.lowerBound * 12)} 
                                                                 onChange={e => {
-                                                                    const val = Number(e.target.value);
+                                                                    const val = Math.max(0, Number(e.target.value));
                                                                     const monthlyLower = Math.round(val / 12);
                                                                     const n = taxTiers.map(tier => {
                                                                         if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: monthlyLower };
@@ -769,7 +769,7 @@ export default function SalaryConfigPage() {
                                                                 className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
                                                                 value={Math.round(t.upperBound * 12)} 
                                                                 onChange={e => {
-                                                                    const val = Number(e.target.value);
+                                                                    const val = Math.max(0, Number(e.target.value));
                                                                     const monthlyUpper = Math.round(val / 12);
                                                                     const n = taxTiers.map(tier => {
                                                                         if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: monthlyUpper };
@@ -791,7 +791,7 @@ export default function SalaryConfigPage() {
                                                                 className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
                                                                 value={t.lowerBound} 
                                                                 onChange={e => {
-                                                                    const val = Number(e.target.value);
+                                                                    const val = Math.max(0, Number(e.target.value));
                                                                     const n = taxTiers.map(tier => {
                                                                         if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: val };
                                                                         if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: val };
@@ -811,7 +811,7 @@ export default function SalaryConfigPage() {
                                                                 className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
                                                                 value={t.upperBound} 
                                                                 onChange={e => {
-                                                                    const val = Number(e.target.value);
+                                                                    const val = Math.max(0, Number(e.target.value));
                                                                     const n = taxTiers.map(tier => {
                                                                         if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: val };
                                                                         if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: val };
@@ -832,7 +832,7 @@ export default function SalaryConfigPage() {
                                                                 value={t.taxRate} 
                                                                 disabled={!isPitEditing} 
                                                                 onChange={e => {
-                                                                    const val = Number(e.target.value);
+                                                                    const val = Math.max(0, Number(e.target.value));
                                                                     const n = taxTiers.map(tier => 
                                                                         tier.tierLevel === t.tierLevel ? { ...tier, taxRate: val } : tier
                                                                     );

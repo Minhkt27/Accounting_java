@@ -4,7 +4,6 @@ import com.accounting.app.dto.AttendanceBulkRequest;
 import com.accounting.app.dto.AttendanceSuggestion;
 import com.accounting.app.model.Attendance;
 import com.accounting.app.repository.AttendanceRepository;
-import com.accounting.app.repository.EmployeeRepository;
 import com.accounting.app.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +18,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/attendance")
 public class AttendanceController {
-    @Autowired private AttendanceRepository attendanceRepository;
-    @Autowired private AttendanceService attendanceService;
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+    @Autowired
+    private AttendanceService attendanceService;
 
     @GetMapping("/{month}/{year}")
     @PreAuthorize("@perm.check('HR_ATTENDANCE')")
@@ -31,31 +32,29 @@ public class AttendanceController {
     @PostMapping
     @PreAuthorize("@perm.check('HR_ATTENDANCE')")
     public List<Attendance> saveBulk(@RequestBody List<Attendance> attendances) {
-        if (attendances == null) return List.of();
-        
+        if (attendances == null)
+            return List.of();
+
         if (!attendances.isEmpty()) {
             Attendance first = attendances.get(0);
-            /* Temporarily disabled for testing
             LocalDate now = LocalDate.now();
             int currentMonthValue = now.getYear() * 12 + now.getMonthValue();
             int targetMonthValue = first.getYear() * 12 + first.getMonth();
 
             if (targetMonthValue >= currentMonthValue) {
                 throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.BAD_REQUEST, 
-                    "Không thể chốt công cho tháng đang diễn ra hoặc chưa tới."
-                );
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "Không thể chốt công cho tháng đang diễn ra hoặc chưa tới.");
             }
-            */
         }
 
         for (Attendance att : attendances) {
             // Upsert logic: check if record exists for (employee, month, year)
             attendanceRepository.findByEmployeeIdAndMonthAndYear(
-                att.getEmployee().getId(), att.getMonth(), att.getYear()
-            ).ifPresent(existing -> att.setId(existing.getId()));
+                    att.getEmployee().getId(), att.getMonth(), att.getYear())
+                    .ifPresent(existing -> att.setId(existing.getId()));
         }
-        
+
         return attendanceRepository.saveAll(attendances);
     }
 
@@ -66,7 +65,8 @@ public class AttendanceController {
             @RequestParam Integer month,
             @RequestParam Integer year,
             @RequestParam Double standardDays) {
-        AttendanceSuggestion suggestion = attendanceService.getAttendanceSuggestion(employeeId, month, year, standardDays);
+        AttendanceSuggestion suggestion = attendanceService.getAttendanceSuggestion(employeeId, month, year,
+                standardDays);
         return ResponseEntity.ok(suggestion);
     }
 
@@ -74,11 +74,10 @@ public class AttendanceController {
     @PreAuthorize("hasRole('NHAN_SU') or hasRole('KE_TOAN_LUONG') or hasRole('ADMIN')")
     public ResponseEntity<Map<String, AttendanceSuggestion>> suggestBulk(@RequestBody AttendanceBulkRequest request) {
         Map<String, AttendanceSuggestion> suggestions = attendanceService.getBulkSuggestions(
-            request.getEmployeeIds(),
-            request.getMonth(),
-            request.getYear(),
-            request.getStandardDays()
-        );
+                request.getEmployeeIds(),
+                request.getMonth(),
+                request.getYear(),
+                request.getStandardDays());
         return ResponseEntity.ok(suggestions);
     }
 }

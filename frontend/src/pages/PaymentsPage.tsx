@@ -67,9 +67,9 @@ export default function PaymentsPage() {
         <div className="flex flex-wrap items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200">
             <div className="flex items-center gap-2 border-r pr-2 mr-2">
               <span className="text-[10px] font-black uppercase text-blue-600">Kỳ thanh toán</span>
-              <Input type="number" className="w-16 h-8 text-center font-bold" value={month} onChange={e => setMonth(Number(e.target.value))} />
+              <Input type="number" className="w-16 h-8 text-center font-bold" value={month} onChange={e => setMonth(Math.max(1, Math.min(12, Number(e.target.value))))} />
               <span className="text-muted-foreground">/</span>
-              <Input type="number" className="w-20 h-8 text-center font-bold" value={year} onChange={e => setYear(Number(e.target.value))} />
+              <Input type="number" className="w-20 h-8 text-center font-bold" value={year} onChange={e => setYear(Math.max(2000, Number(e.target.value)))} />
             </div>
             <div className="flex items-center gap-2">
               <Button size="default" variant="outline" onClick={handleExportExcel} className="h-8 gap-2 border-green-600 text-green-600 hover:bg-green-50 shadow-sm">

@@ -1,9 +1,7 @@
 package com.accounting.app.service;
 
-import com.accounting.app.model.Attendance;
 import com.accounting.app.model.LeaveRecord;
 import com.accounting.app.model.LeaveType;
-import com.accounting.app.repository.AttendanceRepository;
 import com.accounting.app.repository.LeaveRecordRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,15 +17,13 @@ import com.accounting.app.dto.AttendanceSuggestion;
 public class AttendanceService {
 
     @Autowired
-    private AttendanceRepository attendanceRepository;
-
-    @Autowired
     private LeaveRecordRepository leaveRecordRepository;
 
     /**
      * Tính toán gợi ý chấm công hàng loạt cho danh sách nhân viên.
      */
-    public Map<String, AttendanceSuggestion> getBulkSuggestions(List<String> employeeIds, Integer month, Integer year, Double standardDays) {
+    public Map<String, AttendanceSuggestion> getBulkSuggestions(List<String> employeeIds, Integer month, Integer year,
+            Double standardDays) {
         // Tải toàn bộ đơn nghỉ liên quan 1 lần duy nhất để tối ưu hiệu năng
         List<LeaveRecord> allLeaves = leaveRecordRepository.findAll().stream()
                 .filter(l -> employeeIds.contains(l.getEmployee().getId()))
@@ -51,9 +47,11 @@ public class AttendanceService {
             }
 
             double physicalDays = standardDays - allOffDays;
-            if (physicalDays < 0) physicalDays = 0;
-            if (physicalDays > standardDays) physicalDays = standardDays;
-            
+            if (physicalDays < 0)
+                physicalDays = 0;
+            if (physicalDays > standardDays)
+                physicalDays = standardDays;
+
             results.put(empId, new AttendanceSuggestion(physicalDays, paidLeaveDays));
         }
         return results;
@@ -64,7 +62,8 @@ public class AttendanceService {
      * - physicalDays: Số ngày thực tế đi làm (Standard - Tất cả các loại nghỉ).
      * - paidLeaveDays: Số ngày nghỉ vẫn được hưởng lương (ANNUAL).
      */
-    public AttendanceSuggestion getAttendanceSuggestion(String employeeId, Integer month, Integer year, Double standardDays) {
+    public AttendanceSuggestion getAttendanceSuggestion(String employeeId, Integer month, Integer year,
+            Double standardDays) {
         List<LeaveRecord> leaves = leaveRecordRepository.findAll().stream()
                 .filter(l -> l.getEmployee().getId().equals(employeeId))
                 .filter(l -> isWithinMonth(l, month, year))
@@ -81,26 +80,28 @@ public class AttendanceService {
         }
 
         double physicalDays = standardDays - allOffDays;
-        if (physicalDays < 0) physicalDays = 0;
-        if (physicalDays > standardDays) physicalDays = standardDays;
-        
+        if (physicalDays < 0)
+            physicalDays = 0;
+        if (physicalDays > standardDays)
+            physicalDays = standardDays;
+
         return new AttendanceSuggestion(physicalDays, paidLeaveDays);
     }
 
     private boolean isWithinMonth(LeaveRecord leave, int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
-        
+
         return !leave.getStartDate().isAfter(endOfMonth) && !leave.getEndDate().isBefore(startOfMonth);
     }
 
     private double calculateDaysInMonth(LeaveRecord leave, int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
-        
+
         LocalDate actualStart = leave.getStartDate().isBefore(startOfMonth) ? startOfMonth : leave.getStartDate();
         LocalDate actualEnd = leave.getEndDate().isAfter(endOfMonth) ? endOfMonth : leave.getEndDate();
-        
+
         // Đếm số ngày làm việc (T2-T6) trong khoảng này
         double count = 0;
         LocalDate current = actualStart;

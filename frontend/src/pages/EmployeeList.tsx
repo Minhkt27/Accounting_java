@@ -246,7 +246,8 @@ export default function EmployeeList() {
                 value={new Intl.NumberFormat('vi-VN').format(currentEmp.contractSalary || 0)} 
                 onChange={e => {
                   const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
-                  setCurrentEmp({...currentEmp, contractSalary: raw === "" ? 0 : Number(raw)})
+                  const val = raw === "" ? 0 : Number(raw);
+                  setCurrentEmp({...currentEmp, contractSalary: Math.max(0, val)})
                 }} 
                 disabled={viewOnly}
                 required 
@@ -259,8 +260,8 @@ export default function EmployeeList() {
                 min={0}
                 value={currentEmp.dependentCount ?? ""} 
                 onChange={e => {
-                  e.target.value = e.target.value.replace(/^0+(?!$)/, '');
-                  setCurrentEmp({...currentEmp, dependentCount: e.target.value === "" ? 0 : Number(e.target.value)})
+                  const val = e.target.value === "" ? 0 : Number(e.target.value);
+                  setCurrentEmp({...currentEmp, dependentCount: Math.max(0, val)})
                 }} 
                 disabled={viewOnly}
               /></div>
@@ -271,7 +272,8 @@ export default function EmployeeList() {
                   value={new Intl.NumberFormat('vi-VN').format(currentEmp.seniorityAllowance || 0)} 
                   onChange={e => {
                     const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
-                    setCurrentEmp({...currentEmp, seniorityAllowance: raw === "" ? 0 : Number(raw)})
+                    const val = raw === "" ? 0 : Number(raw);
+                    setCurrentEmp({...currentEmp, seniorityAllowance: Math.max(0, val)})
                   }} 
                   disabled={viewOnly}
                   placeholder="0"
