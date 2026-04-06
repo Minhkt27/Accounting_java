@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
-import { 
-  LogOut, Settings, Users, CalendarCheck, 
-  ShieldCheck, 
+import {
+  LogOut, Settings, Users, CalendarCheck,
+  ShieldCheck,
   Database, ChevronRight, Wallet, PieChart, Home
 } from "lucide-react"
 import { useMemo, useState, useEffect } from "react"
@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion"
 
 function FunctionIcon(props: any) {
   return (
-    <svg 
+    <svg
       {...props}
       viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
       className={`${props.className} w-[1.1rem] h-[1.1rem]`}
@@ -41,40 +41,39 @@ interface MenuItem {
 const SidebarItem = ({ item, isActive, isExpanded, onToggle, hasPermission }: { item: MenuItem, isActive: boolean, isExpanded: boolean, onToggle: () => void, hasPermission: (code?: string) => boolean }) => {
   const location = useLocation();
   const hasChildren = item.children && item.children.length > 0;
-  
+
   // Lọc các con theo quyền
   const visibleChildren = item.children?.filter((c: MenuItem) => hasPermission(c.functionCode)) || [];
-  
+
   if (item.functionCode && !hasPermission(item.functionCode)) return null;
   if (hasChildren && visibleChildren.length === 0) return null;
 
   const content = (
-    <div className={`flex items-center justify-between w-full p-3 rounded-xl transition-all duration-300 group relative ${
-      isActive && !hasChildren 
-        ? "bg-slate-800/80 text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]" 
-        : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-100"
-    }`}>
+    <div className={`flex items-center justify-between w-full p-3 rounded-xl transition-all duration-300 group relative ${isActive && !hasChildren
+      ? "bg-slate-800/80 text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+      : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-100"
+      }`}>
       {isActive && !hasChildren && (
-        <motion.div 
-            layoutId="active-pill"
-            className="absolute left-0 w-1 h-6 bg-primary rounded-r-full"
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        <motion.div
+          layoutId="active-pill"
+          className="absolute left-0 w-1 h-6 bg-primary rounded-r-full"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
         />
       )}
       <div className="flex items-center gap-3">
         <div className={`transition-colors duration-300 ${isActive && !hasChildren ? "text-blue-400" : "group-hover:text-primary"}`}>
-            {item.icon}
+          {item.icon}
         </div>
         <span className={`text-sm font-semibold tracking-wide transition-all ${isActive && !hasChildren ? "translate-x-1" : ""}`}>
-            {item.label}
+          {item.label}
         </span>
       </div>
       {hasChildren && (
         <motion.div
-            animate={{ rotate: isExpanded ? 90 : 0 }}
-            transition={{ duration: 0.2 }}
+          animate={{ rotate: isExpanded ? 90 : 0 }}
+          transition={{ duration: 0.2 }}
         >
-            <ChevronRight className="w-4 h-4 opacity-50" />
+          <ChevronRight className="w-4 h-4 opacity-50" />
         </motion.div>
       )}
     </div>
@@ -98,9 +97,8 @@ const SidebarItem = ({ item, isActive, isExpanded, onToggle, hasPermission }: { 
                 <Link
                   key={child.to}
                   to={child.to || "#"}
-                  className={`block p-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                    location.pathname === child.to ? "text-blue-400" : "text-slate-500 hover:text-slate-300"
-                  }`}
+                  className={`block p-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${location.pathname === child.to ? "text-blue-400" : "text-slate-500 hover:text-slate-300"
+                    }`}
                 >
                   {child.label}
                 </Link>
@@ -131,7 +129,7 @@ export default function Layout() {
     if (!token) return
     axios.get("/api/auth/my-permissions", {
       headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setAllowedFunctions(res.data)).catch(() => {})
+    }).then(res => setAllowedFunctions(res.data)).catch(() => { })
   }, [roles.join(",")])
 
   const hasPermission = (functionCode?: string): boolean => {
@@ -143,30 +141,38 @@ export default function Layout() {
   const menuItems = useMemo<MenuItem[]>(() => [
     { to: "/", label: "Tổng quan", icon: <Home size={18} /> },
     { to: "/config/salary", label: "Cấu hình Lương", icon: <Settings size={18} />, functionCode: "CONFIG_INSURANCE" },
-    { label: "Dữ liệu tính lương", icon: <Database size={18} />, children: [
+    {
+      label: "Dữ liệu tính lương", icon: <Database size={18} />, children: [
         { to: "/employees", label: "Hồ sơ nhân sự", functionCode: "HR_EMPLOYEE" },
         { to: "/attendance", label: "Chấm công tháng", functionCode: "HR_ATTENDANCE" },
         { to: "/leaves", label: "Danh sách nghỉ phép", functionCode: "HR_LEAVE" },
         { to: "/salary-changes", label: "Biến động lương", functionCode: "HR_SALARY_CHANGE" },
         { to: "/hr-tracking", label: "Biến động nhân sự", functionCode: "HR_EMPLOYEE" },
-    ]},
-    { label: "Tính lương", icon: <FunctionIcon size={18} />, children: [
+      ]
+    },
+    {
+      label: "Tính lương", icon: <FunctionIcon size={18} />, children: [
         { to: "/payroll", label: "Bảng tính lương tháng", functionCode: "PAYROLL_CALCULATE" },
         { to: "/accounting", label: "Nhật ký hạch toán", functionCode: "ACCOUNTING_VIEW" },
         { to: "/ledger", label: "Sổ cái tài khoản", functionCode: "ACCOUNTING_VIEW" },
-    ]},
-    { label: "Chi trả", icon: <Wallet size={18} />, children: [
+      ]
+    },
+    {
+      label: "Chi trả", icon: <Wallet size={18} />, children: [
         { to: "/payments", label: "Thanh toán & UNC", functionCode: "PAYROLL_APPROVE" },
-    ]},
+      ]
+    },
     { to: "/reports", label: "Báo cáo", icon: <PieChart size={18} />, functionCode: "ACCOUNTING_VIEW" },
-    { label: "Thiết lập", icon: <Settings size={18} />, children: [
+    {
+      label: "Thiết lập", icon: <Settings size={18} />, children: [
         { to: "/admin/users", label: "Quản lý người dùng", functionCode: "ADMIN_USERS" },
         { to: "/config/accounts", label: "Danh mục tài khoản", functionCode: "CONFIG_ACCOUNT" },
-    ]},
+      ]
+    },
   ], [])
 
   const toggleExpand = (label: string) => {
-    setExpandedItems(prev => 
+    setExpandedItems(prev =>
       prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
     )
   }
@@ -181,15 +187,15 @@ export default function Layout() {
     <div className="flex h-screen bg-background font-sans antialiased text-foreground print:bg-white print:block">
       <aside className="w-72 bg-slate-950 flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] relative z-20 no-print border-r border-white/5">
         <div className="p-8 pb-6">
-             <div className="flex items-center gap-3 px-2">
-                <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-2xl border border-primary/20 shadow-inner">
-                    <ShieldCheck className="text-primary w-7 h-7" />
-                </div>
-                <div>
-                   <h1 className="text-white font-black text-xl leading-none uppercase italic tracking-tighter">PHUC ANH</h1>
-                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Accounting OS</p>
-                </div>
-             </div>
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-2xl border border-primary/20 shadow-inner">
+              <ShieldCheck className="text-primary w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-white font-black text-xl leading-none uppercase italic tracking-tighter">PHUC ANH</h1>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Accounting OS</p>
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
@@ -199,7 +205,7 @@ export default function Layout() {
 
             const isActive = !!(item.to && location.pathname === item.to) || (item.children?.some(c => location.pathname === c.to) ?? false);
             return (
-              <SidebarItem 
+              <SidebarItem
                 key={item.label}
                 item={item}
                 isActive={isActive}
@@ -212,58 +218,52 @@ export default function Layout() {
         </nav>
 
         <div className="p-6 mt-auto">
-            <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem] backdrop-blur-sm shadow-xl">
-                 <div className="flex items-center gap-3 mb-5">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary to-blue-400 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-primary/20">
-                        {username.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-slate-100 truncate">{username}</p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">{roleLabel}</p>
-                    </div>
-                 </div>
-                 <button 
-                  onClick={() => {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
-                    navigate("/login");
-                  }}
-                  className="flex w-full items-center justify-center gap-2 py-3 text-red-400 hover:text-white hover:bg-red-500/10 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border border-red-500/20 hover:border-red-500/40"
-                 >
-                    <LogOut className="w-3.5 h-3.5" /> Đăng xuất
-                 </button>
+          <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem] backdrop-blur-sm shadow-xl">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary to-blue-400 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-primary/20">
+                {username.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-100 truncate">{username}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">{roleLabel}</p>
+              </div>
             </div>
+            <button
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                navigate("/login");
+              }}
+              className="flex w-full items-center justify-center gap-2 py-3 text-red-400 hover:text-white hover:bg-red-500/10 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border border-red-500/20 hover:border-red-500/40"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Đăng xuất
+            </button>
+          </div>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-background relative print:block print:w-full">
         <header className="h-20 flex items-center justify-between px-10 border-b border-slate-200/60 sticky top-0 bg-background/80 backdrop-blur-xl z-10 no-print">
-           <div className="flex items-center gap-4">
-              <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{location.pathname.split('/').pop() || 'Tổng quan hệ thống'}</span>
-           </div>
-           <div className="flex items-center gap-8">
-              <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <CalendarCheck size={14} className="text-primary/60" />
-                  {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-              </div>
-              <div className="flex items-center gap-3">
-                <button className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-2xl transition-all relative border border-transparent hover:border-slate-200 group">
-                    <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white z-10"></div>
-                    <Users className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
-                </button>
-                <div className="h-8 w-[1px] bg-slate-200 mx-2"></div>
-                <div className="flex items-center gap-3 pl-2 group cursor-pointer">
-                    <div className="text-right hidden sm:block">
-                        <p className="text-xs font-black text-slate-900 leading-none">{username}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{roleLabel}</p>
-                    </div>
-                </div>
-              </div>
-           </div>
+          <div className="flex items-center gap-4">
+            <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{location.pathname.split('/').pop() || 'Tổng quan hệ thống'}</span>
+          </div>
+          <div className="flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <CalendarCheck size={14} className="text-primary/60" />
+              {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-2xl transition-all relative border border-transparent hover:border-slate-200 group">
+                <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white z-10"></div>
+                <Users className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+              </button>
+              <div className="h-8 w-[1px] bg-slate-200 mx-2"></div>
+            </div>
+          </div>
         </header>
         <div className="flex-1 p-10 overflow-auto custom-scrollbar print:p-0 print:overflow-visible">
-            <Outlet />
+          <Outlet />
         </div>
       </main>
     </div>
