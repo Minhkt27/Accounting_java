@@ -2,6 +2,8 @@ export interface TaxTier {
     id?: number;
     lowerBound: number;
     upperBound: number;
+    lowerBoundYearly?: number;
+    upperBoundYearly?: number;
     taxRate: number;
     tierLevel: number;
     status?: "APPROVED" | "PENDING";

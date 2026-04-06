@@ -18,7 +18,12 @@ export default function TaxConfigPage() {
     try {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       const resTax = await axios.get("/api/config/tax", auth)
-      setTiers(resTax.data)
+      const synchedTiers = resTax.data.map((t: TaxTier) => ({
+        ...t,
+        lowerBoundYearly: t.lowerBoundYearly ?? (t.lowerBound * 12),
+        upperBoundYearly: t.upperBoundYearly ?? (t.upperBound * 12)
+      }))
+      setTiers(synchedTiers)
       const resDed = await axios.get("/api/config/deductions", auth)
       if(resDed.data.length > 0) setDeductions(resDed.data[0])
     } catch (err: unknown) { 
@@ -32,7 +37,11 @@ export default function TaxConfigPage() {
   useEffect(() => { fetchData() }, [fetchData])
 
   const handleAddTier = () => {
-    setTiers([...tiers, { lowerBound: 0, upperBound: 0, taxRate: 0, tierLevel: tiers.length + 1, status: 'PENDING' }])
+    setTiers([...tiers, { 
+      lowerBound: 0, upperBound: 0, 
+      lowerBoundYearly: 0, upperBoundYearly: 0,
+      taxRate: 0, tierLevel: tiers.length + 1, status: 'PENDING' 
+    }])
   }
 
   const handleSaveTax = async () => {
@@ -97,55 +106,93 @@ export default function TaxConfigPage() {
                 <table className="w-full text-left">
                     <thead>
                         <tr className="bg-slate-50/50 border-b border-slate-100">
-                            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center w-20 pl-10">Bậc</th>
-                            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Cận dưới (VNĐ)</th>
-                            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Cận trên (VNĐ)</th>
-                            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center w-32">Thuế suất (%)</th>
-                            <th className="px-8 py-5 text-center w-20 pr-10"></th>
+                            <th className="px-4 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center w-16 pl-10">Bậc</th>
+                            <th className="px-4 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Năm - Trên</th>
+                            <th className="px-4 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Năm - Đến</th>
+                            <th className="px-4 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Tháng - Trên</th>
+                            <th className="px-4 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Tháng - Đến</th>
+                            <th className="px-4 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center w-24">Thuế (%)</th>
+                            <th className="px-4 py-5 text-center w-16 pr-10"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                     {tiers.map((t, i) => (
                         <tr key={i} className="group hover:bg-slate-50/50 transition-all">
-                            <td className="px-8 py-4 text-center pl-10">
+                            <td className="px-4 py-4 text-center pl-10">
                                 <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center font-black text-slate-400 border border-slate-100 group-hover:bg-primary group-hover:text-white transition-all">
                                     {i+1}
                                 </div>
                             </td>
-                            <td className="px-8 py-4">
+                            <td className="px-4 py-4">
                                 <Input 
                                     type="number" 
-                                    className="h-11 rounded-1.5xl bg-slate-50/50 border-transparent focus:bg-white focus:border-primary/20 font-black text-slate-700"
+                                    className="h-10 rounded-xl bg-slate-50/50 border-transparent focus:bg-white focus:border-primary/20 font-bold text-slate-700 text-xs"
+                                    value={t.lowerBoundYearly || 0} 
+                                    onChange={e => {
+                                        const val = Number(e.target.value);
+                                        const newTiers = [...tiers]; 
+                                        newTiers[i].lowerBoundYearly = val; 
+                                        newTiers[i].lowerBound = val / 12;
+                                        setTiers(newTiers);
+                                    }}
+                                />
+                            </td>
+                            <td className="px-4 py-4">
+                                <Input 
+                                    type="number" 
+                                    className="h-10 rounded-xl bg-slate-50/50 border-transparent focus:bg-white focus:border-primary/20 font-bold text-slate-700 text-xs"
+                                    value={t.upperBoundYearly || 0} 
+                                    onChange={e => {
+                                        const val = Number(e.target.value);
+                                        const newTiers = [...tiers]; 
+                                        newTiers[i].upperBoundYearly = val; 
+                                        newTiers[i].upperBound = val / 12;
+                                        setTiers(newTiers);
+                                    }}
+                                />
+                            </td>
+                            <td className="px-4 py-4">
+                                <Input 
+                                    type="number" 
+                                    className="h-10 rounded-xl bg-slate-50/50 border-transparent focus:bg-white focus:border-primary/20 font-bold text-slate-700 text-xs"
                                     value={t.lowerBound} 
                                     onChange={e => {
-                                        const newTiers = [...tiers]; newTiers[i].lowerBound = Number(e.target.value); setTiers(newTiers);
+                                        const val = Number(e.target.value);
+                                        const newTiers = [...tiers]; 
+                                        newTiers[i].lowerBound = val; 
+                                        newTiers[i].lowerBoundYearly = val * 12;
+                                        setTiers(newTiers);
                                     }} 
                                 />
                             </td>
-                            <td className="px-8 py-4">
+                            <td className="px-4 py-4">
                                 <Input 
                                     type="number" 
-                                    className="h-11 rounded-1.5xl bg-slate-50/50 border-transparent focus:bg-white focus:border-primary/20 font-black text-slate-700"
+                                    className="h-10 rounded-xl bg-slate-50/50 border-transparent focus:bg-white focus:border-primary/20 font-bold text-slate-700 text-xs"
                                     value={t.upperBound} 
                                     onChange={e => {
-                                        const newTiers = [...tiers]; newTiers[i].upperBound = Number(e.target.value); setTiers(newTiers);
+                                        const val = Number(e.target.value);
+                                        const newTiers = [...tiers]; 
+                                        newTiers[i].upperBound = val; 
+                                        newTiers[i].upperBoundYearly = val * 12;
+                                        setTiers(newTiers);
                                     }} 
                                 />
                             </td>
-                            <td className="px-8 py-4 text-center">
-                                <div className="flex items-center gap-2 justify-center">
+                            <td className="px-4 py-4 text-center">
+                                <div className="flex items-center gap-1 justify-center">
                                     <Input 
                                         type="number" 
-                                        className="h-11 w-20 rounded-1.5xl bg-slate-50/50 border-transparent text-center font-black text-primary focus:bg-white focus:border-primary/20"
+                                        className="h-10 w-16 rounded-xl bg-slate-50/50 border-transparent text-center font-black text-primary focus:bg-white focus:border-primary/20 text-xs"
                                         value={t.taxRate} 
                                         onChange={e => {
                                             const newTiers = [...tiers]; newTiers[i].taxRate = Number(e.target.value); setTiers(newTiers);
                                         }} 
                                     />
-                                    <span className="font-black text-slate-300">%</span>
+                                    <span className="font-black text-slate-300 text-[10px]">%</span>
                                 </div>
                             </td>
-                            <td className="px-8 py-4 text-center pr-10">
+                            <td className="px-4 py-4 text-center pr-10">
                                 <button 
                                     onClick={() => setTiers(tiers.filter((_, idx)=>idx!==i))}
                                     className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all"

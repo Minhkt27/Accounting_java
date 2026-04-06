@@ -13,6 +13,8 @@ public class TaxTier {
 
     private Double lowerBound;
     private Double upperBound;
+    private Double lowerBoundYearly;
+    private Double upperBoundYearly;
     private Double taxRate;
     private Integer tierLevel;
     private String status = "APPROVED"; // APPROVED, PENDING

@@ -354,7 +354,7 @@ public class PayrollService {
         
         for (TaxTier tier : tiers) {
             Double lBound = tier.getLowerBound() != null ? tier.getLowerBound() : 0.0;
-            Double uBound = tier.getUpperBound() != null ? tier.getUpperBound() : 999999999.0;
+            Double uBound = (tier.getUpperBound() == null || tier.getUpperBound() <= 0) ? 999999999.0 : tier.getUpperBound();
             Double tierSpan = uBound - lBound;
             
             if (remainingIncome > tierSpan && tierSpan > 0) {

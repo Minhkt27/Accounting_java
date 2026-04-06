@@ -133,7 +133,7 @@ public class DataSeeder implements CommandLineRunner {
                 createTier(5000000.0, 10000000.0, 10.0, 2),
                 createTier(10000000.0, 18000000.0, 15.0, 3),
                 createTier(18000000.0, 32000000.0, 20.0, 4),
-                createTier(32000000.0, 999999999.0, 25.0, 5)
+                createTier(32000000.0, 0.0, 25.0, 5)
             ));
         }
 
@@ -183,7 +183,10 @@ public class DataSeeder implements CommandLineRunner {
 
     private TaxTier createTier(Double lower, Double upper, Double rate, Integer level) {
         TaxTier t = new TaxTier();
-        t.setLowerBound(lower); t.setUpperBound(upper); t.setTaxRate(rate); t.setTierLevel(level);
+        t.setLowerBound(lower); t.setUpperBound(upper);
+        t.setLowerBoundYearly(lower * 12);
+        t.setUpperBoundYearly(upper * 12);
+        t.setTaxRate(rate); t.setTierLevel(level);
         t.setStatus("APPROVED");
         return t;
     }

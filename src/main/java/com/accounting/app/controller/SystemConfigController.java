@@ -192,6 +192,14 @@ public class SystemConfigController {
             tier.setStatus(status);
             // Luôn reset ID để tránh xung đột khi thay thế bộ thuế mới
             tier.setId(null);
+
+            // Tự động tính toán giá trị năm nếu thiếu
+            if (tier.getLowerBound() != null && tier.getLowerBoundYearly() == null) {
+                tier.setLowerBoundYearly(tier.getLowerBound() * 12);
+            }
+            if (tier.getUpperBound() != null && tier.getUpperBoundYearly() == null) {
+                tier.setUpperBoundYearly(tier.getUpperBound() * 12);
+            }
         }
         
         if ("APPROVED".equals(status)) {
