@@ -5,6 +5,8 @@ import { Input } from "../components/ui/input"
 import { Plus, UserRoundCheck, Edit, Trash2, Eye, X, FileUp, FileText, FileSpreadsheet, Mail, Phone, MapPin } from "lucide-react"
 import { ExportService } from "../utils/ExportService"
 
+import { Pagination } from "../components/ui/pagination"
+
 interface Employee {
   id: string
   fullName: string
@@ -28,6 +30,11 @@ interface Employee {
 
 export default function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [pageSize] = useState(20)
+
   const [showForm, setShowForm] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [viewOnly, setViewOnly] = useState(false)
@@ -42,14 +49,16 @@ export default function EmployeeList() {
 
   const fetchEmployees = useCallback(async () => {
     try {
-      const res = await axios.get("/api/employees", {
+      const res = await axios.get(`/api/employees?page=${page}&size=${pageSize}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
-      setEmployees(res.data)
+      setEmployees(res.data.content)
+      setTotalPages(res.data.totalPages)
+      setTotalElements(res.data.totalElements)
     } catch (err: unknown) { 
         console.error(err) 
     }
-  }, [])
+  }, [page, pageSize])
 
   useEffect(() => { fetchEmployees() }, [fetchEmployees])
 
@@ -393,6 +402,13 @@ export default function EmployeeList() {
                       )}
                   </tbody>
               </table>
+              <Pagination 
+                currentPage={page}
+                totalPages={totalPages}
+                totalElements={totalElements}
+                pageSize={pageSize}
+                onPageChange={setPage}
+              />
           </div>
       )}
     </div>

@@ -134,37 +134,22 @@ export default function ReportsPage() {
   const formatVND = (val: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(val || 0).replace('₫', 'đ')
 
-  // Filter details to only include APPROVED or PAID statuses
-  const lockedDetails = useMemo(() => {
-    if (!data) return [];
-    return data.details.filter(d => d.status === 'APPROVED' || d.status === 'PAID');
-  }, [data]);
-
-  const lockedInsuranceDetails = useMemo(() => {
-    if (!insuranceData) return [];
-    return insuranceData.details.filter(d => d.status === 'APPROVED' || d.status === 'PAID');
-  }, [insuranceData]);
-
-  const lockedTaxDetails = useMemo(() => {
-    if (!taxData) return [];
-    return taxData.details.filter(d => d.status === 'APPROVED' || d.status === 'PAID');
-  }, [taxData]);
-
-  const lockedUnionDetails = useMemo(() => {
-    if (!unionData) return [];
-    return unionData.details.filter(d => d.status === 'APPROVED' || d.status === 'PAID');
-  }, [unionData]);
+  // Dữ liệu từ Backend đã được lọc các trạng thái APPROVED / PAID
+  const lockedDetails = useMemo(() => data?.details || [], [data]);
+  const lockedInsuranceDetails = useMemo(() => insuranceData?.details || [], [insuranceData]);
+  const lockedTaxDetails = useMemo(() => taxData?.details || [], [taxData]);
+  const lockedUnionDetails = useMemo(() => unionData?.details || [], [unionData]);
 
   // Derived stats based on LOCKED data only
   const stats = useMemo(() => {
     const list = lockedDetails;
     return {
       count: list.length,
-      totalNetPay: list.reduce((sum, d) => sum + d.netPay, 0),
-      totalInsurance: list.reduce((sum, d) => sum + d.totalInsurance, 0),
-      totalEmployerInsurance: list.reduce((sum, d) => sum + d.totalEmployerInsurance, 0),
-      totalTax: list.reduce((sum, d) => sum + d.taxAmount, 0),
-      totalGross: list.reduce((sum, d) => sum + d.grossIncome, 0),
+      totalNetPay: list.reduce((sum, d) => sum + (d.netPay || 0), 0),
+      totalInsurance: list.reduce((sum, d) => sum + (d.totalInsurance || 0), 0),
+      totalEmployerInsurance: list.reduce((sum, d) => sum + (d.totalEmployerInsurance || 0), 0),
+      totalTax: list.reduce((sum, d) => sum + (d.taxAmount || 0), 0),
+      totalGross: list.reduce((sum, d) => sum + (d.grossIncome || 0), 0),
       totalBHXH: list.reduce((sum, d) => sum + (d.bhxh || 0), 0),
       totalBHYT: list.reduce((sum, d) => sum + (d.bhyt || 0), 0),
       totalBHTN: list.reduce((sum, d) => sum + (d.bhtn || 0), 0),
@@ -354,7 +339,7 @@ export default function ReportsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {lockedDetails.filter(d => d.fullName.toLowerCase().includes(searchTerm.toLowerCase())).map(d => (
+                                {lockedDetails.filter(d => (d.fullName || '').toLowerCase().includes(searchTerm.toLowerCase())).map(d => (
                                     <tr key={d.employeeId} className="group hover:bg-slate-50/50 transition-all">
                                         <td className="px-8 py-6 pl-10">
                                             <span className="font-black text-slate-400 text-xs uppercase">#{d.employeeId}</span>

@@ -7,6 +7,14 @@ import java.util.List;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, String> {
-    List<Employee> findAllByActiveTrue();
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM Employee e WHERE e.active = true ORDER BY e.createdAt DESC NULLS LAST, e.id DESC")
+    org.springframework.data.domain.Page<Employee> findAllByActiveTrue(org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM Employee e ORDER BY e.createdAt DESC NULLS LAST, e.id DESC")
+    org.springframework.data.domain.Page<Employee> findAllSorted(org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM Employee e ORDER BY e.createdAt DESC NULLS LAST, e.id DESC")
+    List<Employee> findAllSortedList();
+
     Long countByActiveTrue();
 }

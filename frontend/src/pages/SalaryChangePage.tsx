@@ -9,6 +9,8 @@ import {
 } from "lucide-react"
 import { ExportService } from "../utils/ExportService"
 
+import { Pagination } from "../components/ui/pagination"
+
 interface SalaryChange {
   id: number
   employeeId: string
@@ -42,6 +44,11 @@ const CHANGE_TYPES: Record<string, { label: string; icon: LucideIcon; color: str
 export default function SalaryChangePage() {
   const [changes, setChanges] = useState<SalaryChange[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [pageSize] = useState(20)
+
   const [showForm, setShowForm] = useState(false)
   const [filterStatus, setFilterStatus] = useState("")
   const [rejectId, setRejectId] = useState<number | null>(null)
@@ -73,18 +80,36 @@ export default function SalaryChangePage() {
   const isDirectAdmin = userRoles.includes("ROLE_NHAN_SU") || userRoles.includes("ROLE_ADMIN")
   const canApprove = userRoles.includes("ROLE_ADMIN") || userRoles.includes("ROLE_KE_TOAN_TRUONG")
 
+  useEffect(() => {
+    setPage(0)
+  }, [filterStatus])
+
   const fetchChanges = useCallback(async () => {
     try {
-      const url = (!isDirectAdmin && filterStatus) ? `/api/salary-changes?status=${filterStatus}` : "/api/salary-changes"
-      const res = await axios.get(url, { headers })
-      setChanges(res.data)
+      const baseUrl = "/api/salary-changes"
+      const params = new URLSearchParams()
+      params.append("page", page.toString())
+      params.append("size", pageSize.toString())
+      if (!isDirectAdmin && filterStatus) {
+        params.append("status", filterStatus)
+      } else if (isDirectAdmin && filterStatus) {
+        params.append("status", filterStatus)
+      }
+
+      const res = await axios.get(`${baseUrl}?${params.toString()}`, { headers })
+      setChanges(res.data.content)
+      setTotalPages(res.data.totalPages)
+      setTotalElements(res.data.totalElements)
     } catch (err) { console.error(err) }
-  }, [filterStatus, isDirectAdmin, headers])
+  }, [filterStatus, isDirectAdmin, headers, page, pageSize])
 
   const fetchEmployees = useCallback(async () => {
     try {
-      const res = await axios.get("/api/employees", { headers })
-      setEmployees(res.data.filter((e: Employee) => e.active))
+      // API employees cũng đã phân trang, nhưng ở đây form tạo biến động cần list active để chọn.
+      // Tạm thời lấy trang đầu tiên hoặc lấy list đầy đủ nếu có API riêng. 
+      // Do đã cập nhật repository trả về Page, nên ta lấy trang 0 size lớn để demo.
+      const res = await axios.get("/api/employees?page=0&size=1000", { headers })
+      setEmployees(res.data.content.filter((e: Employee) => e.active))
     } catch (err) { console.error(err) }
   }, [headers])
 
@@ -440,6 +465,13 @@ export default function SalaryChangePage() {
             )}
           </tbody>
         </table>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageChange={setPage}
+        />
       </div>
 
       {rejectId && (

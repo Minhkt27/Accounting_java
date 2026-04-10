@@ -7,6 +7,8 @@ import { ExportService } from "../utils/ExportService"
 import PayslipDialog from "../components/PayslipDialog"
 import PaymentDialog from "../components/PaymentDialog"
 
+import { Pagination } from "../components/ui/pagination"
+
 export interface Employee {
   id: string
   fullName: string
@@ -55,6 +57,11 @@ export interface Payroll {
 
 export default function PayrollPage() {
   const [payrolls, setPayrolls] = useState<Payroll[]>([])
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [pageSize] = useState(20)
+
   // Mặc định hiển thị tháng trước
   const [month, setMonth] = useState(new Date().getMonth() === 0 ? 12 : new Date().getMonth())
   const [year, setYear] = useState(new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear())
@@ -63,16 +70,22 @@ export default function PayrollPage() {
   const user = JSON.parse(localStorage.getItem("user") || "{}")
   const canApprove = user.roles?.includes("ROLE_ADMIN") || user.roles?.includes("ROLE_KE_TOAN_TRUONG")
 
+  useEffect(() => {
+    setPage(0)
+  }, [month, year])
+
   const fetchPayrolls = useCallback(async () => {
     try {
-      const res = await axios.get(`/api/payroll/${month}/${year}`, {
+      const res = await axios.get(`/api/payroll/${month}/${year}?page=${page}&size=${pageSize}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
-      setPayrolls(res.data)
+      setPayrolls(res.data.content)
+      setTotalPages(res.data.totalPages)
+      setTotalElements(res.data.totalElements)
     } catch (err: unknown) {
       console.error(err)
     }
-  }, [month, year])
+  }, [month, year, page, pageSize])
 
   useEffect(() => {
     fetchPayrolls()
@@ -324,6 +337,13 @@ export default function PayrollPage() {
               )}
             </tbody>
           </table>
+          <Pagination 
+            currentPage={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
         </div>
 
       {/* Reject Dialog */}

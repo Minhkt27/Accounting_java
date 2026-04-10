@@ -29,8 +29,20 @@ public class EmployeeController {
 
     @GetMapping
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
-    public List<Employee> getAll() {
-        return employeeRepository.findAll();
+    public com.accounting.app.dto.PageResponse<Employee> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        org.springframework.data.domain.Page<Employee> result = employeeRepository.findAllSorted(
+            org.springframework.data.domain.PageRequest.of(page, size)
+        );
+        return new com.accounting.app.dto.PageResponse<>(
+            result.getContent(),
+            result.getNumber(),
+            result.getSize(),
+            result.getTotalElements(),
+            result.getTotalPages(),
+            result.isLast()
+        );
     }
 
     @GetMapping("/next-id")

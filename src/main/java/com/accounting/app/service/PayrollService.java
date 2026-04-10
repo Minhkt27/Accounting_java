@@ -31,7 +31,7 @@ public class PayrollService {
 
     @Transactional
     public void approveMonthlyPayroll(Integer month, Integer year) {
-        List<Payroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYearSortedList(month, year);
         if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương để phê duyệt");
         
         // Kiểm tra xem đã tính lương chưa (DRAFT)
@@ -77,7 +77,7 @@ public class PayrollService {
 
     @Transactional
     public void rejectMonthlyPayroll(Integer month, Integer year, String reason) {
-        List<Payroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYearSortedList(month, year);
         if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương để từ chối");
 
         // Chỉ từ chối khi đang ở trạng thái DRAFT
@@ -95,7 +95,7 @@ public class PayrollService {
 
     @Transactional
     public void payMonthlyPayroll(Integer month, Integer year, String paymentMethod) {
-        List<Payroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYearSortedList(month, year);
         if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương để thanh toán");
         
         // Kiểm tra xem đã APPROVED chưa
@@ -138,6 +138,12 @@ public class PayrollService {
             throw new RuntimeException("Không thể tính lương cho tháng đang diễn ra hoặc tương lai (Yêu cầu: " + month + "/" + year + ", Hiện tại: " + now.getMonthValue() + "/" + now.getYear() + ")");
         }
 
+        // Kiểm tra xem đã chấm công cho tháng này chưa
+        List<Attendance> attendances = attendanceRepository.findAllByMonthAndYearSortedList(month, year);
+        if (attendances.isEmpty()) {
+            throw new RuntimeException("Chưa hoàn tất chấm công cho tháng " + month + "/" + year + ". Vui lòng thực hiện chấm công và lưu lại trước khi tính lương.");
+        }
+
         // 1. Thu thập dữ liệu đầu vào & Hằng số
         System.out.println("Processing Payroll Calculation for: Month=" + month + ", Year=" + year);
         
@@ -146,7 +152,7 @@ public class PayrollService {
                 .findFirst().orElse(defaultParams());
         System.out.println("Using Salary Parameters: " + params.getStatus());
         
-        List<Employee> employees = employeeRepository.findAll();
+        List<Employee> employees = employeeRepository.findAllSortedList();
         System.out.println("Found " + employees.size() + " total employees in database.");
         
         // Xác định số công chuẩn thực tế (Dựa trên cấu hình: FIXED hoặc MONTHLY)

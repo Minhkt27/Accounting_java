@@ -5,6 +5,8 @@ import { BookOpen, Receipt, ArrowRightLeft, FileSpreadsheet } from "lucide-react
 import { Button } from "../components/ui/button"
 import { ExportService } from "../utils/ExportService"
 
+import { Pagination } from "../components/ui/pagination"
+
 interface VoucherItem {
   id: number
   voucherNumber: string
@@ -34,22 +36,42 @@ export default function VoucherJournalPage() {
   const [vouchers, setVouchers] = useState<VoucherItem[]>([])
   const [journal, setJournal] = useState<JournalItem[]>([])
 
+  const [vPage, setVPage] = useState(0)
+  const [vTotalPages, setVTotalPages] = useState(0)
+  const [vTotalElements, setVTotalElements] = useState(0)
+
+  const [jPage, setJPage] = useState(0)
+  const [jTotalPages, setJTotalPages] = useState(0)
+  const [jTotalElements, setJTotalElements] = useState(0)
+
+  const pageSize = 20
+
   const headers = useMemo(() => ({ 
     Authorization: `Bearer ${localStorage.getItem("token")}` 
   }), [])
 
+  useEffect(() => {
+    setVPage(0)
+    setJPage(0)
+  }, [month, year, tab])
+
   const fetchData = useCallback(async () => {
     try {
-      const [vRes, jRes] = await Promise.all([
-        axios.get(`/api/accounting/vouchers?month=${month}&year=${year}`, { headers }),
-        axios.get(`/api/accounting/journal?month=${month}&year=${year}`, { headers })
-      ])
-      setVouchers(vRes.data)
-      setJournal(jRes.data)
+      if (tab === "vouchers") {
+        const vRes = await axios.get(`/api/accounting/vouchers?month=${month}&year=${year}&page=${vPage}&size=${pageSize}`, { headers })
+        setVouchers(vRes.data.content)
+        setVTotalPages(vRes.data.totalPages)
+        setVTotalElements(vRes.data.totalElements)
+      } else {
+        const jRes = await axios.get(`/api/accounting/journal?month=${month}&year=${year}&page=${jPage}&size=${pageSize}`, { headers })
+        setJournal(jRes.data.content)
+        setJTotalPages(jRes.data.totalPages)
+        setJTotalElements(jRes.data.totalElements)
+      }
     } catch (err: unknown) {
       console.error(err)
     }
-  }, [month, year, headers])
+  }, [month, year, headers, tab, vPage, jPage])
 
   useEffect(() => {
     fetchData()
@@ -152,6 +174,13 @@ export default function VoucherJournalPage() {
                 )}
               </tbody>
             </table>
+            <Pagination 
+              currentPage={vPage}
+              totalPages={vTotalPages}
+              totalElements={vTotalElements}
+              pageSize={pageSize}
+              onPageChange={setVPage}
+            />
           </div>
       )}
 
@@ -208,8 +237,14 @@ export default function VoucherJournalPage() {
                 </tfoot>
               )}
             </table>
+            <Pagination 
+              currentPage={jPage}
+              totalPages={jTotalPages}
+              totalElements={jTotalElements}
+              pageSize={pageSize}
+              onPageChange={setJPage}
+            />
           </div>
-
       )}
     </div>
   )

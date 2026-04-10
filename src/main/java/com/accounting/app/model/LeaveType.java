@@ -4,5 +4,7 @@ public enum LeaveType {
     SICK,       // Nghỉ ốm (BH trả)
     MATERNITY,  // Nghỉ thai sản (BH trả)
     ANNUAL,      // Phép năm (CTY trả)
-    UNPAID       // Nghỉ không lương (Trừ lương)
+    WEDDING,     // Việc riêng hưởng lương
+    FUNERAL,     // Việc riêng hưởng lương
+    UNPAID       // Nghỉ không lương
 }

@@ -29,15 +29,21 @@ public class SalaryChangeController {
      */
     @GetMapping
     @PreAuthorize("@perm.check('HR_SALARY_CHANGE') or @perm.check('HR_SALARY_CHANGE_APPROVE')")
-    public ResponseEntity<List<Map<String, Object>>> getAll(@RequestParam(required = false) String status) {
-        List<SalaryChange> changes;
+    public ResponseEntity<com.accounting.app.dto.PageResponse<Map<String, Object>>> getAll(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        org.springframework.data.domain.Page<SalaryChange> pageResult;
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+
         if (status != null && !status.isEmpty()) {
-            changes = changeRepo.findByStatus(status);
+            pageResult = changeRepo.findByStatus(status, pageable);
         } else {
-            changes = changeRepo.findAllByOrderByCreatedAtDesc();
+            pageResult = changeRepo.findAllSorted(pageable);
         }
 
-        List<Map<String, Object>> result = changes.stream().map(c -> {
+        List<Map<String, Object>> content = pageResult.getContent().stream().map(c -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", c.getId());
             map.put("employeeId", c.getEmployee().getId());
@@ -56,7 +62,16 @@ public class SalaryChangeController {
             return map;
         }).collect(Collectors.toList());
 
-        return ResponseEntity.ok(result);
+        com.accounting.app.dto.PageResponse<Map<String, Object>> response = new com.accounting.app.dto.PageResponse<>(
+            content,
+            pageResult.getNumber(),
+            pageResult.getSize(),
+            pageResult.getTotalElements(),
+            pageResult.getTotalPages(),
+            pageResult.isLast()
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     /**

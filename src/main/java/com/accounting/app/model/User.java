@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.util.HashSet;
 import java.util.Set;
 
+import lombok.EqualsAndHashCode;
+
 @Entity
 @Table(name = "users",
         uniqueConstraints = {
@@ -15,8 +17,9 @@ import java.util.Set;
                 @UniqueConstraint(columnNames = "email")
         })
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class User {
+public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

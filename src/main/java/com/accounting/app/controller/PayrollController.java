@@ -8,8 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/payroll")
@@ -31,8 +29,22 @@ public class PayrollController {
 
     @GetMapping("/{month}/{year}")
     @PreAuthorize("@perm.check('PAYROLL_CALCULATE')")
-    public List<Payroll> getPayrollByMonth(@PathVariable Integer month, @PathVariable Integer year) {
-        return payrollRepository.findByMonthAndYear(month, year);
+    public com.accounting.app.dto.PageResponse<Payroll> getPayrollByMonth(
+            @PathVariable Integer month, 
+            @PathVariable Integer year,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        org.springframework.data.domain.Page<Payroll> result = payrollRepository.findByMonthAndYearSorted(
+            month, year, org.springframework.data.domain.PageRequest.of(page, size)
+        );
+        return new com.accounting.app.dto.PageResponse<>(
+            result.getContent(),
+            result.getNumber(),
+            result.getSize(),
+            result.getTotalElements(),
+            result.getTotalPages(),
+            result.isLast()
+        );
     }
 
     @PostMapping("/approve")
@@ -74,7 +86,7 @@ public class PayrollController {
     @GetMapping("/pending-count")
     @PreAuthorize("@perm.check('PAYROLL_APPROVE')")
     public ResponseEntity<Long> getPendingCount() {
-        long count = payrollRepository.findByStatus(com.accounting.app.model.PayrollStatus.DRAFT).size();
+        long count = payrollRepository.findByStatusSortedList(com.accounting.app.model.PayrollStatus.DRAFT).size();
         return ResponseEntity.ok(count);
     }
 }

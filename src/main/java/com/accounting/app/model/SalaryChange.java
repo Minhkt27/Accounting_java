@@ -3,14 +3,16 @@ package com.accounting.app.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "salary_changes")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class SalaryChange {
+public class SalaryChange extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,17 +48,10 @@ public class SalaryChange {
     private LocalDateTime approvedAt;
     private String rejectionReason; // Lý do từ chối (nếu REJECTED)
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Double newSeniorityAllowance;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        super.onCreate();
     }
 }

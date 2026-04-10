@@ -3,12 +3,17 @@ package com.accounting.app.controller;
 import com.accounting.app.dto.AttendanceBulkRequest;
 import com.accounting.app.dto.AttendanceSuggestion;
 import com.accounting.app.model.Attendance;
+import com.accounting.app.model.Payroll;
+import com.accounting.app.model.PayrollStatus;
 import com.accounting.app.repository.AttendanceRepository;
+import com.accounting.app.repository.PayrollRepository;
 import com.accounting.app.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,11 +27,27 @@ public class AttendanceController {
     private AttendanceRepository attendanceRepository;
     @Autowired
     private AttendanceService attendanceService;
+    @Autowired
+    private PayrollRepository payrollRepository;
 
     @GetMapping("/{month}/{year}")
     @PreAuthorize("@perm.check('HR_ATTENDANCE')")
-    public List<Attendance> getByMonth(@PathVariable Integer month, @PathVariable Integer year) {
-        return attendanceRepository.findAllByMonthAndYear(month, year);
+    public com.accounting.app.dto.PageResponse<Attendance> getByMonth(
+            @PathVariable Integer month, 
+            @PathVariable Integer year,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        org.springframework.data.domain.Page<Attendance> result = attendanceRepository.findAllByMonthAndYearSorted(
+            month, year, org.springframework.data.domain.PageRequest.of(page, size)
+        );
+        return new com.accounting.app.dto.PageResponse<>(
+            result.getContent(),
+            result.getNumber(),
+            result.getSize(),
+            result.getTotalElements(),
+            result.getTotalPages(),
+            result.isLast()
+        );
     }
 
     @PostMapping
@@ -41,10 +62,22 @@ public class AttendanceController {
             int currentMonthValue = now.getYear() * 12 + now.getMonthValue();
             int targetMonthValue = first.getYear() * 12 + first.getMonth();
 
-            if (targetMonthValue >= currentMonthValue) {
-                throw new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.BAD_REQUEST,
-                        "Không thể chốt công cho tháng đang diễn ra hoặc chưa tới.");
+            if (targetMonthValue > currentMonthValue) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Không thể chấm công cho tháng trong tương lai.");
+            }
+
+            // Kiểm tra trạng thái bảng lương
+            List<Payroll> payrolls = payrollRepository.findByMonthAndYearSortedList(first.getMonth(), first.getYear());
+            boolean isLocked = !payrolls.isEmpty() && payrolls.stream().anyMatch(p -> 
+                p.getStatus() != PayrollStatus.REJECTED
+            );
+
+            if (isLocked) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Bảng lương tháng " + first.getMonth() + "/" + first.getYear() + " đã được tính. Vui lòng từ chối bảng lương nếu muốn sửa lại công.");
             }
         }
 

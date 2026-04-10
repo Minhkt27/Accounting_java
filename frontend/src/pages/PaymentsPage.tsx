@@ -15,10 +15,10 @@ export default function PaymentsPage() {
   const fetchData = async () => {
     try {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      const resP = await axios.get(`/api/payroll/${month}/${year}`, auth)
-      setPayrolls(resP.data)
-      const resV = await axios.get(`/api/accounting/vouchers?month=${month}&year=${year}`, auth)
-      setPayments(resV.data)
+      const resP = await axios.get(`/api/payroll/${month}/${year}?size=10000`, auth)
+      setPayrolls(resP.data.content || [])
+      const resV = await axios.get(`/api/accounting/vouchers?month=${month}&year=${year}&size=10000`, auth)
+      setPayments(resV.data.content || [])
     } catch (err) { console.error(err) }
   }
 

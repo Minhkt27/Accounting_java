@@ -4,11 +4,14 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import lombok.EqualsAndHashCode;
+
 @Entity
 @Table(name = "account_categories")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class AccountCategory {
+public class AccountCategory extends BaseEntity {
     @Id
     private String id;
 

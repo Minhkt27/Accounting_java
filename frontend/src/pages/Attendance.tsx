@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { CalendarDays, Save, FileSpreadsheet } from "lucide-react"
 import { ExportService } from "../utils/ExportService"
+import { Pagination } from "../components/ui/pagination"
 
 interface Employee {
   id: string
@@ -30,6 +31,12 @@ export default function AttendancePage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1)
   const [year, setYear] = useState(new Date().getFullYear())
   const [standardDays, setStandardDays] = useState(26)
+  const [isLocked, setIsLocked] = useState(false)
+
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [pageSize] = useState(20)
 
   const getStandardDays = (m: number, y: number) => {
     let days = 0
@@ -55,15 +62,17 @@ export default function AttendancePage() {
       }
       setStandardDays(std)
       
-      // 2. Lấy danh sách nhân viên để hiển thị bảng
-      const resEmp = await axios.get("/api/employees", auth)
-      const empList = resEmp.data
+      // 2. Lấy danh sách nhân viên phân trang để hiển thị bảng
+      const resEmp = await axios.get(`/api/employees?page=${page}&size=${pageSize}`, auth)
+      const empList = resEmp.data.content
+      setTotalPages(resEmp.data.totalPages)
+      setTotalElements(resEmp.data.totalElements)
  
-       // Lấy dữ liệu công đã lưu (nếu có)
-       const resAtt = await axios.get(`/api/attendance/${month}/${year}`, auth)
-       const savedAtt: Attendance[] = resAtt.data
+       // Lấy dữ liệu công đã lưu (nếu có) - API này cũng cần phân trang theo nhân sự
+       const resAtt = await axios.get(`/api/attendance/${month}/${year}?page=${page}&size=${pageSize}`, auth)
+       const savedAtt: Attendance[] = resAtt.data.content
  
-       // Lấy gợi ý hàng loạt (Bulk Suggestion)
+       // Lấy gợi ý hàng loạt (Bulk Suggestion) cho trang hiện tại
        let suggestions: Record<string, { physicalDays: number, paidLeaveDays: number }> = {}
        try {
          const bulkRes = await axios.post("/api/attendance/suggest-bulk", {
@@ -75,6 +84,17 @@ export default function AttendancePage() {
          suggestions = bulkRes.data
        } catch (e: unknown) {
          console.error("Bulk suggest failed", e)
+       }
+ 
+       // Lấy trạng thái khóa (từ bảng lương) - Chỉ cần biết có bảng lương tháng đó chưa
+       setIsLocked(false)
+        try {
+          const resPayroll = await axios.get(`/api/payroll/${month}/${year}?page=0&size=1`, auth)
+          const payrolls = resPayroll.data.content
+          const isCalculationDone = payrolls.length > 0 && payrolls.some((p: any) => p.status !== 'REJECTED')
+          setIsLocked(isCalculationDone)
+        } catch (e) {
+         console.error("Fetch payroll failed", e)
        }
  
        // Map dữ liệu công vào danh sách nhân viên
@@ -104,7 +124,7 @@ export default function AttendancePage() {
        })
        setAttendances(initialAtt)
      } catch (err: unknown) { console.error(err) }
-   }, [month, year])
+   }, [month, year, page, pageSize])
  
    useEffect(() => { fetchData() }, [fetchData])
 
@@ -186,10 +206,10 @@ export default function AttendancePage() {
             </Button>
             <Button 
               onClick={handleSave} 
-              disabled={year * 12 + month < (new Date().getFullYear() * 12 + new Date().getMonth() + 1)}
+              disabled={isLocked || (year * 12 + month > (new Date().getFullYear() * 12 + new Date().getMonth() + 1))}
               className="gap-2 h-8" 
               size="default"
-              title={year * 12 + month < (new Date().getFullYear() * 12 + new Date().getMonth() + 1) ? "Không thể chỉnh sửa dữ liệu tháng cũ" : ""}
+              title={isLocked ? "Bảng lương đã được tính. Vui lòng từ chối bảng lương nếu muốn sửa lại công." : (year * 12 + month > (new Date().getFullYear() * 12 + new Date().getMonth() + 1) ? "Không thể chấm công tháng tương lai" : "")}
             >
                 <Save className="w-4 h-4" /> Lưu
             </Button>
@@ -306,6 +326,13 @@ export default function AttendancePage() {
               ))}
             </tbody>
           </table>
+          <Pagination 
+            currentPage={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
         </div>
       
     </div>

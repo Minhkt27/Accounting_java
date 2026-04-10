@@ -2,6 +2,7 @@ package com.accounting.app.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -9,8 +10,9 @@ import lombok.NoArgsConstructor;
     @UniqueConstraint(columnNames = {"role_name", "function_code"})
 })
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class RolePermission {
+public class RolePermission extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -6,11 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
+import lombok.EqualsAndHashCode;
+
 @Entity
 @Table(name = "employees")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class Employee {
+public class Employee extends BaseEntity {
     @Id
     @NotBlank(message = "Mã nhân viên không được để trống")
     private String id; 

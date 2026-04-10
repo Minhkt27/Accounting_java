@@ -4,13 +4,15 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Table(name = "vouchers")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class Voucher {
+public class Voucher extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,12 +24,11 @@ public class Voucher {
     private String description;
     private Integer targetMonth; // Kỳ hạch toán (tháng)
     private Integer targetYear;  // Kỳ hạch toán (năm)
-
-    private LocalDateTime createdAt;
+    private String status = "PENDING";
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        super.onCreate();
     }
 
     public Voucher(String voucherNumber, String type, LocalDate date, Double amount, String description) {

@@ -4,11 +4,14 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import lombok.EqualsAndHashCode;
+
 @Entity
 @Table(name = "journal_entries")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class JournalEntry {
+public class JournalEntry extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

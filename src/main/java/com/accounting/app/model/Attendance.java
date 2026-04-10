@@ -2,15 +2,17 @@ package com.accounting.app.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "attendances", uniqueConstraints = {
+@Table(name = "attendance", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"employee_id", "month", "year"})
 })
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class Attendance {
+public class Attendance extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

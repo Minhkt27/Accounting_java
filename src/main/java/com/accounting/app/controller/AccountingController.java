@@ -27,12 +27,17 @@ public class AccountingController {
      */
     @GetMapping("/vouchers")
     @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
-    public ResponseEntity<List<Map<String, Object>>> getVouchers(
-            @RequestParam Integer month, @RequestParam Integer year) {
+    public ResponseEntity<com.accounting.app.dto.PageResponse<Map<String, Object>>> getVouchers(
+            @RequestParam Integer month, 
+            @RequestParam Integer year,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
 
-        List<Voucher> vouchers = voucherRepo.findByTargetMonthAndTargetYear(month, year);
+        org.springframework.data.domain.Page<Voucher> pageResult = voucherRepo.findByTargetMonthAndTargetYear(
+            month, year, org.springframework.data.domain.PageRequest.of(page, size)
+        );
 
-        List<Map<String, Object>> result = vouchers.stream().map(v -> {
+        List<Map<String, Object>> content = pageResult.getContent().stream().map(v -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", v.getId());
             map.put("voucherNumber", v.getVoucherNumber());
@@ -44,7 +49,14 @@ public class AccountingController {
             return map;
         }).collect(Collectors.toList());
 
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(new com.accounting.app.dto.PageResponse<>(
+            content,
+            pageResult.getNumber(),
+            pageResult.getSize(),
+            pageResult.getTotalElements(),
+            pageResult.getTotalPages(),
+            pageResult.isLast()
+        ));
     }
 
     /**
@@ -52,13 +64,22 @@ public class AccountingController {
      */
     @GetMapping("/journal")
     @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
-    public ResponseEntity<List<Map<String, Object>>> getJournalEntries(
-            @RequestParam Integer month, @RequestParam Integer year) {
+    public ResponseEntity<com.accounting.app.dto.PageResponse<Map<String, Object>>> getJournalEntries(
+            @RequestParam Integer month, 
+            @RequestParam Integer year,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
 
         List<Voucher> vouchers = voucherRepo.findByTargetMonthAndTargetYear(month, year);
-        List<JournalEntry> entries = journalRepo.findByVoucherIn(vouchers);
+        if (vouchers.isEmpty()) {
+            return ResponseEntity.ok(new com.accounting.app.dto.PageResponse<>(List.of(), page, size, 0, 0, true));
+        }
 
-        List<Map<String, Object>> result = entries.stream().map(e -> {
+        org.springframework.data.domain.Page<JournalEntry> pageResult = journalRepo.findByVoucherIn(
+            vouchers, org.springframework.data.domain.PageRequest.of(page, size)
+        );
+
+        List<Map<String, Object>> content = pageResult.getContent().stream().map(e -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", e.getId());
             map.put("voucherNumber", e.getVoucher().getVoucherNumber());
@@ -72,7 +93,14 @@ public class AccountingController {
             return map;
         }).collect(Collectors.toList());
 
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(new com.accounting.app.dto.PageResponse<>(
+            content,
+            pageResult.getNumber(),
+            pageResult.getSize(),
+            pageResult.getTotalElements(),
+            pageResult.getTotalPages(),
+            pageResult.isLast()
+        ));
     }
 
     /**
@@ -82,7 +110,9 @@ public class AccountingController {
     @PreAuthorize("@perm.check('ACCOUNTING_VIEW') or @perm.check('DASHBOARD_VIEW')")
     public ResponseEntity<Map<String, Object>> getSummary(
             @RequestParam Integer month, @RequestParam Integer year) {
-        List<Payroll> payrolls = payrollRepo.findByMonthAndYear(month, year);
+        List<Payroll> payrolls = payrollRepo.findByMonthAndYearSortedList(month, year).stream()
+                .filter(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID)
+                .collect(Collectors.toList());
 
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("month", month);
@@ -146,7 +176,9 @@ public class AccountingController {
             int m = target.getMonthValue();
             int y = target.getYear();
 
-            List<Payroll> payrolls = payrollRepo.findByMonthAndYear(m, y);
+            List<Payroll> payrolls = payrollRepo.findByMonthAndYearSortedList(m, y).stream()
+                .filter(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID)
+                .collect(Collectors.toList());
             double totalNet = payrolls.stream().mapToDouble(p -> p.getNetPay() != null ? p.getNetPay() : 0).sum();
 
             Map<String, Object> data = new LinkedHashMap<>();
@@ -163,32 +195,59 @@ public class AccountingController {
      */
     @GetMapping("/ledger/{accountId}")
     @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
-    public ResponseEntity<List<Map<String, Object>>> getLedgerEntries(
+    public ResponseEntity<com.accounting.app.dto.LedgerResponse> getLedgerEntries(
             @PathVariable String accountId,
-            @RequestParam Integer month, @RequestParam Integer year) {
+            @RequestParam Integer month, 
+            @RequestParam Integer year,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+ 
+         List<Voucher> vouchers = voucherRepo.findByTargetMonthAndTargetYear(month, year);
+         if (vouchers.isEmpty()) {
+             return ResponseEntity.ok(new com.accounting.app.dto.LedgerResponse(
+                 new com.accounting.app.dto.PageResponse<>(new ArrayList<>(), 0, size, 0, 0, true),
+                 0.0, 0.0
+             ));
+         }
 
-        List<Voucher> vouchers = voucherRepo.findByTargetMonthAndTargetYear(month, year);
-        List<JournalEntry> entries = journalRepo.findByVoucherIn(vouchers);
+         org.springframework.data.domain.Page<JournalEntry> pageResult = journalRepo.findByVoucherInAndAccount(
+             vouchers, accountId, org.springframework.data.domain.PageRequest.of(page, size)
+         );
+ 
+         List<Map<String, Object>> result = pageResult.getContent().stream()
+                 .map(e -> {
+                     Map<String, Object> map = new LinkedHashMap<>();
+                     map.put("id", e.getId());
+                     map.put("voucherNumber", e.getVoucher().getVoucherNumber());
+                     map.put("voucherDate", e.getVoucher().getVoucherDate());
+                     map.put("description", e.getDescription());
+                     map.put("oppositeAccount",
+                             e.getDebitAccount().getId().equals(accountId) ? e.getCreditAccount().getId()
+                                     : e.getDebitAccount().getId());
+                     map.put("debit", e.getDebitAccount().getId().equals(accountId) ? e.getAmount() : 0.0);
+                     map.put("credit", e.getCreditAccount().getId().equals(accountId) ? e.getAmount() : 0.0);
+                     return map;
+                 }).collect(Collectors.toList());
+ 
+         com.accounting.app.dto.PageResponse<Map<String, Object>> pRes = new com.accounting.app.dto.PageResponse<>(
+             result,
+             pageResult.getNumber(),
+             pageResult.getSize(),
+             pageResult.getTotalElements(),
+             pageResult.getTotalPages(),
+             pageResult.isLast()
+         );
 
-        // Lọc các bút toán có liên quan đến tài khoản này (Nợ hoặc Có)
-        List<Map<String, Object>> result = entries.stream()
-                .filter(e -> e.getDebitAccount().getId().equals(accountId)
-                        || e.getCreditAccount().getId().equals(accountId))
-                .map(e -> {
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("id", e.getId());
-                    map.put("voucherNumber", e.getVoucher().getVoucherNumber());
-                    map.put("voucherDate", e.getVoucher().getVoucherDate());
-                    map.put("description", e.getDescription());
-                    map.put("oppositeAccount",
-                            e.getDebitAccount().getId().equals(accountId) ? e.getCreditAccount().getId()
-                                    : e.getDebitAccount().getId());
-                    map.put("debit", e.getDebitAccount().getId().equals(accountId) ? e.getAmount() : 0.0);
-                    map.put("credit", e.getCreditAccount().getId().equals(accountId) ? e.getAmount() : 0.0);
-                    return map;
-                }).collect(Collectors.toList());
+         // Tính tổng cho cả kỳ (không phân trang)
+         List<JournalEntry> allEntries = journalRepo.findByVoucherInAndAccountList(vouchers, accountId);
+         double totalDebit = allEntries.stream()
+            .filter(e -> e.getDebitAccount().getId().equals(accountId))
+            .mapToDouble(JournalEntry::getAmount).sum();
+         double totalCredit = allEntries.stream()
+            .filter(e -> e.getCreditAccount().getId().equals(accountId))
+            .mapToDouble(JournalEntry::getAmount).sum();
 
-        return ResponseEntity.ok(result);
+         return ResponseEntity.ok(new com.accounting.app.dto.LedgerResponse(pRes, totalDebit, totalCredit));
     }
 
     /**
@@ -198,7 +257,9 @@ public class AccountingController {
     @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<Map<String, Object>> getInsuranceReport(
             @RequestParam Integer month, @RequestParam Integer year) {
-        List<Payroll> payrolls = payrollRepo.findByMonthAndYear(month, year);
+        List<Payroll> payrolls = payrollRepo.findByMonthAndYearSortedList(month, year).stream()
+                .filter(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID)
+                .collect(Collectors.toList());
 
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("month", month);
@@ -256,7 +317,9 @@ public class AccountingController {
     @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<Map<String, Object>> getTaxReport(
             @RequestParam Integer month, @RequestParam Integer year) {
-        List<Payroll> payrolls = payrollRepo.findByMonthAndYear(month, year);
+        List<Payroll> payrolls = payrollRepo.findByMonthAndYearSortedList(month, year).stream()
+                .filter(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID)
+                .collect(Collectors.toList());
 
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("month", month);
@@ -291,7 +354,9 @@ public class AccountingController {
     @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
     public ResponseEntity<Map<String, Object>> getUnionFeeReport(
             @RequestParam Integer month, @RequestParam Integer year) {
-        List<Payroll> payrolls = payrollRepo.findByMonthAndYear(month, year);
+        List<Payroll> payrolls = payrollRepo.findByMonthAndYearSortedList(month, year).stream()
+                .filter(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID)
+                .collect(Collectors.toList());
 
         double totalContractSalary = payrolls.stream()
                 .mapToDouble(p -> p.getContractSalary() != null ? p.getContractSalary() : 0).sum();

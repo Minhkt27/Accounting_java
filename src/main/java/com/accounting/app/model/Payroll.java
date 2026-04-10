@@ -5,13 +5,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+import lombok.EqualsAndHashCode;
+
 @Entity
 @Table(name = "payrolls", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"employee_id", "month", "year"})
 })
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class Payroll {
+public class Payroll extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -79,18 +82,4 @@ public class Payroll {
     private String approvedBy;          // Người phê duyệt
     private LocalDateTime approvedAt;   // Thời điểm phê duyệt
     private String rejectionReason;     // Lý do từ chối (nếu REJECTED)
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }
