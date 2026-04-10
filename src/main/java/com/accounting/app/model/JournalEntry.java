@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "journal_entries")
+@Table(name = "journal_entries") // Bảng Bút toán nhật ký
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -18,18 +18,18 @@ public class JournalEntry extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "voucher_id")
-    private Voucher voucher;
+    private Voucher voucher; // Chứng từ
 
     @ManyToOne
     @JoinColumn(name = "debit_account_id")
-    private AccountCategory debitAccount;
+    private AccountCategory debitAccount; // Tài khoản nợ
 
     @ManyToOne
     @JoinColumn(name = "credit_account_id")
-    private AccountCategory creditAccount;
+    private AccountCategory creditAccount; // Tài khoản có
 
-    private Double amount;
-    private String description;
+    private Double amount; // Số tiền
+    private String description; // Diễn giải/Mô tả
 
     public JournalEntry(Voucher voucher, AccountCategory debit, AccountCategory credit, Double amount, String description) {
         this.voucher = voucher;

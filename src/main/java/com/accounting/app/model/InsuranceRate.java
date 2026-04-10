@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "insurance_rates")
+@Table(name = "insurance_rates") // Bảng Tỷ lệ bảo hiểm
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -19,10 +19,10 @@ public class InsuranceRate extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String type;
-    private Double employeeRate;
-    private Double employerRate;
+    private String type; // Loại bảo hiểm
+    private Double employeeRate; // Tỷ lệ nhân viên đóng
+    private Double employerRate; // Tỷ lệ doanh nghiệp đóng
     
-    private LocalDate effectiveDate;
-    private String status = "APPROVED"; // APPROVED, PENDING
+    private LocalDate effectiveDate; // Ngày hiệu lực
+    private String status = "APPROVED"; // Trạng thái (APPROVED, PENDING)
 }

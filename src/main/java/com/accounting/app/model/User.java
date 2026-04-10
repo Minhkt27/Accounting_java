@@ -15,7 +15,7 @@ import lombok.EqualsAndHashCode;
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "username"),
                 @UniqueConstraint(columnNames = "email")
-        })
+        }) // Bảng Người dùng
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -25,20 +25,20 @@ public class User extends BaseEntity {
     private Long id;
 
     @NotBlank
-    private String username;
+    private String username; // Tên đăng nhập
 
     @NotBlank
     @Email
-    private String email;
+    private String email; // Thư điện tử (Email)
 
     @NotBlank
-    private String password;
+    private String password; // Mật khẩu
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles = new HashSet<>();
+    private Set<Role> roles = new HashSet<>(); // Danh sách vai trò
 
     public User(String username, String email, String password) {
         this.username = username;

@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(name = "payrolls", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"employee_id", "month", "year"})
-})
+}) // Bảng Lương
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -21,13 +21,13 @@ public class Payroll extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "employee_id")
-    private Employee employee;
+    private Employee employee; // Nhân viên
 
-    private Integer month;
-    private Integer year;
+    private Integer month; // Tháng
+    private Integer year; // Năm
 
     // Lương thời gian
-    private Double contractSalary;   // Lương HĐ tại thời điểm tính
+    private Double contractSalary;   // Lương hợp đồng tại thời điểm tính
     private Double realWorkDays;     // Số ngày thực tế đi làm
     private Double paidLeaveDays;    // Số ngày nghỉ hưởng lương
     private Double baseSalaryPay;    // Lương chính = (Lương HĐ / Standard) * (realWorkDays + paidLeaveDays)
@@ -40,28 +40,28 @@ public class Payroll extends BaseEntity {
     private Double otPremiumPay = 0.0;  // Phần OT miễn thuế (Phần chênh lệch hệ số > 1.0)
 
     // Phụ cấp & Thưởng
-    private Double mealAllowance = 0.0;
-    private Double positionAllowance = 0.0;
-    private Double seniorityAllowance = 0.0;
-    private Double otherAllowances = 0.0;
-    private Double bonus = 0.0;
-    private Double penalty = 0.0;
+    private Double mealAllowance = 0.0; // Phụ cấp ăn trưa
+    private Double positionAllowance = 0.0; // Phụ cấp chức vụ
+    private Double seniorityAllowance = 0.0; // Phụ cấp thâm niên
+    private Double otherAllowances = 0.0; // Phụ cấp khác
+    private Double bonus = 0.0; // Tiền thưởng
+    private Double penalty = 0.0; // Tiền phạt
 
     // Tổng thu nhập (Gross)
     private Double grossIncome;      // Lương chính + OT + phụ cấp + thưởng
 
     // Các khoản trích (BH - Phần NLĐ đóng 10.5%)
-    private Double bhxhNhanVien = 0.0;
-    private Double bhytNhanVien = 0.0;
-    private Double bhtnNhanVien = 0.0;
-    private Double totalInsurance = 0.0;
+    private Double bhxhNhanVien = 0.0; // BHXH (Nhân viên)
+    private Double bhytNhanVien = 0.0; // BHYT (Nhân viên)
+    private Double bhtnNhanVien = 0.0; // BHTN (Nhân viên)
+    private Double totalInsurance = 0.0; // Tổng bảo hiểm (Nhân viên)
 
     // Các khoản trích (BH - Phần DN đóng 23.5%)
-    private Double bhxhCongTy = 0.0;   // 17.5%
-    private Double bhytCongTy = 0.0;   // 3%
-    private Double bhtnCongTy = 0.0;   // 1%
-    private Double kpcdCongTy = 0.0;   // 2% (Kinh phí công đoàn)
-    private Double totalEmployerInsurance = 0.0;
+    private Double bhxhCongTy = 0.0;   // BHXH (Công ty - 17.5%)
+    private Double bhytCongTy = 0.0;   // BHYT (Công ty - 3%)
+    private Double bhtnCongTy = 0.0;   // BHTN (Công ty - 1%)
+    private Double kpcdCongTy = 0.0;   // Kinh phí công đoàn (Công ty - 2%)
+    private Double totalEmployerInsurance = 0.0; // Tổng bảo hiểm (Công ty)
 
     // Thuế TNCN
     private Double taxableIncomeBase = 0.0;    // Thu nhập chịu thuế (Gross - Miễn thuế)
@@ -74,10 +74,10 @@ public class Payroll extends BaseEntity {
 
 
     // Lương thực lĩnh (Net)
-    private Double netPay;           // Gross - Insurance_EE - Tax
+    private Double netPay;           // Lương thực lĩnh (Gross - Insurance_EE - Tax)
 
     @Enumerated(EnumType.STRING)
-    private PayrollStatus status;
+    private PayrollStatus status; // Trạng thái bảng lương
 
     private String approvedBy;          // Người phê duyệt
     private LocalDateTime approvedAt;   // Thời điểm phê duyệt

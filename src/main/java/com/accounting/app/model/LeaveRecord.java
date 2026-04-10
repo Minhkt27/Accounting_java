@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "leave_records")
+@Table(name = "leave_records") // Bảng Hồ sơ nghỉ phép
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -19,11 +19,11 @@ public class LeaveRecord extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "employee_id")
-    private Employee employee;
+    private Employee employee; // Nhân viên
 
     @Enumerated(EnumType.STRING)
-    private LeaveType leaveType;
+    private LeaveType leaveType; // Loại nghỉ
 
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private LocalDate startDate; // Ngày bắt đầu
+    private LocalDate endDate; // Ngày kết thúc
 }

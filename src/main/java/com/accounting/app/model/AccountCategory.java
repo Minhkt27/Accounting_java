@@ -7,18 +7,18 @@ import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "account_categories")
+@Table(name = "account_categories") // Bảng Danh mục tài khoản
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class AccountCategory extends BaseEntity {
     @Id
-    private String id;
+    private String id; // Mã danh mục tài khoản
 
-    private String name;
-    private String type;
+    private String name; // Tên danh mục
+    private String type; // Loại tài khoản
 
-    private String status;
+    private String status; // Trạng thái
 
     public AccountCategory(String id, String name, String type) {
         this.id = id;

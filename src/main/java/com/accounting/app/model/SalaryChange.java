@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "salary_changes")
+@Table(name = "salary_changes") // Bảng Biến động lương
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -19,7 +19,7 @@ public class SalaryChange extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "employee_id")
-    private Employee employee;
+    private Employee employee; // Nhân viên
 
     /**
      * Loại biến động:
@@ -28,7 +28,7 @@ public class SalaryChange extends BaseEntity {
      * REWARD - Khen thưởng
      * DISCIPLINE - Kỷ luật
      */
-    private String changeType;
+    private String changeType; // Loại thay đổi
 
     private Double oldValue;        // Giá trị cũ (lương cũ, hoặc 0 nếu thưởng/phạt)
     private Double newValue;        // Giá trị mới (lương mới, hoặc số tiền thưởng/phạt)
@@ -41,14 +41,14 @@ public class SalaryChange extends BaseEntity {
      * APPROVED - Đã phê duyệt
      * REJECTED - Đã từ chối
      */
-    private String status = "PENDING";
+    private String status = "PENDING"; // Trạng thái phê duyệt
 
     private String createdBy;       // Người tạo đề xuất
     private String approvedBy;      // Người phê duyệt / từ chối
-    private LocalDateTime approvedAt;
+    private LocalDateTime approvedAt; // Thời gian phê duyệt
     private String rejectionReason; // Lý do từ chối (nếu REJECTED)
 
-    private Double newSeniorityAllowance;
+    private Double newSeniorityAllowance; // Phụ cấp thâm niên mới
 
     @PrePersist
     protected void onCreate() {

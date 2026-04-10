@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "tax_tiers")
+@Table(name = "tax_tiers") // Bảng Bậc thuế
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -15,11 +15,11 @@ public class TaxTier extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double lowerBound;
-    private Double upperBound;
-    private Double lowerBoundYearly;
-    private Double upperBoundYearly;
-    private Double taxRate;
-    private Integer tierLevel;
-    private String status = "APPROVED"; // APPROVED, PENDING
+    private Double lowerBound; // Cận dưới (tháng)
+    private Double upperBound; // Cận trên (tháng)
+    private Double lowerBoundYearly; // Cận dưới (năm)
+    private Double upperBoundYearly; // Cận trên (năm)
+    private Double taxRate; // Thuế suất
+    private Integer tierLevel; // Bậc thuế
+    private String status = "APPROVED"; // Trạng thái (APPROVED, PENDING)
 }

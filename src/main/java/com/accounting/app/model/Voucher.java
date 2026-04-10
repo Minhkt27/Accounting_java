@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "vouchers")
+@Table(name = "vouchers") // Bảng Chứng từ
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -17,14 +17,14 @@ public class Voucher extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String voucherNumber; // Ví dụ: PC001/03-24
-    private String type;          // PHIEU_CHI, UNC
-    private LocalDate voucherDate;
-    private Double totalAmount;
-    private String description;
+    private String voucherNumber; // Số chứng từ (Ví dụ: PC001/03-24)
+    private String type;          // Loại chứng từ (PHIEU_CHI, UNC)
+    private LocalDate voucherDate; // Ngày lập chứng từ
+    private Double totalAmount; // Tổng số tiền
+    private String description; // Diễn giải/Mô tả
     private Integer targetMonth; // Kỳ hạch toán (tháng)
     private Integer targetYear;  // Kỳ hạch toán (năm)
-    private String status = "PENDING";
+    private String status = "PENDING"; // Trạng thái
 
     @PrePersist
     protected void onCreate() {
