@@ -15,6 +15,7 @@ const ROLE_LABELS: Record<string, string> = {
   ROLE_ADMIN: "Quản trị viên",
   ROLE_KE_TOAN_TRUONG: "KT Trưởng",
   ROLE_KE_TOAN_LUONG: "KT Tiền lương",
+  ROLE_KE_TOAN_VON_BANG_TIEN: "KT Vốn bằng tiền",
   ROLE_NHAN_SU: "Nhân sự",
 }
 
@@ -24,14 +25,18 @@ const FUNCTION_LABELS: Record<string, string> = {
   HR_EMPLOYEE: "Quản lý Nhân sự",
   HR_ATTENDANCE: "Chấm công",
   HR_LEAVE: "Nghỉ phép",
+  HR_SALARY_CHANGE: "Biến động lương",
+  HR_SALARY_CHANGE_APPROVE: "Duyệt biến động lương",
   PAYROLL_CALCULATE: "Tính lương",
-  PAYROLL_APPROVE: "Chốt sổ / Thanh toán",
+  PAYROLL_APPROVE: "Chốt sổ",
+  PAYROLL_PAY: "Thanh toán lương",
   ACCOUNTING_VIEW: "Sổ sách & Báo cáo",
   ADMIN_USERS: "Hệ thống tài khoản",
+  DASHBOARD_VIEW: "Tổng quan",
 }
 
 const FUNCTION_CODES = Object.keys(FUNCTION_LABELS)
-const EDITABLE_ROLES = ["ROLE_NHAN_SU", "ROLE_KE_TOAN_LUONG", "ROLE_KE_TOAN_TRUONG"]
+const EDITABLE_ROLES = ["ROLE_NHAN_SU", "ROLE_KE_TOAN_LUONG", "ROLE_KE_TOAN_VON_BANG_TIEN", "ROLE_KE_TOAN_TRUONG"]
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<UserItem[]>([])

@@ -103,10 +103,11 @@ A modern, high-performance desktop-style web application for comprehensive payro
 
 ### Default Credentials
 
-*   **Admin**: `admin` / `admin123`
-*   **HR (nhansu)**: `nhansu` / `123456`
-*   **Payroll Accountant**: `ketoan_luong` / `123456`
-*   **Chief Accountant**: `ketoan_truong` / `123456`
+*   **Admin (Quản trị viên)**: `admin` / `admin123`
+*   **HR (Nhân sự)**: `nhansu` / `123456`
+*   **Payroll Accountant (Kế toán Tiền lương)**: `ketoan_luong` / `123456` *(Has permission to Calculate Salary)*
+*   **Cash Accountant (Kế toán Vốn bằng tiền)**: `ketoan_tien` / `123456` *(Has permission to Pay Salary)*
+*   **Chief Accountant (Kế toán Trưởng)**: `ketoan_truong` / `123456` *(Has permission to Approve/Finalize Payroll)*
 
 ## 📁 Project Structure
 

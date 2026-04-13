@@ -69,6 +69,16 @@ export default function SalaryChangePage() {
     Authorization: `Bearer ${localStorage.getItem("token")}`
   }), [])
 
+  const [allowedFunctions, setAllowedFunctions] = useState<string[]>([])
+
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    axios.get("/api/auth/my-permissions", {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => setAllowedFunctions(res.data)).catch(() => { })
+  }, [])
+
   const userRoles = useMemo(() => {
     try {
       const raw = localStorage.getItem("user")
@@ -78,7 +88,7 @@ export default function SalaryChangePage() {
   }, [])
 
   const isDirectAdmin = userRoles.includes("ROLE_NHAN_SU") || userRoles.includes("ROLE_ADMIN")
-  const canApprove = userRoles.includes("ROLE_ADMIN") || userRoles.includes("ROLE_KE_TOAN_TRUONG")
+  const canApprove = userRoles.includes("ROLE_ADMIN") || userRoles.includes("ROLE_KE_TOAN_TRUONG") || allowedFunctions.includes("HR_SALARY_CHANGE_APPROVE")
 
   useEffect(() => {
     setPage(0)
@@ -333,28 +343,26 @@ export default function SalaryChangePage() {
         </div>
       )}
 
-      {!isDirectAdmin && (
-        <div className="flex gap-2">
-          {[
-            { value: "", label: "Tất cả" },
-            { value: "PENDING", label: "Chờ duyệt" },
-            { value: "APPROVED", label: "Đã duyệt" },
-            { value: "REJECTED", label: "Từ chối" },
-          ].map(tab => (
-            <button
-              key={tab.value}
-              onClick={() => setFilterStatus(tab.value)}
-              className={`px-4 py-2 text-xs font-black rounded-xl transition-all border ${
-                filterStatus === tab.value
-                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                  : "bg-white text-slate-500 border-slate-200 hover:border-primary/30 hover:text-primary"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex gap-2">
+        {[
+          { value: "", label: "Tất cả" },
+          { value: "PENDING", label: "Chờ duyệt" },
+          { value: "APPROVED", label: "Đã duyệt" },
+          { value: "REJECTED", label: "Từ chối" },
+        ].map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => setFilterStatus(tab.value)}
+            className={`px-4 py-2 text-xs font-black rounded-xl transition-all border ${
+              filterStatus === tab.value
+                ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                : "bg-white text-slate-500 border-slate-200 hover:border-primary/30 hover:text-primary"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       <div className="border rounded-xl bg-card shadow-lg overflow-hidden">
         <table className="w-full text-sm text-left">
@@ -366,7 +374,7 @@ export default function SalaryChangePage() {
               <th className="px-4 py-4 font-bold text-right">Trước biến động</th>
               <th className="px-4 py-4 font-bold text-right">Sau biến động</th>
               <th className="px-4 py-4 font-bold">Lý do</th>
-              {!isDirectAdmin && <th className="px-4 py-4 font-bold text-center">Trạng thái</th>}
+              <th className="px-4 py-4 font-bold text-center">Trạng thái</th>
               <th className="px-4 py-4 font-bold">Ngày hiệu lực</th>
               <th className="px-4 py-4 font-bold text-center">Hành động</th>
             </tr>
@@ -396,24 +404,22 @@ export default function SalaryChangePage() {
                     </span>
                   </td>
                   <td className="px-4 py-4 text-slate-600 max-w-[200px] truncate" title={c.reason}>{c.reason}</td>
-                  {!isDirectAdmin && (
-                    <td className="px-4 py-4 text-center">
-                        <span className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-lg shadow-sm border ${
-                        c.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200' :
-                        c.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
-                        'bg-amber-50 text-amber-700 border-amber-200'
-                        }`}>
-                        {c.status === 'PENDING' ? '⏳ Chờ duyệt' : c.status === 'APPROVED' ? '✅ Đã duyệt' : '❌ Từ chối'}
-                        </span>
-                        {c.rejectionReason && (
-                        <p className="text-[10px] text-red-500 mt-1 italic">"{c.rejectionReason}"</p>
-                        )}
-                    </td>
-                  )}
+                  <td className="px-4 py-4 text-center">
+                      <span className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-lg shadow-sm border ${
+                      c.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200' :
+                      c.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
+                      'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                      {c.status === 'PENDING' ? '⏳ Chờ duyệt' : c.status === 'APPROVED' ? '✅ Đã duyệt' : '❌ Từ chối'}
+                      </span>
+                      {c.rejectionReason && (
+                      <p className="text-[10px] text-red-500 mt-1 italic">"{c.rejectionReason}"</p>
+                      )}
+                  </td>
                   <td className="px-4 py-4 text-xs text-slate-500 tabular-nums">{c.effectiveDate}</td>
                   <td className="px-4 py-4 text-center">
                     <div className="flex items-center gap-1 justify-center">
-                        {isDirectAdmin ? (
+                        {isDirectAdmin && (
                             <>
                                 <button
                                     onClick={() => startEdit(c)}
@@ -430,25 +436,24 @@ export default function SalaryChangePage() {
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </>
-                        ) : (
-                            c.status === 'PENDING' && canApprove && (
-                                <>
-                                    <button
-                                        onClick={() => handleApprove(c.id)}
-                                        className="p-1.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors border border-green-200"
-                                        title="Phê duyệt"
-                                    >
-                                        <CheckCircle className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => setRejectId(c.id)}
-                                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors border border-red-200"
-                                        title="Từ chối"
-                                    >
-                                        <XCircle className="w-4 h-4" />
-                                    </button>
-                                </>
-                            )
+                        )}
+                        {c.status === 'PENDING' && canApprove && (
+                            <>
+                                <button
+                                    onClick={() => handleApprove(c.id)}
+                                    className="p-1.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors border border-green-200"
+                                    title="Phê duyệt"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => setRejectId(c.id)}
+                                    className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors border border-red-200"
+                                    title="Từ chối"
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                </button>
+                            </>
                         )}
                     </div>
                   </td>

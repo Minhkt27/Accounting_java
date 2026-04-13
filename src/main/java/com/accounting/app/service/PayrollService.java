@@ -46,6 +46,8 @@ public class PayrollService {
         // 1. Tạo Voucher hạch toán chi phí (Voucher Kế toán - PK)
         String voucherNo = String.format("PK%02d-%d", month, year % 100);
         Voucher v = new Voucher(voucherNo, "PHIEU_KE_TOAN", LocalDate.now(), totalGross + totalInsuranceER, "Ghi nhận chi phí lương & bảo hiểm tháng " + month + "/" + year);
+        v.setTargetMonth(month);
+        v.setTargetYear(year);
         v = voucherRepo.save(v);
 
         // 2. Hạch toán tài khoản

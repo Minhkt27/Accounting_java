@@ -28,7 +28,7 @@ public class PayrollController {
     }
 
     @GetMapping("/{month}/{year}")
-    @PreAuthorize("@perm.check('PAYROLL_CALCULATE')")
+    @PreAuthorize("@perm.check('PAYROLL_CALCULATE') or @perm.check('PAYROLL_PAY')")
     public com.accounting.app.dto.PageResponse<Payroll> getPayrollByMonth(
             @PathVariable Integer month, 
             @PathVariable Integer year,
@@ -59,7 +59,7 @@ public class PayrollController {
     }
 
     @PostMapping("/pay")
-    @PreAuthorize("@perm.check('PAYROLL_APPROVE')")
+    @PreAuthorize("@perm.check('PAYROLL_PAY')")
     public ResponseEntity<String> payPayroll(@RequestParam Integer month, @RequestParam Integer year, @RequestParam String paymentMethod) {
         try {
             payrollService.payMonthlyPayroll(month, year, paymentMethod);

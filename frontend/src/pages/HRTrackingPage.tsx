@@ -14,8 +14,8 @@ export default function HRTrackingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resE = await axios.get("/api/employees", auth)
-        setEmployees(resE.data)
+        const resE = await axios.get("/api/employees?size=1000", auth)
+        setEmployees(resE.data.content || [])
         const resL = await axios.get("/api/leaves", auth)
         setLeaves(resL.data)
       } catch (err: unknown) { console.error(err) }

@@ -70,27 +70,32 @@ public class DataSeeder implements CommandLineRunner {
         // Tạo tài khoản mẫu cho từng phòng ban theo UC.md
         seedUser("nhansu", "nhansu@company.com", "123456", ERole.ROLE_NHAN_SU);
         seedUser("ketoan_luong", "ktluong@company.com", "123456", ERole.ROLE_KE_TOAN_LUONG);
+        seedUser("ketoan_tien", "kttien@company.com", "123456", ERole.ROLE_KE_TOAN_VON_BANG_TIEN);
         seedUser("ketoan_truong", "kttruong@company.com", "123456", ERole.ROLE_KE_TOAN_TRUONG);
 
         // Seed ma trận phân quyền mặc định
         permRepo.deleteByRoleName("ROLE_KE_TOAN_LUONG");
+        permRepo.deleteByRoleName("ROLE_KE_TOAN_VON_BANG_TIEN");
         permRepo.deleteByRoleName("ROLE_KE_TOAN_TRUONG");
         permRepo.deleteByRoleName("ROLE_NHAN_SU");
 
         seedPerm("ROLE_NHAN_SU", "HR_EMPLOYEE"); seedPerm("ROLE_NHAN_SU", "HR_ATTENDANCE"); seedPerm("ROLE_NHAN_SU", "HR_LEAVE");
         seedPerm("ROLE_NHAN_SU", "HR_SALARY_CHANGE");
         seedPerm("ROLE_NHAN_SU", "HR_SALARY_CHANGE_APPROVE");
-        seedPerm("ROLE_NHAN_SU", "DASHBOARD_VIEW");
 
         seedPerm("ROLE_KE_TOAN_LUONG", "CONFIG_ACCOUNT"); seedPerm("ROLE_KE_TOAN_LUONG", "CONFIG_INSURANCE");
         seedPerm("ROLE_KE_TOAN_LUONG", "PAYROLL_CALCULATE"); seedPerm("ROLE_KE_TOAN_LUONG", "ACCOUNTING_VIEW");
+
+        seedPerm("ROLE_KE_TOAN_VON_BANG_TIEN", "PAYROLL_PAY");
+        seedPerm("ROLE_KE_TOAN_VON_BANG_TIEN", "ACCOUNTING_VIEW");
 
         seedPerm("ROLE_KE_TOAN_TRUONG", "CONFIG_ACCOUNT"); 
         seedPerm("ROLE_KE_TOAN_TRUONG", "CONFIG_INSURANCE"); 
         seedPerm("ROLE_KE_TOAN_TRUONG", "PAYROLL_CALCULATE"); 
         seedPerm("ROLE_KE_TOAN_TRUONG", "PAYROLL_APPROVE"); 
         seedPerm("ROLE_KE_TOAN_TRUONG", "ACCOUNTING_VIEW");
-        seedPerm("ROLE_KE_TOAN_TRUONG", "HR_SALARY_CHANGE_APPROVE"); 
+        seedPerm("ROLE_KE_TOAN_TRUONG", "HR_SALARY_CHANGE_APPROVE");
+        seedPerm("ROLE_KE_TOAN_TRUONG", "DASHBOARD_VIEW");
 
         // Update status for existing null records
         salaryRepo.findAll().stream().filter(x -> x.getStatus() == null).forEach(x -> { x.setStatus("APPROVED"); salaryRepo.save(x); });

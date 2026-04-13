@@ -20,8 +20,8 @@ export default function LeaveManagementPage() {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       const resL = await axios.get("/api/leaves", auth)
       setLeaves(resL.data)
-      const resE = await axios.get("/api/employees", auth)
-      setEmployees(resE.data)
+      const resE = await axios.get("/api/employees?size=1000", auth)
+      setEmployees(resE.data.content || [])
     } catch (err: unknown) { 
         const message = err instanceof Error ? err.message : String(err)
         alert("Lỗi tải dữ liệu: " + message) 

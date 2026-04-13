@@ -92,6 +92,22 @@ public class SystemConfigController {
         }
     }
 
+    @PostMapping("/insurance")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    public InsuranceRate createInsurance(@RequestBody InsuranceRate rate) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        rate.setId(null);
+        if (isAdmin || isChief) {
+            rate.setStatus("APPROVED");
+        } else {
+            rate.setStatus("PENDING");
+        }
+        return insuranceRepo.save(rate);
+    }
+
     @PutMapping("/insurance/{id}")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
     @SuppressWarnings("null")
@@ -122,7 +138,7 @@ public class SystemConfigController {
 
     // UC 03: Salary Params
     @GetMapping("/params")
-    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE') or @perm.check('HR_ATTENDANCE') or @perm.check('PAYROLL_CALCULATE')")
     public List<SalaryParameter> getParams() { return salaryRepo.findAll(); }
 
     @PostMapping("/params")

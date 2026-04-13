@@ -181,6 +181,7 @@ public class UserManagementController {
             case ROLE_ADMIN -> "Quản trị viên";
             case ROLE_NHAN_SU -> "Phòng Nhân sự";
             case ROLE_KE_TOAN_LUONG -> "Kế toán Tiền lương";
+            case ROLE_KE_TOAN_VON_BANG_TIEN -> "Kế toán Vốn bằng tiền";
             case ROLE_KE_TOAN_TRUONG -> "Kế toán Trưởng";
         };
     }

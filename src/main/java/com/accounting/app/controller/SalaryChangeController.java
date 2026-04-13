@@ -180,6 +180,55 @@ public class SalaryChangeController {
         }
     }
 
+    @PostMapping("/{id}/approve")
+    @PreAuthorize("@perm.check('HR_SALARY_CHANGE_APPROVE')")
+    public ResponseEntity<?> approve(@PathVariable Long id) {
+        try {
+            SalaryChange change = changeRepo.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động #" + id));
+            
+            if (!"PENDING".equals(change.getStatus())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Chỉ có thể phê duyệt biến động đang chờ duyệt."));
+            }
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            change.setStatus("APPROVED");
+            change.setApprovedBy(auth.getName());
+            change.setApprovedAt(java.time.LocalDateTime.now());
+
+            if ("SALARY_ADJUSTMENT".equals(change.getChangeType()) || "PROMOTION".equals(change.getChangeType())) {
+                Employee emp = change.getEmployee();
+                emp.setContractSalary(change.getNewValue());
+                employeeRepo.save(emp);
+            }
+
+            changeRepo.save(change);
+            return ResponseEntity.ok(Map.of("message", "Phê duyệt thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("@perm.check('HR_SALARY_CHANGE_APPROVE')")
+    public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        try {
+            SalaryChange change = changeRepo.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động #" + id));
+            
+            if (!"PENDING".equals(change.getStatus())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Chỉ có thể từ chối biến động đang chờ duyệt."));
+            }
+
+            change.setStatus("REJECTED");
+            change.setRejectionReason(body.get("reason"));
+            changeRepo.save(change);
+            return ResponseEntity.ok(Map.of("message", "Từ chối thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi: " + e.getMessage()));
+        }
+    }
+
     private Double toDouble(Object val) {
         if (val == null)
             return 0.0;

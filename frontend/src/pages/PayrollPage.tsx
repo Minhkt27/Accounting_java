@@ -5,8 +5,6 @@ import { Input } from "../components/ui/input"
 import { Calculator, CheckCircle, XCircle, FileSpreadsheet } from "lucide-react"
 import { ExportService } from "../utils/ExportService"
 import PayslipDialog from "../components/PayslipDialog"
-import PaymentDialog from "../components/PaymentDialog"
-
 import { Pagination } from "../components/ui/pagination"
 
 export interface Employee {
@@ -121,18 +119,6 @@ export default function PayrollPage() {
     }
   }
 
-  const handlePay = async (method: string) => {
-    try {
-      await axios.post(`/api/payroll/pay?month=${month}&year=${year}&paymentMethod=${method}`, null, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      })
-      alert("Đã thanh toán lương và tự động sinh chứng từ kế toán thành công!")
-      fetchPayrolls()
-    } catch (err: any) {
-      const serverMsg = err.response?.data?.message || err.message
-      alert("Lỗi khi thanh toán: " + serverMsg)
-    }
-  }
 
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
@@ -262,12 +248,6 @@ export default function PayrollPage() {
             </Button>
           )}
 
-          {canApprove && (
-            <PaymentDialog 
-              onPay={handlePay}
-              disabled={!isApprovedAll || isPaidAll}
-            />
-          )}
         </div>
       </div>
 

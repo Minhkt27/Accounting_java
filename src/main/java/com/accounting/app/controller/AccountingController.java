@@ -26,7 +26,7 @@ public class AccountingController {
      * UC21 - Danh sách chứng từ theo kỳ
      */
     @GetMapping("/vouchers")
-    @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW') or @perm.check('PAYROLL_PAY')")
     public ResponseEntity<com.accounting.app.dto.PageResponse<Map<String, Object>>> getVouchers(
             @RequestParam Integer month, 
             @RequestParam Integer year,

@@ -52,9 +52,11 @@ export default function AttendancePage() {
     try {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       
-      // 1. Lấy cấu hình công chuẩn (FIXED/MONTHLY)
-      const resParams = await axios.get("/api/config/params", auth)
-      const params = resParams.data.length > 0 ? resParams.data[0] : null
+      let params = null;
+      try {
+          const resParams = await axios.get("/api/config/params", auth)
+          params = resParams.data.length > 0 ? resParams.data[0] : null
+      } catch (e) { console.warn("cannot fetch params") }
       
       let std = getStandardDays(month, year)
       if (params && params.standardWorkDayMode === 'FIXED') {

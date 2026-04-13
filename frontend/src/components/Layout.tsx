@@ -139,7 +139,7 @@ export default function Layout() {
   }
 
   const menuItems = useMemo<MenuItem[]>(() => [
-    { to: "/", label: "Tổng quan", icon: <Home size={18} /> },
+    { to: "/", label: "Tổng quan", icon: <Home size={18} />, functionCode: "DASHBOARD_VIEW" },
     { to: "/config/salary", label: "Cấu hình Lương", icon: <Settings size={18} />, functionCode: "CONFIG_INSURANCE" },
     {
       label: "Dữ liệu tính lương", icon: <Database size={18} />, children: [
@@ -159,7 +159,7 @@ export default function Layout() {
     },
     {
       label: "Chi trả", icon: <Wallet size={18} />, children: [
-        { to: "/payments", label: "Thanh toán & UNC", functionCode: "PAYROLL_APPROVE" },
+        { to: "/payments", label: "Thanh toán & UNC", functionCode: "PAYROLL_PAY" },
       ]
     },
     { to: "/reports", label: "Báo cáo", icon: <PieChart size={18} />, functionCode: "ACCOUNTING_VIEW" },
