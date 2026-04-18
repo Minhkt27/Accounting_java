@@ -32,14 +32,21 @@ export default function LeaveManagementPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!newLeave.startDate || !newLeave.endDate) return
+    if (new Date(newLeave.startDate) > new Date(newLeave.endDate)) {
+        alert("Ngày bắt đầu không thể sau ngày kết thúc!")
+        return
+    }
+
     try {
       await axios.post("/api/leaves", newLeave, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       fetchData()
       alert("Đã ghi nhận ngày nghỉ!")
-    } catch (err: unknown) { 
-        const message = err instanceof Error ? err.message : String(err)
+      setNewLeave({ employee: { id: "" }, leaveType: "ANNUAL", startDate: "", endDate: "" })
+    } catch (err: any) { 
+        const message = err.response?.data || (err instanceof Error ? err.message : String(err))
         alert("Lỗi lưu dữ liệu: " + message) 
     }
   }
@@ -93,18 +100,33 @@ export default function LeaveManagementPage() {
           </div>
 
           {newLeave.startDate && newLeave.endDate && (
-            <div className="p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                💡 Dự kiến tính: <strong>{(() => {
-                    let count = 0;
-                    const curr = new Date(newLeave.startDate);
-                    const end = new Date(newLeave.endDate);
-                    while (curr <= end) {
-                        const day = curr.getDay();
-                        if (day !== 0 && day !== 6) count++;
-                        curr.setDate(curr.getDate() + 1);
-                    }
-                    return count;
-                })()}</strong> ngày công
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800 space-y-1 shadow-inner">
+                <div className="flex justify-between items-center">
+                    <span className="font-medium">Tổng số ngày nghỉ:</span>
+                    <span className="font-black text-lg text-blue-600">
+                        {(() => {
+                            const start = new Date(newLeave.startDate).getTime();
+                            const end = new Date(newLeave.endDate).getTime();
+                            return Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                        })()} ngày
+                    </span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] opacity-70 italic border-t border-blue-100 pt-1">
+                    <span>Trong đó ngày công:</span>
+                    <span className="font-bold">
+                        {(() => {
+                            let count = 0;
+                            const curr = new Date(newLeave.startDate);
+                            const end = new Date(newLeave.endDate);
+                            while (curr <= end) {
+                                const day = curr.getDay();
+                                if (day !== 0 && day !== 6) count++;
+                                curr.setDate(curr.getDate() + 1);
+                            }
+                            return count;
+                        })()} ngày
+                    </span>
+                </div>
             </div>
           )}
 

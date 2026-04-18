@@ -7,8 +7,8 @@ import java.util.List;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, String> {
-    @org.springframework.data.jpa.repository.Query("SELECT e FROM Employee e WHERE e.active = true ORDER BY e.createdAt DESC NULLS LAST, e.id DESC")
-    org.springframework.data.domain.Page<Employee> findAllByActiveTrue(org.springframework.data.domain.Pageable pageable);
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM Employee e WHERE e.status = 'WORKING' OR e.status = 'ON_LEAVE' ORDER BY e.createdAt DESC NULLS LAST, e.id DESC")
+    org.springframework.data.domain.Page<Employee> findAllActive(org.springframework.data.domain.Pageable pageable);
 
     @org.springframework.data.jpa.repository.Query("SELECT e FROM Employee e ORDER BY e.createdAt DESC NULLS LAST, e.id DESC")
     org.springframework.data.domain.Page<Employee> findAllSorted(org.springframework.data.domain.Pageable pageable);
@@ -16,5 +16,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
     @org.springframework.data.jpa.repository.Query("SELECT e FROM Employee e ORDER BY e.createdAt DESC NULLS LAST, e.id DESC")
     List<Employee> findAllSortedList();
 
-    Long countByActiveTrue();
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(e) FROM Employee e WHERE e.status = 'WORKING' OR e.status = 'ON_LEAVE'")
+    Long countActive();
+
+    default Long countByActiveTrue() {
+        return countActive();
+    }
 }

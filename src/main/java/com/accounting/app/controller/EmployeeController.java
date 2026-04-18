@@ -24,6 +24,8 @@ import java.util.OptionalInt;
 public class EmployeeController {
     @Autowired
     private EmployeeRepository employeeRepository;
+    @Autowired
+    private com.accounting.app.repository.LeaveRecordRepository leaveRepository;
 
     private final Path root = Paths.get("uploads/contracts");
 
@@ -35,6 +37,20 @@ public class EmployeeController {
         org.springframework.data.domain.Page<Employee> result = employeeRepository.findAllSorted(
             org.springframework.data.domain.PageRequest.of(page, size)
         );
+
+        // Detect active leaves for today
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.util.List<com.accounting.app.model.LeaveRecord> activeLeaves = leaveRepository.findActiveLeaves(today);
+        java.util.Set<String> onLeaveIds = activeLeaves.stream()
+                .map(lr -> lr.getEmployee().getId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        result.getContent().forEach(emp -> {
+            if (onLeaveIds.contains(emp.getId())) {
+                emp.setOnLeave(true);
+            }
+        });
+
         return new com.accounting.app.dto.PageResponse<>(
             result.getContent(),
             result.getNumber(),
@@ -91,7 +107,9 @@ public class EmployeeController {
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public void delete(@PathVariable String id) {
-        employeeRepository.deleteById(id);
+        Employee emp = employeeRepository.findById(id).orElseThrow();
+        emp.setStatus(EmployeeStatus.LEFT);
+        employeeRepository.save(emp);
     }
 
     @PostMapping("/upload-contract/{id}")

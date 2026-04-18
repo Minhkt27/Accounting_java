@@ -19,7 +19,23 @@ public class LeaveRecordController {
 
     @PostMapping
     @PreAuthorize("@perm.check('HR_LEAVE')")
-    public LeaveRecord create(@RequestBody LeaveRecord record) { return leaveRepo.save(record); }
+    public LeaveRecord create(@Valid @RequestBody LeaveRecord record) {
+        if (record.getStartDate().isAfter(record.getEndDate())) {
+            throw new RuntimeException("Ngày bắt đầu không thể sau ngày kết thúc");
+        }
+        
+        boolean overlaps = leaveRepo.existsByEmployeeIdAndOverlap(
+            record.getEmployee().getId(), 
+            record.getStartDate(), 
+            record.getEndDate()
+        );
+        
+        if (overlaps) {
+            throw new RuntimeException("Nhân viên đã có lịch nghỉ trùng với khoảng thời gian này");
+        }
+        
+        return leaveRepo.save(record); 
+    }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.check('HR_LEAVE')")

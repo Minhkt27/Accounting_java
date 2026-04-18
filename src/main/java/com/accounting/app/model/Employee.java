@@ -21,6 +21,7 @@ public class Employee extends BaseEntity {
     @NotBlank(message = "Họ tên không được để trống")
     private String fullName; // Họ và tên
 
+    @NotNull(message = "Lương hợp đồng không được để trống")
     @Min(value = 0, message = "Lương không được nhỏ hơn 0")
     private Double contractSalary; // Lương hợp đồng
 
@@ -30,11 +31,16 @@ public class Employee extends BaseEntity {
     @Past(message = "Ngày sinh phải là một ngày trong quá khứ")
     private LocalDate dob; // Ngày sinh 
 
+    @NotBlank(message = "Số điện thoại không được để trống")
     @Pattern(regexp = "^(0|\\+84)\\d{8,11}$", 
              message = "Số điện thoại không đúng định dạng (8-11 số)")
     private String phone; // Số điện thoại
 
+    @NotBlank(message = "Email không được để trống")
+    @Email(message = "Email không đúng định dạng")
     private String email; // Thư điện tử (Email)
+
+    @NotBlank(message = "Quê quán không được để trống")
     private String hometown; // Quê quán
     private String department; // Phòng ban
     private String contractFilePath; // Đường dẫn file hợp đồng 
@@ -46,7 +52,11 @@ public class Employee extends BaseEntity {
     @NotNull(message = "Loại hình nhân sự không được để trống")
     private EmployeeType employeeType; // Loại hình nhân viên
 
-    private Boolean active = true; // Đang hoạt động
+    @Enumerated(EnumType.STRING)
+    private EmployeeStatus status = EmployeeStatus.WORKING;
+
+    @Transient
+    private boolean onLeave = false;
 
     public Employee(String id, String fullName, Double contractSalary, Integer dependentCount, EmployeeType type) {
         this.id = id;
@@ -54,6 +64,15 @@ public class Employee extends BaseEntity {
         this.contractSalary = contractSalary;
         this.dependentCount = dependentCount;
         this.employeeType = type;
-        this.active = true;
+        this.status = EmployeeStatus.WORKING;
+    }
+
+    // Helpers for compatibility with existing code
+    public boolean getActive() {
+        return status != EmployeeStatus.LEFT;
+    }
+
+    public void setActive(boolean active) {
+        this.status = active ? EmployeeStatus.WORKING : EmployeeStatus.LEFT;
     }
 }

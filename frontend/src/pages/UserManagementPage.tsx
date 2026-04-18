@@ -121,7 +121,32 @@ export default function UserManagementPage() {
     setEditingUser(u); setFormUsername(u.username); setFormEmail(u.email); setFormPassword(""); setFormRoles([...u.roles]); setShowForm(true)
   }
 
+  const validate = () => {
+    if (!formUsername) {
+      alert("Vui lòng nhập Tên đăng nhập")
+      return false
+    }
+    if (!formEmail) {
+      alert("Vui lòng nhập Email liên hệ")
+      return false
+    }
+    if (formEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formEmail)) {
+      alert("Email không đúng định dạng (ví dụ: example@domain.com)")
+      return false
+    }
+    if (!editingUser && !formPassword) {
+      alert("Vui lòng nhập Mật khẩu")
+      return false
+    }
+    if (formRoles.length === 0) {
+      alert("Vui lòng chọn ít nhất một vai trò")
+      return false
+    }
+    return true
+  }
+
   const handleSave = async () => {
+    if (!validate()) return
     try {
       if (editingUser) {
         await axios.put(`/api/admin/users/${editingUser.id}`, { email: formEmail, roles: formRoles }, { headers })
@@ -359,7 +384,7 @@ export default function UserManagementPage() {
 
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Tên đăng nhập</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Tên đăng nhập <span className="text-red-500">*</span></label>
                                 <Input 
                                     value={formUsername} 
                                     onChange={e => setFormUsername(e.target.value)} 
@@ -368,7 +393,7 @@ export default function UserManagementPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Email liên hệ</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Email liên hệ <span className="text-red-500">*</span></label>
                                 <Input 
                                     value={formEmail} 
                                     onChange={e => setFormEmail(e.target.value)}
@@ -377,7 +402,7 @@ export default function UserManagementPage() {
                             </div>
                             {!editingUser && (
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Mật khẩu ban đầu</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Mật khẩu ban đầu <span className="text-red-500">*</span></label>
                                     <Input 
                                         type="password"
                                         value={formPassword} 
@@ -388,7 +413,7 @@ export default function UserManagementPage() {
                             )}
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Phân vai trò</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Phân vai trò <span className="text-red-500">*</span></label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {roles.filter(r => r.name !== "ROLE_ADMIN").map(r => {
                                         const selected = formRoles.includes(r.name)

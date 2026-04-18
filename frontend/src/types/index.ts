@@ -78,7 +78,8 @@ export interface Employee {
     dob?: string;
     positionCoefficient?: number;
     seniorityAllowance?: number;
-    active: boolean;
+    status: 'WORKING' | 'LEFT' | 'ON_LEAVE';
+    onLeave?: boolean;
 }
 
 export type LeaveType = "ANNUAL" | "SICK" | "MATERNITY";

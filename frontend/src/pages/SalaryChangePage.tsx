@@ -32,7 +32,7 @@ interface Employee {
   id: string
   fullName: string
   contractSalary: number
-  active?: boolean
+  status?: 'WORKING' | 'LEFT' | 'ON_LEAVE'
 }
 
 const CHANGE_TYPES: Record<string, { label: string; icon: LucideIcon; color: string }> = {
@@ -117,9 +117,9 @@ export default function SalaryChangePage() {
     try {
       // API employees cũng đã phân trang, nhưng ở đây form tạo biến động cần list active để chọn.
       // Tạm thời lấy trang đầu tiên hoặc lấy list đầy đủ nếu có API riêng. 
-      // Do đã cập nhật repository trả về Page, nên ta lấy trang 0 size lớn để demo.
+      // Do đã cập nhật repository trả về Page, nên ta lấy trang 0 size lớn để đề xuất.
       const res = await axios.get("/api/employees?page=0&size=1000", { headers })
-      setEmployees(res.data.content.filter((e: Employee) => e.active))
+      setEmployees(res.data.content.filter((e: Employee) => e.status === 'WORKING' || e.status === 'ON_LEAVE'))
     } catch (err) { console.error(err) }
   }, [headers])
 
@@ -139,7 +139,28 @@ export default function SalaryChangePage() {
     }
   }, [formEmployeeId, employees, editingId])
 
+  const validate = () => {
+    if (!formEmployeeId) {
+      alert("Vui lòng chọn nhân viên")
+      return false
+    }
+    if (!formReason) {
+      alert("Vui lòng nhập Lý do")
+      return false
+    }
+    if (!formEffectiveDate) {
+      alert("Vui lòng chọn ngày hiệu lực")
+      return false
+    }
+    if (formNewValue < 0) {
+      alert("Giá trị mới không được nhỏ hơn 0 VNĐ")
+      return false
+    }
+    return true
+  }
+
   const handleCreateOrUpdate = async () => {
+    if (!validate()) return
     try {
       const data = {
         employeeId: formEmployeeId,
@@ -282,7 +303,7 @@ export default function SalaryChangePage() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-500">Nhân viên</label>
+              <label className="text-[10px] font-black uppercase text-slate-500">Nhân viên <span className="text-red-500">*</span></label>
               <select 
                 disabled={!!editingId}
                 className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary/20 outline-none disabled:bg-slate-50"
@@ -296,7 +317,7 @@ export default function SalaryChangePage() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-500">Loại biến động</label>
+              <label className="text-[10px] font-black uppercase text-slate-500">Loại biến động <span className="text-red-500">*</span></label>
               <select 
                 className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary/20 outline-none"
                 value={formChangeType} 
@@ -308,7 +329,7 @@ export default function SalaryChangePage() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-500">Ngày hiệu lực</label>
+               <label className="text-[10px] font-black uppercase text-slate-500">Ngày hiệu lực <span className="text-red-500">*</span></label>
               <Input type="date" value={formEffectiveDate} onChange={e => setFormEffectiveDate(e.target.value)} />
             </div>
             {(formChangeType !== 'REWARD' && formChangeType !== 'DISCIPLINE') && (
@@ -322,7 +343,7 @@ export default function SalaryChangePage() {
             )}
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-slate-500">
-                {formChangeType === 'REWARD' ? 'Số tiền thưởng' : formChangeType === 'DISCIPLINE' ? 'Số tiền phạt' : 'Lương mới'}
+                {formChangeType === 'REWARD' ? 'Số tiền thưởng' : formChangeType === 'DISCIPLINE' ? 'Số tiền phạt' : 'Lương mới'} <span className="text-red-500">*</span>
               </label>
               <Input type="text" value={formatVND(formNewValue)} onChange={e => {
                 const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
@@ -330,7 +351,7 @@ export default function SalaryChangePage() {
               }} />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-500">Lý do</label>
+              <label className="text-[10px] font-black uppercase text-slate-500">Lý do <span className="text-red-500">*</span></label>
               <Input value={formReason} onChange={e => setFormReason(e.target.value)} placeholder="Nhập lý do biến động..." />
             </div>
           </div>

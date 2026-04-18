@@ -23,8 +23,9 @@ export default function HRTrackingPage() {
     fetchData()
   }, [auth])
 
-  const activeCount = employees.filter(e => e.active).length
-  const inactiveCount = employees.filter(e => !e.active).length
+  const activeCount = employees.filter(e => e.status !== 'LEFT' && !e.onLeave).length
+  const onLeaveCount = employees.filter(e => e.status !== 'LEFT' && e.onLeave).length
+  const inactiveCount = employees.filter(e => e.status === 'LEFT').length
   const avgSalary = employees.length > 0 ? employees.reduce((a, b) => a + (b.contractSalary || 0), 0) / employees.length : 0
 
   const maternityCount = leaves.filter(l => l.leaveType === 'MATERNITY').length
@@ -45,6 +46,11 @@ export default function HRTrackingPage() {
               <Users className="w-10 h-10 text-blue-500 mb-2" />
               <p className="text-3xl font-black">{activeCount}</p>
               <p className="text-[10px] uppercase font-bold text-slate-500">Nhân viên đang làm</p>
+          </div>
+          <div className="p-6 bg-amber-50 border border-amber-200 rounded-2xl shadow-sm flex flex-col items-center">
+              <Calendar className="w-10 h-10 text-amber-600 mb-2" />
+              <p className="text-3xl font-black text-amber-600">{onLeaveCount}</p>
+              <p className="text-[10px] uppercase font-bold text-amber-700">Nhân viên nghỉ phép</p>
           </div>
           <div className="p-6 bg-slate-50 border rounded-2xl shadow-sm flex flex-col items-center opacity-70">
               <UserMinus className="w-10 h-10 text-slate-400 mb-2" />

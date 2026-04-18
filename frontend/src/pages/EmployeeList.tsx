@@ -16,7 +16,7 @@ interface Employee {
   seniorityAllowance: number
   employeeType: "OFFICIAL" | "FULL_TIME" | "PROBATION" | "TRAINEE" | "INTERN" | "OTHER"
   department?: string
-  active: boolean
+  status: 'WORKING' | 'LEFT' | 'ON_LEAVE'
   dob: string
   phone: string
   email: string
@@ -42,7 +42,7 @@ export default function EmployeeList() {
     id: "", fullName: "", contractSalary: 0, dependentCount: 0, 
     positionCoefficient: 0.0, seniorityAllowance: 0.0,
     employeeType: "FULL_TIME", 
-    active: true, dob: "", phone: "", email: "", hometown: "",
+    status: 'WORKING', dob: "", phone: "", email: "", hometown: "",
     department: "Kế toán"
   })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -63,24 +63,50 @@ export default function EmployeeList() {
   useEffect(() => { fetchEmployees() }, [fetchEmployees])
 
   const validate = () => {
-    if (!currentEmp.id || !currentEmp.fullName || !currentEmp.dob) {
-      alert("Vui lòng nhập đầy đủ các trường bắt buộc (*)")
+    if (!currentEmp.id) {
+      alert("Vui lòng nhập Mã NV")
       return false
     }
+    if (!currentEmp.fullName) {
+      alert("Vui lòng nhập Họ tên")
+      return false
+    }
+    if (!currentEmp.dob) {
+      alert("Vui lòng nhập Ngày sinh")
+      return false
+    }
+    if (!currentEmp.contractSalary) {
+      alert("Vui lòng nhập Lương hợp đồng")
+      return false
+    }
+    
+    if (!currentEmp.phone) {
+      alert("Vui lòng nhập Số điện thoại")
+      return false
+    }
+    if (!currentEmp.email) {
+      alert("Vui lòng nhập Email")
+      return false
+    }
+    if (!currentEmp.hometown) {
+      alert("Vui lòng nhập Quê quán")
+      return false
+    }
+    
     if (currentEmp.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentEmp.email)) {
-      alert("Email không đúng định dạng")
+      alert("Email không đúng định dạng (ví dụ: example@domain.com)")
       return false
     }
     if (currentEmp.phone && !/^(0|\+84)\d{8,11}$/.test(currentEmp.phone.replace(/\s/g, ""))) {
-      alert("Số điện thoại không đúng định dạng (8-11 số)")
+      alert("Số điện thoại không hợp lệ (yêu cầu từ 8-11 chữ số)")
       return false
     }
     if (currentEmp.contractSalary && currentEmp.contractSalary < 0) {
-      alert("Lương không được âm")
+      alert("Lương hợp đồng không được nhỏ hơn 0 VNĐ")
       return false
     }
     if (new Date(currentEmp.dob!) > new Date()) {
-      alert("Ngày sinh không được vượt quá ngày hiện tại")
+      alert("Ngày sinh không được là ngày trong tương lai")
       return false
     }
     return true
@@ -121,7 +147,7 @@ export default function EmployeeList() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa nhân viên ${id}?`)) return
+    if (!confirm(`Xác nhận nhân viên ${id} thôi việc? Hệ thống sẽ chuyển trạng thái sang "Đã nghỉ" để theo dõi.`)) return
     try {
       await axios.delete(`/api/employees/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
@@ -222,34 +248,34 @@ export default function EmployeeList() {
           <h2 className="text-lg font-bold mb-6">
             {viewOnly ? "Chi tiết nhân viên" : isEditing ? "Cập nhật thông tin" : "Tạo hồ sơ mới"}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} noValidate className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Mã NV</label>
+                <label className="text-sm font-medium">Mã NV <span className="text-red-500">*</span></label>
                 <Input value={currentEmp.id} onChange={e => setCurrentEmp({...currentEmp, id: e.target.value})} disabled={isEditing || viewOnly} placeholder={viewOnly ? "" : "NV001"} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Họ tên</label>
+                <label className="text-sm font-medium">Họ tên <span className="text-red-500">*</span></label>
                 <Input value={currentEmp.fullName} onChange={e => setCurrentEmp({...currentEmp, fullName: e.target.value})} disabled={viewOnly} placeholder={viewOnly ? "" : "Nguyễn Văn A"} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Ngày sinh</label>
+                <label className="text-sm font-medium">Ngày sinh <span className="text-red-500">*</span></label>
                 <Input type="date" value={currentEmp.dob} onChange={e => setCurrentEmp({...currentEmp, dob: e.target.value})} disabled={viewOnly} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Số điện thoại</label>
+                <label className="text-sm font-medium">Số điện thoại <span className="text-red-500">*</span></label>
                 <Input value={currentEmp.phone} onChange={e => setCurrentEmp({...currentEmp, phone: e.target.value})} disabled={viewOnly} placeholder={viewOnly ? "" : "09xxx"} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-sm font-medium">Email <span className="text-red-500">*</span></label>
                 <Input type="email" value={currentEmp.email} onChange={e => setCurrentEmp({...currentEmp, email: e.target.value})} disabled={viewOnly} placeholder={viewOnly ? "" : "abc@company.com"} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Quê quán</label>
+                <label className="text-sm font-medium">Quê quán <span className="text-red-500">*</span></label>
                 <Input value={currentEmp.hometown} onChange={e => setCurrentEmp({...currentEmp, hometown: e.target.value})} disabled={viewOnly} placeholder={viewOnly ? "" : "Hà Nội"} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Lương hợp đồng (VNĐ)</label>
+                <label className="text-sm font-medium">Lương hợp đồng (VNĐ) <span className="text-red-500">*</span></label>
                 <Input 
                 type="text" 
                 value={new Intl.NumberFormat('vi-VN').format(currentEmp.contractSalary || 0)} 
@@ -298,7 +324,7 @@ export default function EmployeeList() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Loại nhân sự</label>
+                <label className="text-sm font-medium">Loại nhân sự <span className="text-red-500">*</span></label>
                 <select value={currentEmp.employeeType} onChange={e => setCurrentEmp({...currentEmp, employeeType: e.target.value as any})} disabled={viewOnly} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="FULL_TIME">Chính thức</option>
                   <option value="PROBATION">Thử việc</option>
@@ -306,6 +332,26 @@ export default function EmployeeList() {
                   <option value="OTHER">Khác</option>
                 </select>
               </div>
+              {(isEditing || viewOnly) && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Trạng thái</label>
+                  <div className={`flex items-center gap-2 h-10 px-3 rounded-md border ${
+                    currentEmp.status === 'LEFT' ? "bg-red-50 border-red-200 text-red-700" :
+                    currentEmp.onLeave 
+                      ? "bg-amber-50 border-amber-200 text-amber-700" 
+                      : "bg-green-50 border-green-200 text-green-700"
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${
+                      currentEmp.status === 'LEFT' ? "bg-red-500" :
+                      currentEmp.onLeave ? "bg-amber-500" : "bg-green-500"
+                    }`} />
+                    <span className="text-sm font-bold uppercase tracking-wider">
+                      {currentEmp.status === 'LEFT' ? "Đã nghỉ việc" : 
+                       currentEmp.onLeave ? "Đang nghỉ phép" : "Đang làm việc"}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="border-t pt-4 space-y-4">
@@ -345,6 +391,7 @@ export default function EmployeeList() {
                           <th className="px-6 py-5 font-black uppercase tracking-tighter">Họ tên nhân viên</th>
                           <th className="px-6 py-5 font-black uppercase tracking-tighter">Thông tin liên hệ</th>
                           <th className="px-6 py-5 font-black uppercase tracking-tighter text-center">Phòng ban</th>
+                          <th className="px-6 py-5 font-black uppercase tracking-tighter text-center">Trạng thái</th>
                           <th className="px-6 py-5 font-black uppercase tracking-tighter text-center">Thao tác</th>
                       </tr>
                   </thead>
@@ -354,7 +401,7 @@ export default function EmployeeList() {
                               <td className="px-6 py-5 font-black text-slate-400 group-hover:text-primary transition-colors tabular-nums">{employee.id}</td>
                               <td className="px-6 py-5">
                                   <div className="font-black text-slate-800 text-base">{employee.fullName}</div>
-                                  <div className="flex items-center gap-2 mt-1">
+                                   <div className="flex items-center gap-2 mt-1">
                                       <span className="text-[10px] font-black bg-blue-50 text-blue-500 px-2 py-0.5 rounded uppercase tracking-widest">
                                           {employee.employeeType === 'OFFICIAL' || employee.employeeType === 'FULL_TIME' ? 'Chính thức' : 
                                            employee.employeeType === 'PROBATION' ? 'Thử việc' :
@@ -379,6 +426,18 @@ export default function EmployeeList() {
                                       <div className="w-2 h-2 rounded-full bg-primary shadow-sm shadow-primary/20"></div>
                                       {employee.department || 'N/A'}
                                   </div>
+                              </td>
+                              <td className="px-6 py-5 text-center">
+                                  <span className={`text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-widest border ${
+                                      employee.status === 'LEFT' 
+                                          ? 'bg-red-50 text-red-600 border-red-200' 
+                                          : employee.onLeave
+                                          ? 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'
+                                          : 'bg-green-50 text-green-600 border-green-200'
+                                  }`}>
+                                      {employee.status === 'LEFT' ? 'Đã nghỉ việc' : 
+                                       employee.onLeave ? 'Đang nghỉ phép' : 'Đang làm việc'}
+                                  </span>
                               </td>
                               <td className="px-6 py-5">
                                   <div className="flex items-center gap-2">
