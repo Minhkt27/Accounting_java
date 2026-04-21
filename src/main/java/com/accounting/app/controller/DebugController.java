@@ -17,7 +17,7 @@ public class DebugController {
     @Autowired
     private TaxTierRepository taxRepo;
     @Autowired
-    private InsuranceRateRepository insuranceRepo;
+    private InsuranceConfigRepository insuranceRepo;
     @Autowired
     private EntityManager entityManager;
 
@@ -26,7 +26,7 @@ public class DebugController {
         Map<String, Object> res = new HashMap<>();
         res.put("taxTiers", taxRepo.findAll());
         res.put("deductions", deductionRepo.findAll());
-        res.put("insuranceRates", insuranceRepo.findAll());
+        res.put("insuranceConfigs", insuranceRepo.findAll());
         res.put("employees", employeeRepo.findAll());
         return res;
     }

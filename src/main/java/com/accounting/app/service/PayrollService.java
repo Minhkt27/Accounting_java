@@ -25,9 +25,9 @@ public class PayrollService {
     @Autowired private VoucherRepository voucherRepo;
     @Autowired private JournalEntryRepository journalRepo;
     @Autowired private AccountCategoryRepository accountRepo;
-    @Autowired private InsuranceRateRepository insuranceRepo;
     @Autowired private DeductionSettingRepository deductionRepo;
     @Autowired private EmployeeTaxConfigRepository taxConfigRepo;
+    @Autowired private InsuranceConfigRepository insuranceConfigRepo;
 
     @Transactional
     public void approveMonthlyPayroll(Integer month, Integer year) {
@@ -251,32 +251,36 @@ public class PayrollService {
             payroll.setGrossIncome(grossIncome);
 
 
-            // Bước 5: Tính bảo hiểm dựa trên cấu hình InsuranceRate (chỉ lấy APPROVED)
-            List<InsuranceRate> currentRates = insuranceRepo.findAll().stream()
-                .filter(r -> "APPROVED".equals(r.getStatus()))
-                .toList();
-            Double rateXH_EE = currentRates.stream().filter(r -> "XH".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(8.0) / 100.0;
-            Double rateYT_EE = currentRates.stream().filter(r -> "YT".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(1.5) / 100.0;
-            Double rateTN_EE = currentRates.stream().filter(r -> "TN".equals(r.getType())).mapToDouble(InsuranceRate::getEmployeeRate).findFirst().orElse(1.0) / 100.0;
+            // Bước 5: Tính bảo hiểm dựa trên cấu hình InsuranceConfig (chỉ lấy APPROVED)
+            InsuranceConfig config = insuranceConfigRepo.findAll().stream()
+                .filter(c -> "APPROVED".equals(c.getStatus()))
+                .findFirst().orElse(new InsuranceConfig());
+            
+            Double rateXH_EE = (config.getBhxhEmployee() != null ? config.getBhxhEmployee() : 8.0) / 100.0;
+            Double rateYT_EE = (config.getBhytEmployee() != null ? config.getBhytEmployee() : 1.5) / 100.0;
+            Double rateTN_EE = (config.getBhtnEmployee() != null ? config.getBhtnEmployee() : 1.0) / 100.0;
 
-            Double rateXH_ER = currentRates.stream().filter(r -> "XH".equals(r.getType())).mapToDouble(InsuranceRate::getEmployerRate).findFirst().orElse(17.5) / 100.0;
-            Double rateYT_ER = currentRates.stream().filter(r -> "YT".equals(r.getType())).mapToDouble(InsuranceRate::getEmployerRate).findFirst().orElse(3.0) / 100.0;
-            Double rateTN_ER = currentRates.stream().filter(r -> "TN".equals(r.getType())).mapToDouble(InsuranceRate::getEmployerRate).findFirst().orElse(1.0) / 100.0;
-            Double rateKP_ER = 0.02; // Kinh phí công đoàn mặc định 2%
+            Double rateXH_ER = (config.getBhxhEmployer() != null ? config.getBhxhEmployer() : 17.5) / 100.0;
+            Double rateYT_ER = (config.getBhytEmployer() != null ? config.getBhytEmployer() : 3.0) / 100.0;
+            Double rateTN_ER = (config.getBhtnEmployer() != null ? config.getBhtnEmployer() : 1.0) / 100.0;
+            Double rateKP_ER = (config.getKpcdEmployer() != null ? config.getKpcdEmployer() : 2.0) / 100.0;
 
             Double bhxhEE = 0.0, bhytEE = 0.0, bhtnEE = 0.0;
             Double bhxhER = 0.0, bhytER = 0.0, bhtnER = 0.0, kpcdER = 0.0;
 
             if (emp.getEmployeeType() == EmployeeType.FULL_TIME) {
                 Double cSal = emp.getContractSalary() != null ? emp.getContractSalary() : 0.0;
-                bhxhEE = (double) Math.round(cSal * rateXH_EE);
-                bhytEE = (double) Math.round(cSal * rateYT_EE);
-                bhtnEE = (double) Math.round(cSal * rateTN_EE);
+                // Áp dụng mức trần bảo hiểm (thường là 20 lần lương cơ sở)
+                Double insuranceSalary = Math.min(cSal, params.getInsuranceCeiling() != null ? params.getInsuranceCeiling() : 36000000.0);
+                
+                bhxhEE = (double) Math.round(insuranceSalary * rateXH_EE);
+                bhytEE = (double) Math.round(insuranceSalary * rateYT_EE);
+                bhtnEE = (double) Math.round(insuranceSalary * rateTN_EE);
 
-                bhxhER = (double) Math.round(cSal * rateXH_ER);
-                bhytER = (double) Math.round(cSal * rateYT_ER);
-                bhtnER = (double) Math.round(cSal * rateTN_ER);
-                kpcdER = (double) Math.round(cSal * rateKP_ER);
+                bhxhER = (double) Math.round(insuranceSalary * rateXH_ER);
+                bhytER = (double) Math.round(insuranceSalary * rateYT_ER);
+                bhtnER = (double) Math.round(insuranceSalary * rateTN_ER);
+                kpcdER = (double) Math.round(insuranceSalary * rateKP_ER);
             }
             
             payroll.setBhxhNhanVien(bhxhEE);

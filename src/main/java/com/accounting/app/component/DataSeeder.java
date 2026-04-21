@@ -18,7 +18,7 @@ public class DataSeeder implements CommandLineRunner {
 
     @Autowired private RoleRepository roleRepository;
     @Autowired private UserRepository userRepository;
-    @Autowired private InsuranceRateRepository insuranceRepo;
+    @Autowired private InsuranceConfigRepository insuranceConfigRepo;
     @Autowired private SalaryParameterRepository salaryRepo;
     @Autowired private TaxTierRepository taxRepo;
     @Autowired private DeductionSettingRepository deductionRepo;
@@ -99,23 +99,20 @@ public class DataSeeder implements CommandLineRunner {
 
         // Update status for existing null records
         salaryRepo.findAll().stream().filter(x -> x.getStatus() == null).forEach(x -> { x.setStatus("APPROVED"); salaryRepo.save(x); });
-        insuranceRepo.findAll().stream().filter(x -> x.getStatus() == null).forEach(x -> { x.setStatus("APPROVED"); insuranceRepo.save(x); });
+        insuranceConfigRepo.findAll().stream().filter(x -> x.getStatus() == null).forEach(x -> { x.setStatus("APPROVED"); insuranceConfigRepo.save(x); });
         taxRepo.findAll().stream().filter(x -> x.getStatus() == null).forEach(x -> { x.setStatus("APPROVED"); taxRepo.save(x); });
         deductionRepo.findAll().stream().filter(x -> x.getStatus() == null).forEach(x -> { x.setStatus("APPROVED"); deductionRepo.save(x); });
 
-        // Seed UC 02: Insurance Rates
-        if (insuranceRepo.count() == 0) {
-            InsuranceRate xh = new InsuranceRate();
-            xh.setType("XH"); xh.setEmployeeRate(8.0); xh.setEmployerRate(17.5); xh.setEffectiveDate(LocalDate.now()); xh.setStatus("APPROVED");
-            insuranceRepo.save(xh);
-
-            InsuranceRate yt = new InsuranceRate();
-            yt.setType("YT"); yt.setEmployeeRate(1.5); yt.setEmployerRate(3.0); yt.setEffectiveDate(LocalDate.now()); yt.setStatus("APPROVED");
-            insuranceRepo.save(yt);
-
-            InsuranceRate tn = new InsuranceRate();
-            tn.setType("TN"); tn.setEmployeeRate(1.0); tn.setEmployerRate(1.0); tn.setEffectiveDate(LocalDate.now()); tn.setStatus("APPROVED");
-            insuranceRepo.save(tn);
+        // Seed UC 02: Insurance Config (Unified)
+        if (insuranceConfigRepo.count() == 0) {
+            InsuranceConfig config = new InsuranceConfig();
+            config.setBhxhEmployee(8.0); config.setBhytEmployee(1.5); config.setBhtnEmployee(1.0);
+            config.setBhxhEmployer(17.5); config.setBhytEmployer(3.0); config.setBhtnEmployer(1.0);
+            config.setKpcdEmployer(2.0);
+            config.setEffectiveDate(LocalDate.now());
+            config.setStatus("APPROVED");
+            insuranceConfigRepo.save(config);
+            System.out.println("Seeded Unified Insurance Configuration");
         }
 
         // Seed UC 03: Salary Params
@@ -163,6 +160,9 @@ public class DataSeeder implements CommandLineRunner {
         if (employeeRepo.count() == 0) {
             Employee e1 = new Employee("NV001", "Nguyễn Văn Anh", 25000000.0, 1, EmployeeType.FULL_TIME);
             e1.setDob(LocalDate.of(1990, 5, 20));
+            e1.setPhone("0912345678");
+            e1.setEmail("anhnv@company.com");
+            e1.setHometown("Hà Nội");
             e1.setPositionCoefficient(0.8);
             e1.setSeniorityAllowance(500000.0);
             e1.setDepartment("Kế toán");
@@ -171,6 +171,9 @@ public class DataSeeder implements CommandLineRunner {
 
             Employee e2 = new Employee("NV002", "Trần Thị Bình", 12000000.0, 0, EmployeeType.PROBATION);
             e2.setDob(LocalDate.of(1995, 10, 15));
+            e2.setPhone("0987654321");
+            e2.setEmail("binhtt@company.com");
+            e2.setHometown("Hải Phòng");
             e2.setPositionCoefficient(0.4);
             e2.setSeniorityAllowance(0.0);
             e2.setDepartment("Nhân sự");
@@ -179,6 +182,9 @@ public class DataSeeder implements CommandLineRunner {
 
             Employee e3 = new Employee("NV003", "Lê Văn Cường", 5000000.0, 0, EmployeeType.INTERN);
             e3.setDob(LocalDate.of(2002, 1, 1));
+            e3.setPhone("0901234567");
+            e3.setEmail("cuonglv@company.com");
+            e3.setHometown("Đà Nẵng");
             e3.setDepartment("Kinh doanh");
             e3.setActive(true);
             employeeRepo.save(e3);

@@ -29,15 +29,6 @@ export interface InsuranceConfig {
     status?: "APPROVED" | "PENDING";
 }
 
-export interface InsuranceRate {
-    id?: number;
-    type: string;
-    employeeRate: number;
-    employerRate: number;
-    effectiveDate: string;
-    status?: "APPROVED" | "PENDING";
-}
-
 export type EmployeeType = "FULL_TIME" | "OFFICIAL" | "PROBATION" | "INTERN" | "TRAINEE" | "OTHER";
 export type TaxMethod = "EXEMPT" | "FIXED_10" | "PROGRESSIVE";
 

@@ -14,17 +14,12 @@ import java.util.List;
 @RequestMapping("/api/config")
 public class SystemConfigController {
 
-    @Autowired private InsuranceRateRepository insuranceRepo;
     @Autowired private SalaryParameterRepository salaryRepo;
     @Autowired private TaxTierRepository taxRepo;
     @Autowired private DeductionSettingRepository deductionRepo;
     @Autowired private EmployeeTaxConfigRepository taxConfigRepo;
     @Autowired private InsuranceConfigRepository insuranceConfigRepo;
 
-    // UC 02: Insurance
-    @GetMapping("/insurance")
-    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public List<InsuranceRate> getInsurance() { return insuranceRepo.findAll(); }
 
     // NEW: Unified Insurance Config
     @GetMapping("/insurance-config")
@@ -72,69 +67,6 @@ public class SystemConfigController {
         }
     }
 
-    @PostMapping("/insurance/{id}/approve")
-    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    @SuppressWarnings("null")
-    public InsuranceRate approveInsurance(@PathVariable Long id) {
-        InsuranceRate rate = insuranceRepo.findById(id).orElseThrow();
-        // Không xóa bảo hiểm cũ vì có thể có nhiều loại (BHXH, BHYT...)
-        rate.setStatus("APPROVED");
-        return insuranceRepo.save(rate);
-    }
-
-    @PostMapping("/insurance/{id}/reject")
-    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    @SuppressWarnings("null")
-    public void rejectInsurance(@PathVariable Long id) {
-        InsuranceRate rate = insuranceRepo.findById(id).orElseThrow();
-        if ("PENDING".equals(rate.getStatus())) {
-            insuranceRepo.delete(rate);
-        }
-    }
-
-    @PostMapping("/insurance")
-    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public InsuranceRate createInsurance(@RequestBody InsuranceRate rate) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
-        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        rate.setId(null);
-        if (isAdmin || isChief) {
-            rate.setStatus("APPROVED");
-        } else {
-            rate.setStatus("PENDING");
-        }
-        return insuranceRepo.save(rate);
-    }
-
-    @PutMapping("/insurance/{id}")
-    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    @SuppressWarnings("null")
-    public InsuranceRate updateInsurance(@PathVariable Long id, @RequestBody InsuranceRate rate) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
-        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        InsuranceRate existing = insuranceRepo.findById(id).orElseThrow();
-        existing.setType(rate.getType());
-        existing.setEmployeeRate(rate.getEmployeeRate());
-        existing.setEmployerRate(rate.getEmployerRate());
-        existing.setEffectiveDate(rate.getEffectiveDate());
-
-        if (isAdmin || isChief) {
-            existing.setStatus("APPROVED");
-        } else {
-            existing.setStatus("PENDING");
-        }
-        return insuranceRepo.save(existing);
-    }
-
-    @DeleteMapping("/insurance/{id}")
-    @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public void deleteInsurance(@PathVariable Long id) {
-        insuranceRepo.deleteById(id);
-    }
 
     // UC 03: Salary Params
     @GetMapping("/params")
