@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 public class Employee extends BaseEntity {
     @Id
     @NotBlank(message = "Mã nhân viên không được để trống")
-    private String id; // Mã nhân viên 
+    private String id; // Mã nhân viên
 
     @NotBlank(message = "Họ tên không được để trống")
     private String fullName; // Họ và tên
@@ -29,11 +29,10 @@ public class Employee extends BaseEntity {
     private Integer dependentCount; // Số người phụ thuộc
 
     @Past(message = "Ngày sinh phải là một ngày trong quá khứ")
-    private LocalDate dob; // Ngày sinh 
+    private LocalDate dob; // Ngày sinh
 
     @NotBlank(message = "Số điện thoại không được để trống")
-    @Pattern(regexp = "^(0|\\+84)\\d{8,11}$", 
-             message = "Số điện thoại không đúng định dạng (8-11 số)")
+    @Pattern(regexp = "^(0|\\+84)\\d{8,11}$", message = "Số điện thoại không đúng định dạng (8-11 số)")
     private String phone; // Số điện thoại
 
     @NotBlank(message = "Email không được để trống")
@@ -43,10 +42,10 @@ public class Employee extends BaseEntity {
     @NotBlank(message = "Quê quán không được để trống")
     private String hometown; // Quê quán
     private String department; // Phòng ban
-    private String contractFilePath; // Đường dẫn file hợp đồng 
+    private String contractFilePath; // Đường dẫn file hợp đồng
 
     private Double positionCoefficient = 0.0; // Hệ số chức vụ: 0.4 - 1.0 (nhân lương tối thiểu)
-    private Double seniorityAllowance = 0.0;   // Phụ cấp thâm niên (cố định theo năm)
+    private Double seniorityAllowance = 0.0; // Phụ cấp thâm niên (cố định theo năm)
 
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Loại hình nhân sự không được để trống")

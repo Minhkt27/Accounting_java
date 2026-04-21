@@ -5,6 +5,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.accounting.app.model.LeaveRecord;
 import com.accounting.app.repository.LeaveRecordRepository;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)

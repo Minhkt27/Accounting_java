@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.Valid;
 import com.accounting.app.model.Employee;
+import com.accounting.app.model.EmployeeStatus;
 import com.accounting.app.repository.EmployeeRepository;
 import java.io.IOException;
 import java.net.MalformedURLException;
