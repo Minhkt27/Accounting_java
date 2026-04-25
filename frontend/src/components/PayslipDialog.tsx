@@ -73,112 +73,204 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
           <FileText className="w-3 h-3" /> Phiếu lương
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl bg-white text-black p-0 payslip-modal print:p-0 print:m-0 print:shadow-none sm:rounded-[1rem] border-none shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
-        <div id="payslip-content" className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
-          <div className="flex justify-between items-start border-b-4 border-primary pb-4">
-            <div>
-              <h1 className="text-lg font-black text-slate-800 uppercase leading-none text-primary">PHUC ANH COMPANY</h1>
-              <p className="text-[10px] text-muted-foreground mt-1 font-bold italic underline opacity-80">Số 43, Tổ 4, Xã Sóc Sơn, TP Hà Nội, Việt Nam</p>
-              <p className="text-[10px] text-muted-foreground font-bold mt-1 opacity-80">Mã số thuế: 0110465135</p>
-              <hr className="my-2 border-primary/20 w-32" />
-              <h2 className="text-lg font-black text-primary uppercase">Phiếu Lương Nhân Viên</h2>
-              <p className="text-sm font-black text-slate-500">Kỳ lương: Tháng {payroll.month}/{payroll.year}</p>
-            </div>
-            <div className="text-right border-l pl-6 border-slate-100 min-w-[200px]">
-              <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Thông tin nhân viên</p>
-              <p className="font-black text-xl text-slate-900 tracking-tight">{payroll.employee?.fullName}</p>
-              <p className="text-sm font-bold text-primary">Mã NV: {payroll.employee?.id}</p>
-              <div className="mt-2 text-right text-[11px] text-slate-500 space-y-0.5 font-medium">
-                <p>Ngày sinh: {payroll.employee?.dob || '---'}</p>
-                <p>SĐT: {payroll.employee?.phone || '---'}</p>
-                <p>Email: {payroll.employee?.email || '---'}</p>
-              </div>
+      <DialogContent className="max-w-4xl bg-white text-black p-0 payslip-modal print:p-0 print:m-0 print:shadow-none sm:rounded-[0.5rem] border-none shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+        <div id="payslip-content" className="flex-1 overflow-y-auto p-10 space-y-8 scrollbar-hide text-[13px] font-medium leading-relaxed">
+          {/* Header Section */}
+          <div className="flex flex-col items-center text-center space-y-1 mb-6">
+            <h1 className="text-sm font-bold uppercase w-full text-left">Công ty TNHH thiết bị kỹ thuật tin học Phúc Anh</h1>
+            <p className="text-[12px] w-full text-left">Số 43, Tổ 4, Xã Sóc Sơn, TP Hà Nội, Việt Nam</p>
+            <p className="text-[12px] w-full text-left">Mã số thuế: 0110465135</p>
+            
+            <div className="py-4 space-y-1">
+                <h2 className="text-xl font-black uppercase tracking-tight">PHIẾU LƯƠNG NHÂN VIÊN</h2>
+                <p className="text-sm font-bold">Kỳ lương: Tháng {payroll.month} / {payroll.year}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 text-sm">
-            <div className="space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-              <h3 className="font-bold border-b pb-1 text-primary/80 uppercase text-[10px]">1. THÔNG TIN CÔNG TÁC</h3>
-              <div className="flex justify-between"><span>Lương hợp đồng:</span> <span className="font-bold">{formatVND(payroll.contractSalary)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>Số ngày công thực tế:</span> <span className="font-bold">{payroll.realWorkDays} ngày</span></div>
-              <div className="flex justify-between text-xs text-green-600"><span>Số ngày nghỉ hưởng lương:</span> <span className="font-bold">+{payroll.paidLeaveDays || 0} ngày</span></div>
-              <div className="mt-2 pt-2 border-t border-dashed">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Giờ làm thêm (OT)</p>
-                <div className="flex justify-between text-[11px]"><span>Ngày thường (150%):</span> <span className="font-medium">{formatVND(payroll.otNormalPay)}</span></div>
-                <div className="flex justify-between text-[11px]"><span>Nghỉ tuần (200%):</span> <span className="font-medium">{formatVND(payroll.otWeekendPay)}</span></div>
-                <div className="flex justify-between text-[11px]"><span>Lễ, Tết (300%):</span> <span className="font-medium">{formatVND(payroll.otHolidayPay)}</span></div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <h3 className="font-bold border-b pb-1 text-primary/80 uppercase text-[10px]">2. CÁC KHOẢN THU NHẬP</h3>
-              <div className="flex justify-between"><span>Lương theo thời gian:</span> <span className="font-bold">{formatVND(payroll.baseSalaryPay)}</span></div>
-              <div className="flex justify-between"><span>Phụ cấp ăn trưa:</span> <span className="font-bold text-blue-600">{formatVND(payroll.mealAllowance)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>Phụ cấp chức vụ:</span> <span>{formatVND(payroll.positionAllowance)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>Phụ cấp thâm niên:</span> <span>{formatVND(payroll.seniorityAllowance)}</span></div>
-              <div className="flex justify-between"><span>Làm thêm giờ (OT):</span> <span className="font-bold">{formatVND(payroll.otPay)}</span></div>
-              <div className="text-[10px] text-green-600 bg-green-50/50 p-1 rounded italic flex justify-between">
-                <span>- Trong đó miễn thuế TNCN:</span>
-                <span className="font-bold">{formatVND(payroll.otPremiumPay + payroll.mealAllowance)}</span>
-              </div>
-              <p className="text-[8px] text-slate-400 italic mt-0.5">(Gồm Phụ cấp ăn ca và Phần vượt trội OT)</p>
-              <div className="flex justify-between bg-primary/5 p-2 px-3 font-black border-t text-base mt-2 rounded-lg">
-                <span className="uppercase">TỔNG THU NHẬP (GROSS):</span> 
-                <span>{formatVND(payroll.grossIncome)}</span>
-              </div>
-            </div>
+          {/* Employee & Work Info Grid */}
+          <div className="grid grid-cols-2 gap-x-20 gap-y-1 border-t border-b py-4">
+             <div className="flex">
+                <span className="w-40 shrink-0">Họ tên nhân viên:</span>
+                <span className="font-bold uppercase">{payroll.employee?.fullName}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">Ngày sinh:</span>
+                <span>{payroll.employee?.dob || '---'}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">SĐT:</span>
+                <span>{payroll.employee?.phone || '---'}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">Mã nhân viên:</span>
+                <span className="font-bold">{payroll.employee?.id}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">Chức danh/Phòng ban:</span>
+                <span>{payroll.employee?.department || 'Văn phòng'}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0 italic">Lương đóng Bảo hiểm:</span>
+                <span className="font-bold">{formatVND(payroll.contractSalary)}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">Ngày công chuẩn:</span>
+                <span className="font-bold underline">{payroll.standardWorkDays || 26}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">Ngày công đi làm thực tế:</span>
+                <span className="font-bold">{payroll.realWorkDays}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">Ngày nghỉ không tính phép:</span>
+                <span>{(payroll.standardWorkDays || 26) - (payroll.realWorkDays + (payroll.paidLeaveDays || 0))}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">Ngày nghỉ hưởng lương:</span>
+                <span className="font-bold text-blue-600">{payroll.paidLeaveDays || 0}</span>
+             </div>
+             <div className="flex">
+                <span className="w-40 shrink-0">Giờ làm ngoài giờ (OT):</span>
+                <span className="font-bold text-orange-600">{(payroll.otNormalHours || 0) + (payroll.otWeekendHours || 0) + (payroll.otHolidayHours || 0)} giờ</span>
+             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 text-sm">
-            <div className="space-y-3">
-              <h3 className="font-bold border-b pb-1 text-red-600/80 uppercase text-[10px]">3. CÁC KHOẢN KHẤU TRỪ (NLĐ)</h3>
-              <div className="flex justify-between text-[11px]"><span>BHXH (8%):</span> <span className="text-red-600">-{formatVND(payroll.bhxhNhanVien)}</span></div>
-              <div className="flex justify-between text-[11px]"><span>BHYT (1.5%):</span> <span className="text-red-600">-{formatVND(payroll.bhytNhanVien)}</span></div>
-              <div className="flex justify-between text-[11px]"><span>BHTN (1%):</span> <span className="text-red-600">-{formatVND(payroll.bhtnNhanVien)}</span></div>
-              <div className="flex justify-between font-bold text-red-500 border-t pt-1"><span>TỔNG TRÍCH BH (10.5%):</span> <span className="tabular-nums">-{formatVND(payroll.totalInsurance)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>Thu nhập chịu thuế:</span> <span className="font-bold">{formatVND(payroll.taxableIncomeBase)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>Giảm trừ bản thân:</span> <span>-{formatVND(payroll.personalDeduction)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>Giảm trừ gia cảnh ({payroll.dependentCount} NTT):</span> <span>-{formatVND(payroll.dependentDeduction)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>Giảm trừ bảo hiểm (10.5%):</span> <span>-{formatVND(payroll.totalInsurance)}</span></div>
-              <div className="flex justify-between text-xs text-blue-600 font-bold border-b border-dotted pb-1 mb-1"><span>Thu nhập tính thuế:</span> <span>{formatVND(payroll.taxableIncome)}</span></div>
-              <div className="flex justify-between group relative cursor-help">
-                <span className="underline decoration-dotted decoration-red-300 font-bold">THUẾ TNCN:</span>
-                <span className="font-bold text-red-500">-{formatVND(payroll.taxAmount)}</span>
-                <div className="absolute bottom-full left-0 hidden group-hover:block bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg z-50 w-48 mb-1">
-                  TN tính thuế = Gross - Ăn trưa - BH - Giảm trừ - OT miễn thuế
+          {/* Main Calculation Tables */}
+          <div className="grid grid-cols-2 gap-0 border-l border-r border-t border-black">
+             {/* LEFT COLUMN: INCOME */}
+             <div className="border-r border-black flex flex-col">
+                <div className="flex border-b border-black font-bold text-center bg-slate-50">
+                   <div className="w-12 border-r border-black py-2">STT</div>
+                   <div className="flex-1 border-r border-black py-2">Các khoản thu nhập</div>
+                   <div className="w-32 py-2">Số tiền</div>
                 </div>
-              </div>
-            </div>
-            <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-200 space-y-2 flex flex-col justify-center text-center shadow-inner">
-              <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest leading-none mb-1">THỰC LĨNH CUỐI CÙNG (NET)</p>
-              <p className="text-3xl font-black text-emerald-600 tabular-nums leading-none mb-2">{formatVND(payroll.netPay)}</p>
-              <div className="pt-2 border-t border-emerald-100">
-                <p className="text-[9px] font-bold text-emerald-800 uppercase opacity-60">Bằng chữ</p>
-                <p className="text-[11px] italic text-emerald-800 font-bold">{toVietnameseWords(payroll.netPay)}</p>
-              </div>
-            </div>
+                
+                <div className="flex flex-1">
+                   <div className="w-12 border-r border-black text-center py-2 space-y-4">
+                      <div>1</div>
+                      <div>2</div>
+                      <div className="pt-10">3</div>
+                      <div className="pt-24">4</div>
+                      <div className="pt-2">5</div>
+                      <div className="pt-2">6</div>
+                   </div>
+                   <div className="flex-1 border-r border-black py-2 space-y-4">
+                      <div className="px-2">Lương theo thời gian</div>
+                      <div className="px-2">Phụ cấp thâm niên</div>
+                      <div className="px-2 font-bold bg-slate-50 py-1">Tổng tiền làm ngoài giờ</div>
+                      <div className="px-4 text-[11px] space-y-1 italic text-slate-600">
+                         <div className="flex justify-between"><span>+ Ngày thường (150%):</span> <span>{payroll.otNormalHours || 0}h</span></div>
+                         <div className="flex justify-between"><span>+ Nghỉ tuần (200%):</span> <span>{payroll.otWeekendHours || 0}h</span></div>
+                         <div className="flex justify-between"><span>+ Lễ, Tết (300%):</span> <span>{payroll.otHolidayHours || 0}h</span></div>
+                      </div>
+                      <div className="px-2 pt-2 border-t border-black/10">Phụ cấp ăn trưa ({payroll.realWorkDays} ngày)</div>
+                      <div className="px-2">Tiền thưởng (Khen thưởng)</div>
+                      <div className="px-2">Tiền phạt (Kỷ luật)</div>
+                   </div>
+                   <div className="w-32 py-2 text-right space-y-4 pr-2 tabular-nums">
+                      <div>{formatVND(payroll.baseSalaryPay)}</div>
+                      <div>{formatVND(payroll.seniorityAllowance)}</div>
+                      <div className="font-bold pt-1 mt-1">{formatVND(payroll.otPay)}</div>
+                      <div className="text-[11px] space-y-1 pt-1 opacity-80">
+                         <div>{formatVND(payroll.otNormalPay)}</div>
+                         <div>{formatVND(payroll.otWeekendPay)}</div>
+                         <div>{formatVND(payroll.otHolidayPay)}</div>
+                      </div>
+                      <div className="pt-6">{formatVND(payroll.mealAllowance)}</div>
+                      <div>{formatVND(payroll.bonus)}</div>
+                      <div className="text-red-500">-{formatVND(payroll.penalty)}</div>
+                   </div>
+                </div>
+                <div className="flex border-t border-black font-black bg-slate-100 py-3 uppercase">
+                   <div className="w-12 border-r border-black/30"></div>
+                   <div className="flex-1 px-4 leading-tight">TỔNG THU NHẬP (GROSS)</div>
+                   <div className="w-32 text-right pr-4">{formatVND(payroll.grossIncome)}</div>
+                </div>
+             </div>
+
+             {/* RIGHT COLUMN: DEDUCTIONS */}
+             <div className="flex flex-col">
+                <div className="flex border-b border-black font-bold text-center bg-slate-50">
+                   <div className="w-12 border-r border-black py-2">STT</div>
+                   <div className="flex-1 border-r border-black py-2">Các khoản khấu trừ vào Lương NLĐ</div>
+                   <div className="w-32 py-2 text-right pr-2">Số tiền</div>
+                </div>
+
+                <div className="flex flex-1">
+                   <div className="w-12 border-r border-black text-center py-2 space-y-4">
+                      <div>1</div>
+                      <div>2</div>
+                      <div>3</div>
+                      <div className="pt-4">4</div>
+                      <div className="pt-2">4.1</div>
+                      <div className="pt-2">4.2</div>
+                      <div className="pt-2">4.3</div>
+                      <div className="pt-2">4.4</div>
+                   </div>
+                   <div className="flex-1 border-r border-black py-2 space-y-4">
+                      <div className="px-2">Bảo hiểm xã hội (8%)</div>
+                      <div className="px-2">Bảo hiểm y tế (1.5%)</div>
+                      <div className="px-2">Bảo hiểm thất nghiệp (1%)</div>
+                      <div className="px-2 font-black border-t border-black/10 pt-2 flex justify-between bg-red-50/30">
+                        <span>TỔNG TRÍCH BẢO HIỂM</span>
+                        <span className="font-bold">(10.5%)</span>
+                      </div>
+                      <div className="px-2 font-bold pt-4">Thuế thu nhập cá nhân</div>
+                      <div className="px-4 text-[11px] italic text-slate-500">Trong đó miễn thuế TNCN</div>
+                      <div className="px-4 text-[11px] italic text-slate-500">Giảm trừ bản thân</div>
+                      <div className="px-4 text-[11px] italic text-slate-500">Giảm trừ người phụ thuộc ({payroll.dependentCount} NTT)</div>
+                      <div className="px-4 text-[11px] italic text-slate-500">Giảm trừ Bảo hiểm (10.5%)</div>
+                   </div>
+                   <div className="w-32 py-2 text-right space-y-4 pr-2 tabular-nums">
+                      <div>{formatVND(payroll.bhxhNhanVien)}</div>
+                      <div>{formatVND(payroll.bhytNhanVien)}</div>
+                      <div>{formatVND(payroll.bhtnNhanVien)}</div>
+                      <div className="font-black pt-2 mt-0.5">{formatVND(payroll.totalInsurance)}</div>
+                      <div className="pt-4 font-bold text-red-600">-{formatVND(payroll.taxAmount)}</div>
+                      <div className="text-[10px] text-slate-400">{formatVND((payroll.otPremiumPay || 0) + (payroll.mealAllowance || 0))}</div>
+                      <div className="text-[10px] text-slate-400">{formatVND(payroll.personalDeduction)}</div>
+                      <div className="text-[10px] text-slate-400">{formatVND(payroll.dependentDeduction)}</div>
+                      <div className="text-[10px] text-slate-400">{formatVND(payroll.totalInsurance)}</div>
+                   </div>
+                </div>
+                
+                <div className="flex flex-col border-t border-black p-2 bg-slate-50/50 space-y-1">
+                    <div className="flex justify-between items-center px-2">
+                        <span className="font-bold text-[11px] uppercase opacity-70">Thu nhập chịu thuế:</span>
+                        <span className="font-bold text-primary">{formatVND(payroll.taxableIncomeBase)}</span>
+                    </div>
+                    <div className="flex justify-between items-center px-2 border-t border-black/5 pt-1">
+                        <span className="font-bold text-[11px] uppercase opacity-70">Thu nhập tính thuế:</span>
+                        <span className="font-black text-rose-600 underline">{formatVND(payroll.taxableIncome)}</span>
+                    </div>
+                </div>
+             </div>
           </div>
 
-          <div className="bg-slate-900 p-5 rounded-2xl text-[10px] text-white">
-            <p className="font-bold text-slate-400 uppercase mb-3 tracking-widest border-b border-slate-800 pb-2">Thông tin tham khảo: Chi phí doanh nghiệp đóng (23.5%)</p>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="flex flex-col"><span>BHXH (17.5%):</span> <span className="font-bold text-sm text-slate-200">{formatVND(payroll.bhxhCongTy)}</span></div>
-              <div className="flex flex-col"><span>BHYT (3%):</span> <span className="font-bold text-sm text-slate-200">{formatVND(payroll.bhytCongTy)}</span></div>
-              <div className="flex flex-col"><span>BHTN (1%):</span> <span className="font-bold text-sm text-slate-200">{formatVND(payroll.bhtnCongTy)}</span></div>
-              <div className="flex flex-col"><span>KPCĐ (2%):</span> <span className="font-bold text-sm text-slate-200">{formatVND(payroll.kpcdCongTy)}</span></div>
-            </div>
-            <div className="mt-3 font-bold text-blue-400 flex justify-end text-xs pt-2 border-t border-slate-800 uppercase">
-                Tổng chi phí BH & KPCĐ trích nộp: {formatVND(payroll.totalEmployerInsurance)}
-            </div>
+          {/* NET PAY SECTION */}
+          <div className="border border-black bg-[#111827] text-white p-6 flex flex-col items-center justify-center space-y-4 rounded-b-xl shadow-inner">
+             <div className="flex items-baseline gap-6 w-full justify-center">
+                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">TỔNG SỐ TIỀN LƯƠNG THỰC NHẬN:</h3>
+                 <span className="text-4xl font-black text-yellow-400 tracking-tighter tabular-nums drop-shadow-md">{formatVND(payroll.netPay)}</span>
+             </div>
+             <div className="flex gap-4 w-full justify-center pt-2 border-t border-white/10 italic">
+                <span className="font-bold text-slate-400">Bằng chữ:</span>
+                <span className="font-black text-white capitalize">{toVietnameseWords(payroll.netPay)}</span>
+             </div>
           </div>
 
-          <div className="flex justify-between items-end pt-8 italic text-[10px] text-muted-foreground uppercase font-bold">
-            <div>
-                <p>Mã chứng từ: PAY-{payroll.id}</p>
-                <p>Ngày in: {new Date().toLocaleDateString()}</p>
-            </div>
-            <div className="text-center w-32 border-t-2 border-slate-200 pt-2">
-              <p>Nhân viên ký nhận</p>
-            </div>
+          {/* Footer Signatures */}
+          <div className="grid grid-cols-2 pt-10 text-center uppercase tracking-widest text-[11px] font-black">
+             <div className="space-y-20">
+                <p>Người lập phiếu</p>
+                <div className="h-20" />
+                <p className="text-slate-400 normal-case font-bold">{new Date().toLocaleDateString('vi-VN')}</p>
+             </div>
+             <div className="space-y-20">
+                <p>Nhân viên ký nhận</p>
+                <div className="h-20" />
+                <p className="normal-case italic font-medium opacity-50 px-10 border-t border-black/40 pt-2">(Ký và ghi rõ họ tên)</p>
+             </div>
           </div>
         </div>
       </DialogContent>

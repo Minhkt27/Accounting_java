@@ -33,7 +33,15 @@ export default function SalaryConfigPage() {
   })
   
   // --- State for Tax Config ---
-  const [taxTiers, setTaxTiers] = useState<TaxTier[]>([])
+  // Mặc định 5 bậc thuế luỹ tiến từng phần theo quy định pháp luật
+  const DEFAULT_5_TAX_TIERS: TaxTier[] = [
+    { lowerBound: 0, upperBound: 10000000, lowerBoundYearly: 0, upperBoundYearly: 120000000, taxRate: 5, tierLevel: 1, status: 'PENDING' },
+    { lowerBound: 10000000, upperBound: 30000000, lowerBoundYearly: 120000000, upperBoundYearly: 360000000, taxRate: 10, tierLevel: 2, status: 'PENDING' },
+    { lowerBound: 30000000, upperBound: 60000000, lowerBoundYearly: 360000000, upperBoundYearly: 720000000, taxRate: 20, tierLevel: 3, status: 'PENDING' },
+    { lowerBound: 60000000, upperBound: 100000000, lowerBoundYearly: 720000000, upperBoundYearly: 1200000000, taxRate: 30, tierLevel: 4, status: 'PENDING' },
+    { lowerBound: 100000000, upperBound: 999999999, lowerBoundYearly: 1200000000, upperBoundYearly: 999999999999, taxRate: 35, tierLevel: 5, status: 'PENDING' },
+  ]
+  const [taxTiers, setTaxTiers] = useState<TaxTier[]>(DEFAULT_5_TAX_TIERS)
   const [deductions, setDeductions] = useState<DeductionSetting>({ personalDeduction: 15500000, dependentDeduction: 6200000 })
   const [taxRules, setTaxRules] = useState<EmployeeTaxConfig[]>([])
 
@@ -91,11 +99,16 @@ export default function SalaryConfigPage() {
       }
       
       const allTax = resTax.data
-      const hasPendingTax = allTax.some((x: TaxTier) => x.status === 'PENDING')
-      if (hasPendingTax) {
-          setTaxTiers(allTax.filter((x: TaxTier) => x.status === 'PENDING'))
+      if (allTax.length === 0) {
+          // Nếu DB chưa có biểu thuế -> hiển thị mặc định 5 bậc theo luật
+          setTaxTiers(DEFAULT_5_TAX_TIERS)
       } else {
-          setTaxTiers(allTax.filter((x: TaxTier) => x.status === 'APPROVED'))
+          const hasPendingTax = allTax.some((x: TaxTier) => x.status === 'PENDING')
+          if (hasPendingTax) {
+              setTaxTiers(allTax.filter((x: TaxTier) => x.status === 'PENDING'))
+          } else {
+              setTaxTiers(allTax.filter((x: TaxTier) => x.status === 'APPROVED'))
+          }
       }
       
       setTaxRules(resTaxRules.data)
@@ -702,153 +715,159 @@ export default function SalaryConfigPage() {
                                         <div className="flex items-center gap-2">
                                             <Button 
                                                 variant="outline" 
-                                                onClick={() => setTaxTiers([
-                                                    { lowerBound: 0, upperBound: 5000000, taxRate: 5, tierLevel: 1, status: 'PENDING' },
-                                                    { lowerBound: 5000000, upperBound: 10000000, taxRate: 10, tierLevel: 2, status: 'PENDING' },
-                                                    { lowerBound: 10000000, upperBound: 18000000, taxRate: 15, tierLevel: 3, status: 'PENDING' },
-                                                    { lowerBound: 18000000, upperBound: 32000000, taxRate: 20, tierLevel: 4, status: 'PENDING' },
-                                                    { lowerBound: 32000000, upperBound: 999999999, taxRate: 25, tierLevel: 5, status: 'PENDING' }
-                                                ])} 
+                                                onClick={() => setTaxTiers([...DEFAULT_5_TAX_TIERS])} 
                                                 className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-blue-100 text-blue-600 hover:bg-blue-50"
                                             >
                                                 <RefreshCw size={14}/> Khôi phục chuẩn 5 bậc
                                             </Button>
-                                            <Button variant="outline" onClick={() => setTaxTiers([...taxTiers, { lowerBound: 0, upperBound: 0, taxRate: 0, tierLevel: taxTiers.length + 1, status: 'PENDING' }])} className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-slate-200 hover:bg-slate-50">
+                                            <Button variant="outline" onClick={() => setTaxTiers([...taxTiers, { lowerBound: 0, upperBound: 0, lowerBoundYearly: 0, upperBoundYearly: 0, taxRate: 0, tierLevel: taxTiers.length + 1, status: 'PENDING' }])} className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-slate-200 hover:bg-slate-50">
                                                 <Plus size={14}/> Thêm bậc
                                             </Button>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-                                    <table className="w-full text-xs">
-                                        <thead className="bg-slate-50 border-b border-slate-200">
-                                            <tr className="border-b border-slate-100">
-                                                <th rowSpan={2} className="px-6 py-4 font-black uppercase text-slate-500 text-center w-16">Bậc thuế</th>
-                                                <th colSpan={2} className="px-6 py-3 font-black uppercase text-slate-500 text-center border-x border-slate-100">Phần thu nhập tính thuế/năm (VND)</th>
-                                                <th colSpan={2} className="px-6 py-3 font-black uppercase text-slate-500 text-center">Phần thu nhập tính thuế/tháng (VND)</th>
-                                                <th rowSpan={2} className="px-6 py-4 font-black uppercase text-slate-500 text-center w-32 border-l border-slate-100">Thuế suất (%)</th>
-                                            </tr>
-                                            <tr>
-                                                <th className="px-3 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 text-[10px]">Trên</th>
-                                                <th className="px-3 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 text-[10px]">Đến</th>
-                                                <th className="px-3 py-2 font-black uppercase text-slate-400 text-center border-r border-slate-100 text-[10px]">Trên</th>
-                                                <th className="px-3 py-2 font-black uppercase text-slate-400 text-center text-[10px]">Đến</th>
+                                <div className="border border-slate-400 shadow-sm overflow-hidden bg-white">
+                                    <table className="w-full text-sm border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-slate-400">
+                                                <th className="px-4 py-4 font-semibold text-slate-800 text-center w-24 border-r border-slate-400 bg-slate-50">Bậc thuế</th>
+                                                <th className="px-6 py-4 font-semibold text-slate-800 text-center border-r border-slate-400 bg-slate-50 leading-relaxed">
+                                                    Phần thu nhập tính thuế/năm<br/><span className="text-sm font-normal text-slate-600 tracking-tight">(triệu đồng)</span>
+                                                </th>
+                                                <th className="px-6 py-4 font-semibold text-slate-800 text-center border-r border-slate-400 bg-slate-50 leading-relaxed">
+                                                    Phần thu nhập tính thuế/tháng<br/><span className="text-sm font-normal text-slate-600 tracking-tight">(triệu đồng)</span>
+                                                </th>
+                                                <th className="px-4 py-4 font-semibold text-slate-800 text-center w-36 bg-slate-50 leading-relaxed">
+                                                    Thuế suất<br/><span className="text-sm font-normal text-slate-600 tracking-tight">(%)</span>
+                                                </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {[...taxTiers].sort((a,b)=>a.tierLevel - b.tierLevel).map((t) => (
-                                                <tr key={t.tierLevel} className="hover:bg-slate-50/50 transition-colors text-[11px]">
-                                                    <td className="px-3 py-4 text-center font-black text-slate-600 border-r border-slate-100 bg-slate-50/20">{t.tierLevel}</td>
+                                        <tbody className="divide-y divide-slate-400">
+                                            {[...taxTiers].sort((a,b)=>a.tierLevel - b.tierLevel).map((t) => {
+                                                const minM_month = t.lowerBound / 1000000;
+                                                const maxM_month = t.upperBound / 1000000;
+                                                const minM_year = (t.lowerBound * 12) / 1000000;
+                                                const maxM_year = (t.upperBound * 12) / 1000000;
+                                                
+                                                const renderText = (min: number, max: number) => {
+                                                    if (min === 0) return `Đến ${max}`;
+                                                    if (max > 900) return `Trên ${min}`;
+                                                    return `Trên ${min} đến ${max}`;
+                                                };
+
+                                                return (
+                                                <tr key={t.tierLevel} className="hover:bg-slate-50/50 transition-colors text-slate-900">
+                                                    <td className="px-4 py-4 text-center font-medium border-r border-slate-400">{t.tierLevel}</td>
+                                                    
                                                     {/* Thu nhập Năm */}
-                                                    <td className="px-3 py-4 text-right font-black text-slate-800 border-r border-slate-100 tabular-nums uppercase whitespace-nowrap">
+                                                    <td className="px-6 py-4 text-left border-r border-slate-400">
                                                         {isPitEditing ? (
-                                                            <Input 
-                                                                type="number" 
-                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
-                                                                value={Math.round(t.lowerBound * 12)} 
-                                                                onChange={e => {
-                                                                    const val = Math.max(0, Number(e.target.value));
-                                                                    const monthlyLower = Math.round(val / 12);
-                                                                    const n = taxTiers.map(tier => {
-                                                                        if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: monthlyLower };
-                                                                        if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: monthlyLower };
-                                                                        return tier;
-                                                                    });
-                                                                    setTaxTiers(n);
-                                                                }} 
-                                                            />
+                                                            <div className="flex items-center gap-2 w-full justify-center">
+                                                                <Input 
+                                                                    type="number" 
+                                                                    className="h-9 w-20 text-center border-slate-300" 
+                                                                    value={minM_year} 
+                                                                    onChange={e => {
+                                                                        const val = Math.max(0, Number(e.target.value)) * 1000000;
+                                                                        const monthlyLower = Math.round(val / 12);
+                                                                        const n = taxTiers.map(tier => {
+                                                                            if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: monthlyLower };
+                                                                            if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: monthlyLower };
+                                                                            return tier;
+                                                                        });
+                                                                        setTaxTiers(n);
+                                                                    }} 
+                                                                />
+                                                                <span className="text-slate-500 font-medium whitespace-nowrap">-</span>
+                                                                <Input 
+                                                                    type="number" 
+                                                                    className="h-9 w-20 text-center border-slate-300" 
+                                                                    value={maxM_year > 900 ? 999 : maxM_year} 
+                                                                    onChange={e => {
+                                                                        const val = Math.max(0, Number(e.target.value)) * 1000000;
+                                                                        const monthlyUpper = Math.round(val / 12);
+                                                                        const n = taxTiers.map(tier => {
+                                                                            if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: monthlyUpper };
+                                                                            if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: monthlyUpper };
+                                                                            return tier;
+                                                                        });
+                                                                        setTaxTiers(n);
+                                                                    }} 
+                                                                />
+                                                            </div>
                                                         ) : (
-                                                            (t.lowerBound === 0 && t.tierLevel === 1) ? '-' : (t.lowerBound === 0 ? '0' : (t.lowerBound * 12).toLocaleString('vi-VN', { minimumFractionDigits: 0 }))
+                                                            renderText(minM_year, maxM_year)
                                                         )}
                                                     </td>
-                                                    <td className="px-3 py-4 text-right font-black text-slate-800 border-r border-slate-100 tabular-nums whitespace-nowrap">
-                                                        {isPitEditing ? (
-                                                            <Input 
-                                                                type="number" 
-                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
-                                                                value={Math.round(t.upperBound * 12)} 
-                                                                onChange={e => {
-                                                                    const val = Math.max(0, Number(e.target.value));
-                                                                    const monthlyUpper = Math.round(val / 12);
-                                                                    const n = taxTiers.map(tier => {
-                                                                        if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: monthlyUpper };
-                                                                        if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: monthlyUpper };
-                                                                        return tier;
-                                                                    });
-                                                                    setTaxTiers(n);
-                                                                }} 
-                                                            />
-                                                        ) : (
-                                                            t.upperBound > 900000000 ? '-' : (t.upperBound * 12).toLocaleString('vi-VN', { minimumFractionDigits: 0 })
-                                                        )}
-                                                    </td>
+
                                                     {/* Thu nhập Tháng */}
-                                                    <td className="px-3 py-4 text-right font-black text-slate-800 bg-blue-50/10 border-r border-slate-100 tabular-nums whitespace-nowrap">
+                                                    <td className="px-6 py-4 text-left border-r border-slate-400">
                                                         {isPitEditing ? (
-                                                            <Input 
-                                                                type="number" 
-                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
-                                                                value={t.lowerBound} 
-                                                                onChange={e => {
-                                                                    const val = Math.max(0, Number(e.target.value));
-                                                                    const n = taxTiers.map(tier => {
-                                                                        if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: val };
-                                                                        if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: val };
-                                                                        return tier;
-                                                                    });
-                                                                    setTaxTiers(n);
-                                                                }} 
-                                                            />
+                                                            <div className="flex items-center gap-2 w-full justify-center">
+                                                                <Input 
+                                                                    type="number" 
+                                                                    className="h-9 w-20 text-center border-slate-300" 
+                                                                    value={minM_month} 
+                                                                    onChange={e => {
+                                                                        const val = Math.max(0, Number(e.target.value)) * 1000000;
+                                                                        const n = taxTiers.map(tier => {
+                                                                            if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: val };
+                                                                            if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: val };
+                                                                            return tier;
+                                                                        });
+                                                                        setTaxTiers(n);
+                                                                    }} 
+                                                                />
+                                                                <span className="text-slate-500 font-medium whitespace-nowrap">-</span>
+                                                                <Input 
+                                                                    type="number" 
+                                                                    className="h-9 w-20 text-center border-slate-300" 
+                                                                    value={maxM_month > 900 ? 999 : maxM_month} 
+                                                                    onChange={e => {
+                                                                        const val = Math.max(0, Number(e.target.value)) * 1000000;
+                                                                        const n = taxTiers.map(tier => {
+                                                                            if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: val };
+                                                                            if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: val };
+                                                                            return tier;
+                                                                        });
+                                                                        setTaxTiers(n);
+                                                                    }} 
+                                                                />
+                                                            </div>
                                                         ) : (
-                                                            (t.lowerBound === 0 && t.tierLevel === 1) ? '-' : (t.lowerBound === 0 ? '0' : t.lowerBound.toLocaleString('vi-VN', { minimumFractionDigits: 0 }))
+                                                            renderText(minM_month, maxM_month)
                                                         )}
                                                     </td>
-                                                    <td className="px-3 py-4 text-right font-black text-slate-800 bg-blue-50/10 border-r border-slate-100 tabular-nums whitespace-nowrap">
-                                                        {isPitEditing ? (
-                                                            <Input 
-                                                                type="number" 
-                                                                className="h-8 w-full border-none bg-white font-black text-right text-slate-800 p-0 focus:ring-0" 
-                                                                value={t.upperBound} 
-                                                                onChange={e => {
-                                                                    const val = Math.max(0, Number(e.target.value));
-                                                                    const n = taxTiers.map(tier => {
-                                                                        if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: val };
-                                                                        if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: val };
-                                                                        return tier;
-                                                                    });
-                                                                    setTaxTiers(n);
-                                                                }} 
-                                                            />
-                                                        ) : (
-                                                            t.upperBound > 900000000 ? '-' : t.upperBound.toLocaleString('vi-VN', { minimumFractionDigits: 0 })
-                                                        )}
-                                                    </td>
-                                                    <td className="px-3 py-4">
+
+                                                    {/* Thuế suất */}
+                                                    <td className="px-4 py-4 text-center">
                                                         <div className="flex items-center gap-2 justify-center">
-                                                            <Input 
-                                                                type="number" 
-                                                                className={`h-8 w-16 border-none bg-slate-100/50 rounded-lg text-center font-black text-blue-600 p-0 ${!isPitEditing && 'opacity-70 bg-transparent'}`} 
-                                                                value={t.taxRate} 
-                                                                disabled={!isPitEditing} 
-                                                                onChange={e => {
-                                                                    const val = Math.max(0, Number(e.target.value));
-                                                                    const n = taxTiers.map(tier => 
-                                                                        tier.tierLevel === t.tierLevel ? { ...tier, taxRate: val } : tier
-                                                                    );
-                                                                    setTaxTiers(n);
-                                                                }} 
-                                                            />
-                                                            <span className="font-black text-slate-400 text-[10px]">%</span>
-                                                            {isPitEditing && (
-                                                                <button onClick={() => setTaxTiers(taxTiers.filter(x => x.tierLevel !== t.tierLevel))} className="ml-2 text-red-300 hover:text-red-500 transition-colors">
-                                                                    <Trash2 size={16} />
-                                                                </button>
+                                                            {isPitEditing ? (
+                                                                <>
+                                                                    <Input 
+                                                                        type="number" 
+                                                                        className="h-9 w-16 text-center border-slate-300 font-bold text-blue-700" 
+                                                                        value={t.taxRate} 
+                                                                        onChange={e => {
+                                                                            const val = Math.max(0, Number(e.target.value));
+                                                                            const n = taxTiers.map(tier => 
+                                                                                tier.tierLevel === t.tierLevel ? { ...tier, taxRate: val } : tier
+                                                                            );
+                                                                            setTaxTiers(n);
+                                                                        }} 
+                                                                    />
+                                                                    <button onClick={() => setTaxTiers(taxTiers.filter(x => x.tierLevel !== t.tierLevel))} className="text-red-400 hover:text-red-600 transition-colors">
+                                                                        <Trash2 size={18} />
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <span className="font-semibold text-slate-800">{t.taxRate}</span>
                                                             )}
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            ))}
+                                            )})}
                                         </tbody>
                                     </table>
                                 </div>

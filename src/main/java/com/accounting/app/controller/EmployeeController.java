@@ -34,10 +34,17 @@ public class EmployeeController {
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public com.accounting.app.dto.PageResponse<Employee> getAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        org.springframework.data.domain.Page<Employee> result = employeeRepository.findAllSorted(
-            org.springframework.data.domain.PageRequest.of(page, size)
-        );
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
+        org.springframework.data.domain.Page<Employee> result;
+        if (month != null && year != null) {
+            java.time.LocalDate targetDate = java.time.LocalDate.of(year, month, 1);
+            java.time.LocalDateTime endDate = targetDate.plusMonths(1).atStartOfDay().minusSeconds(1);
+            result = employeeRepository.findActiveAt(targetDate, endDate, org.springframework.data.domain.PageRequest.of(page, size));
+        } else {
+            result = employeeRepository.findAllSorted(org.springframework.data.domain.PageRequest.of(page, size));
+        }
 
         // Detect active leaves for today
         java.time.LocalDate today = java.time.LocalDate.now();
@@ -102,6 +109,18 @@ public class EmployeeController {
         emp.setEmail(details.getEmail());
         emp.setHometown(details.getHometown());
         emp.setDepartment(details.getDepartment());
+        emp.setGender(details.getGender());
+        emp.setResignationDate(details.getResignationDate());
+        
+        // Cập nhật trạng thái thủ công nếu cần
+        if (details.getStatus() != null) {
+            emp.setStatus(details.getStatus());
+            // Nếu chuyển sang Đã nghỉ mà chưa có ngày nghỉ thì lấy hôm nay
+            if (details.getStatus() == com.accounting.app.model.EmployeeStatus.LEFT && emp.getResignationDate() == null) {
+                emp.setResignationDate(java.time.LocalDate.now());
+            }
+        }
+
         return employeeRepository.save(emp);
     }
 
@@ -110,6 +129,7 @@ public class EmployeeController {
     public void delete(@PathVariable String id) {
         Employee emp = employeeRepository.findById(id).orElseThrow();
         emp.setStatus(EmployeeStatus.LEFT);
+        emp.setResignationDate(java.time.LocalDate.now()); // Tự động lấy ngày hôm nay
         employeeRepository.save(emp);
     }
 

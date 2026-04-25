@@ -229,12 +229,12 @@ export default function UserManagementPage() {
               <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
                   <div className="overflow-x-auto">
                       <table className="w-full text-left">
-                          <thead>
-                              <tr className="bg-slate-50/50 border-b border-slate-100">
-                                  <th className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest pl-8">Chức năng hệ thống</th>
-                                  <th className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center">Admin</th>
+                          <thead className="bg-primary text-primary-foreground">
+                              <tr className="border-b border-white/10">
+                                  <th className="px-4 py-4 text-[9px] font-black uppercase text-white/70 tracking-widest pl-8">Chức năng hệ thống</th>
+                                  <th className="px-4 py-4 text-[9px] font-black uppercase text-white/70 tracking-widest text-center">Admin</th>
                                   {EDITABLE_ROLES.map(r => (
-                                      <th key={r} className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center">{ROLE_LABELS[r]}</th>
+                                      <th key={r} className="px-4 py-4 text-[9px] font-black uppercase text-white/70 tracking-widest text-center">{ROLE_LABELS[r]}</th>
                                   ))}
                               </tr>
                           </thead>
@@ -303,11 +303,11 @@ export default function UserManagementPage() {
               <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden">
                   <div className="overflow-x-auto">
                       <table className="w-full text-left">
-                          <thead>
-                              <tr className="bg-slate-50/50 border-b border-slate-100">
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest pl-10">Người dùng</th>
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email liên hệ</th>
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Vai trò / Quyền hạn</th>
+                          <thead className="bg-primary text-primary-foreground">
+                              <tr className="border-b border-white/10">
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-white/70 tracking-widest pl-10">Người dùng</th>
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-white/70 tracking-widest">Email liên hệ</th>
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-white/70 tracking-widest">PF / Quyền hạn</th>
                                   <th className="px-8 py-5 text-center pr-10">Thao tác</th>
                               </tr>
                           </thead>

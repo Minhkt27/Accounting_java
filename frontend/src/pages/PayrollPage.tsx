@@ -13,6 +13,7 @@ export interface Employee {
   dob?: string
   phone?: string
   email?: string
+  resignationDate?: string
 }
 
 export interface Payroll {
@@ -51,6 +52,13 @@ export interface Payroll {
   netPay: number
   status: string
   rejectionReason?: string
+  bonus?: number
+  penalty?: number
+  otherAllowances?: number
+  standardWorkDays?: number
+  otNormalHours?: number
+  otWeekendHours?: number
+  otHolidayHours?: number
 }
 
 export default function PayrollPage() {
@@ -301,7 +309,7 @@ export default function PayrollPage() {
                   <td className="px-4 py-4 text-right font-medium text-slate-500 tabular-nums bg-muted/20">{p.realWorkDays}</td>
                   <td className="px-4 py-4 text-right font-bold text-green-600 tabular-nums bg-muted/20">+{p.paidLeaveDays || 0}</td>
                   <td className="px-4 py-4 text-right font-bold tabular-nums text-primary/80">{formatVND(p.baseSalaryPay)}</td>
-                  <td className="px-4 py-4 text-right tabular-nums">{formatVND(p.mealAllowance + p.otPay + (p.seniorityAllowance || 0))}</td>
+                  <td className="px-4 py-4 text-right tabular-nums">{formatVND(p.mealAllowance + p.otPay + (p.seniorityAllowance || 0) + (p.bonus || 0) + (p.otherAllowances || 0) - (p.penalty || 0))}</td>
                   <td className="px-4 py-4 text-right font-black text-blue-600 dark:text-blue-400 tabular-nums">{formatVND(p.grossIncome)}</td>
                   <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">{formatVND(Math.abs(p.totalInsurance))}</td>
                   <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">{formatVND(Math.abs(p.taxAmount))}</td>

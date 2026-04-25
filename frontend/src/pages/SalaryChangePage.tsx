@@ -44,9 +44,12 @@ const CHANGE_TYPES: Record<string, { label: string; icon: LucideIcon; color: str
 export default function SalaryChangePage() {
   const [changes, setChanges] = useState<SalaryChange[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
+  
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterType, setFilterType] = useState("")
+  const [filterMonth, setFilterMonth] = useState("")
+
   const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [totalElements, setTotalElements] = useState(0)
   const [pageSize] = useState(20)
 
   const [showForm, setShowForm] = useState(false)
@@ -92,26 +95,39 @@ export default function SalaryChangePage() {
 
   useEffect(() => {
     setPage(0)
-  }, [filterStatus])
+  }, [filterStatus, searchTerm, filterType, filterMonth])
 
   const fetchChanges = useCallback(async () => {
     try {
       const baseUrl = "/api/salary-changes"
       const params = new URLSearchParams()
-      params.append("page", page.toString())
-      params.append("size", pageSize.toString())
-      if (!isDirectAdmin && filterStatus) {
-        params.append("status", filterStatus)
-      } else if (isDirectAdmin && filterStatus) {
+      params.append("page", "0")
+      params.append("size", "2000")
+      if (filterStatus) {
         params.append("status", filterStatus)
       }
 
       const res = await axios.get(`${baseUrl}?${params.toString()}`, { headers })
       setChanges(res.data.content)
-      setTotalPages(res.data.totalPages)
-      setTotalElements(res.data.totalElements)
     } catch (err) { console.error(err) }
-  }, [filterStatus, isDirectAdmin, headers, page, pageSize])
+  }, [filterStatus, headers])
+
+  const filteredChanges = useMemo(() => {
+    return changes.filter(c => {
+      const matchSearch = !searchTerm || 
+          (c.employeeId || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+          (c.employeeName || "").toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchType = !filterType || c.changeType === filterType;
+      const matchMonth = !filterMonth || c.effectiveDate.startsWith(filterMonth);
+
+      return matchSearch && matchType && matchMonth;
+    });
+  }, [changes, searchTerm, filterType, filterMonth]);
+
+  const pagedChanges = filteredChanges.slice(page * pageSize, (page + 1) * pageSize)
+  const totalElements = filteredChanges.length
+  const totalPages = Math.ceil(totalElements / pageSize)
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -364,32 +380,96 @@ export default function SalaryChangePage() {
         </div>
       )}
 
-      <div className="flex gap-2">
-        {[
-          { value: "", label: "Tất cả" },
-          { value: "PENDING", label: "Chờ duyệt" },
-          { value: "APPROVED", label: "Đã duyệt" },
-          { value: "REJECTED", label: "Từ chối" },
-        ].map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setFilterStatus(tab.value)}
-            className={`px-4 py-2 text-xs font-black rounded-xl transition-all border ${
-              filterStatus === tab.value
-                ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                : "bg-white text-slate-500 border-slate-200 hover:border-primary/30 hover:text-primary"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-2">
+          {[
+            { value: "", label: "Tất cả" },
+            { value: "PENDING", label: "Chờ duyệt" },
+            { value: "APPROVED", label: "Đã duyệt" },
+            { value: "REJECTED", label: "Từ chối" },
+          ].map(tab => (
+            <button
+              key={tab.value}
+              onClick={() => setFilterStatus(tab.value)}
+              className={`px-4 py-2 text-xs font-black rounded-xl transition-all border ${
+                filterStatus === tab.value
+                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-primary/30 hover:text-primary"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <Input 
+                placeholder="Tìm kiếm Tên hoặc Mã NV..." 
+                value={searchTerm} 
+                onChange={e => setSearchTerm(e.target.value)}
+                className="max-w-xs bg-slate-50"
+            />
+            <select 
+                value={filterType} 
+                onChange={e => setFilterType(e.target.value)}
+                className="flex h-10 w-[200px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+            >
+                <option value="">Tất cả loại biến động</option>
+                {Object.entries(CHANGE_TYPES).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+            </select>
+            <div className="flex items-center gap-2">
+               <span className="text-sm font-medium text-slate-500 whitespace-nowrap">Tháng:</span>
+               <select 
+                   value={filterMonth ? filterMonth.split('-')[1] : ""}
+                   onChange={e => {
+                       const m = e.target.value;
+                       if (!m) setFilterMonth("");
+                       else {
+                         const y = filterMonth ? filterMonth.split('-')[0] : new Date().getFullYear().toString();
+                         setFilterMonth(`${y}-${m}`);
+                       }
+                   }}
+                   className="flex h-10 w-[120px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+               >
+                   <option value="">Cả năm</option>
+                   {Array.from({length: 12}, (_, i) => {
+                     const mStr = String(i + 1).padStart(2, '0');
+                     return <option key={mStr} value={mStr}>Tháng {i + 1}</option>
+                   })}
+               </select>
+
+               {filterMonth && (
+                 <select 
+                     value={filterMonth.split('-')[0]}
+                     onChange={e => {
+                         const y = e.target.value;
+                         const m = filterMonth.split('-')[1];
+                         setFilterMonth(`${y}-${m}`);
+                     }}
+                     className="flex h-10 w-[110px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                 >
+                     {Array.from({length: 11}, (_, i) => {
+                       const year = new Date().getFullYear() - 5 + i;
+                       return <option key={year} value={year}>Năm {year}</option>
+                     })}
+                 </select>
+               )}
+            </div>
+            {(searchTerm || filterType || filterMonth) && (
+                <Button variant="ghost" onClick={() => {setSearchTerm(""); setFilterType(""); setFilterMonth("");}} className="text-red-500 hover:bg-red-50 hover:text-red-600">
+                   Xóa lọc
+                </Button>
+            )}
+        </div>
       </div>
 
       <div className="border rounded-xl bg-card shadow-lg overflow-hidden">
         <table className="w-full text-sm text-left">
-          <thead className="bg-[#111827] text-white">
+          <thead className="bg-primary text-primary-foreground">
             <tr>
-              <th className="px-4 py-4 font-bold">#</th>
+              <th className="px-4 py-4 font-bold">STT</th>
               <th className="px-4 py-4 font-bold">Nhân viên</th>
               <th className="px-4 py-4 font-bold">Loại biến động</th>
               <th className="px-4 py-4 font-bold text-right">Trước biến động</th>
@@ -401,7 +481,7 @@ export default function SalaryChangePage() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {changes.map(c => {
+            {pagedChanges.map(c => {
               const typeInfo = CHANGE_TYPES[c.changeType] || { label: c.changeType, color: "slate" }
               const diff = c.newValue - c.oldValue
               return (
@@ -412,7 +492,7 @@ export default function SalaryChangePage() {
                     <div className="text-[10px] text-slate-400">{c.employeeId}</div>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] font-black rounded-lg bg-${typeInfo.color}-50 text-${typeInfo.color}-700 border border-${typeInfo.color}-200`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] font-black rounded-lg bg-${typeInfo.color}-50 text-${typeInfo.color}-700`}>
                       {typeInfo.label}
                     </span>
                   </td>
@@ -426,12 +506,12 @@ export default function SalaryChangePage() {
                   </td>
                   <td className="px-4 py-4 text-slate-600 max-w-[200px] truncate" title={c.reason}>{c.reason}</td>
                   <td className="px-4 py-4 text-center">
-                      <span className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-lg shadow-sm border ${
-                      c.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200' :
-                      c.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
-                      'bg-amber-50 text-amber-700 border-amber-200'
+                      <span className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-lg shadow-sm ${
+                      c.status === 'APPROVED' ? 'bg-green-50 text-green-700' :
+                      c.status === 'REJECTED' ? 'bg-red-50 text-red-700' :
+                      'bg-amber-50 text-amber-700'
                       }`}>
-                      {c.status === 'PENDING' ? '⏳ Chờ duyệt' : c.status === 'APPROVED' ? '✅ Đã duyệt' : '❌ Từ chối'}
+                      {c.status === 'PENDING' ? '⏳ Chờ duyệt' : c.status === 'APPROVED' ? 'Đã duyệt' : '❌ Từ chối'}
                       </span>
                       {c.rejectionReason && (
                       <p className="text-[10px] text-red-500 mt-1 italic">"{c.rejectionReason}"</p>
@@ -481,11 +561,11 @@ export default function SalaryChangePage() {
                 </tr>
               )
             })}
-            {changes.length === 0 && (
+            {pagedChanges.length === 0 && (
               <tr>
                 <td colSpan={isDirectAdmin ? 8 : 9} className="px-6 py-16 text-center text-muted-foreground/60 italic">
                   <Clock className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                  Chưa có biến động nào{filterStatus ? ` ở trạng thái "${filterStatus}"` : ""}.
+                  Chưa có biến động nào phù hợp với bộ lọc{filterStatus ? ` ở trạng thái "${filterStatus}"` : ""}.
                 </td>
               </tr>
             )}

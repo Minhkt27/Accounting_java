@@ -30,7 +30,13 @@ public class Payroll extends BaseEntity {
     private Double contractSalary;   // Lương hợp đồng tại thời điểm tính
     private Double realWorkDays;     // Số ngày thực tế đi làm
     private Double paidLeaveDays;    // Số ngày nghỉ hưởng lương
+    private Double standardWorkDays;     // Ngày công chuẩn (22, 24, 26...)
     private Double baseSalaryPay;    // Lương chính = (Lương HĐ / Standard) * (realWorkDays + paidLeaveDays)
+
+    // Làm thêm giờ (giờ)
+    private Double otNormalHours = 0.0;
+    private Double otWeekendHours = 0.0;
+    private Double otHolidayHours = 0.0;
 
     // Làm thêm giờ
     private Double otNormalPay = 0.0;

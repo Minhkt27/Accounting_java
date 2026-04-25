@@ -21,6 +21,7 @@ public class PayrollService {
     @Autowired private SalaryParameterRepository salaryParameterRepository;
     @Autowired private TaxTierRepository taxTierRepository;
     @Autowired private AttendanceService attendanceService;
+    @Autowired private SalaryChangeRepository salaryChangeRepository;
     
     @Autowired private VoucherRepository voucherRepo;
     @Autowired private JournalEntryRepository journalRepo;
@@ -43,32 +44,58 @@ public class PayrollService {
         Double totalInsuranceER = payrolls.stream().mapToDouble(Payroll::getTotalEmployerInsurance).sum();
         Double totalTax = payrolls.stream().mapToDouble(Payroll::getTaxAmount).sum();
 
-        // 1. Tạo Voucher hạch toán chi phí (Voucher Kế toán - PK)
-        String voucherNo = String.format("PK%02d-%d", month, year % 100);
-        Voucher v = new Voucher(voucherNo, "PHIEU_KE_TOAN", LocalDate.now(), totalGross + totalInsuranceER, "Ghi nhận chi phí lương & bảo hiểm tháng " + month + "/" + year);
-        v.setTargetMonth(month);
-        v.setTargetYear(year);
-        v = voucherRepo.save(v);
-
-        // 2. Hạch toán tài khoản
+        // Lấy tài khoản
         AccountCategory acc642 = accountRepo.findById("642").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 642"));
         AccountCategory acc334 = accountRepo.findById("334").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 334"));
         AccountCategory acc338 = accountRepo.findById("338").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 338"));
         AccountCategory acc3335 = accountRepo.findById("3335").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 3335"));
 
-        // - Nợ 642 / Có 334 (Lương Gross)
-        journalRepo.save(new JournalEntry(v, acc642, acc334, totalGross, "Trích chi phí lương tháng " + month));
-        // - Nợ 334 / Có 338 (BH NLĐ 10.5%)
-        if (totalInsuranceEE > 0)
-            journalRepo.save(new JournalEntry(v, acc334, acc338, totalInsuranceEE, "Trích BH NLĐ tháng " + month));
-        // - Nợ 642 / Có 338 (BH DN 23.5%)
-        if (totalInsuranceER > 0)
-            journalRepo.save(new JournalEntry(v, acc642, acc338, totalInsuranceER, "Trích BH & KPCĐ DN tháng " + month));
-        // - Nợ 334 / Có 3335 (Thuế TNCN)
-        if (totalTax > 0)
-            journalRepo.save(new JournalEntry(v, acc334, acc3335, totalTax, "Trích thuế TNCN tháng " + month));
+        // ═══════════════════════════════════════════════════════════
+        // CHỨNG TỪ 1: GHI NHẬN CHI PHÍ LƯƠNG (Nợ 642 / Có 334)
+        // ═══════════════════════════════════════════════════════════
+        String voucherNo1 = String.format("PK-LUONG-%02d-%d", month, year % 100);
+        Voucher v1 = new Voucher(voucherNo1, "PHIEU_KE_TOAN", LocalDate.now(), totalGross, "Trích chi phí tiền lương phải trả tháng " + month + "/" + year);
+        v1.setTargetMonth(month);
+        v1.setTargetYear(year);
+        v1 = voucherRepo.save(v1);
 
-        // 3. Cập nhật trạng thái -> APPROVED
+        // Bút toán: Nợ 642 / Có 334 = Lương Gross
+        journalRepo.save(new JournalEntry(v1, acc642, acc334, totalGross, "Chi phí lương tháng " + month));
+
+        // ═══════════════════════════════════════════════════════════
+        // CHỨNG TỪ 2: TRÍCH CÁC KHOẢN KHẤU TRỪ TỪ LƯƠNG NLĐ
+        //   - Nợ 334 / Có 338  (BH phần NLĐ đóng 10.5%)
+        //   - Nợ 334 / Có 3335 (Thuế TNCN)
+        // ═══════════════════════════════════════════════════════════
+        Double totalDeductions = totalInsuranceEE + totalTax;
+        if (totalDeductions > 0) {
+            String voucherNo2 = String.format("PK-KHAUTRU-%02d-%d", month, year % 100);
+            Voucher v2 = new Voucher(voucherNo2, "PHIEU_KE_TOAN", LocalDate.now(), totalDeductions, "Trích các khoản khấu trừ lương NLĐ tháng " + month + "/" + year);
+            v2.setTargetMonth(month);
+            v2.setTargetYear(year);
+            v2 = voucherRepo.save(v2);
+
+            if (totalInsuranceEE > 0)
+                journalRepo.save(new JournalEntry(v2, acc334, acc338, totalInsuranceEE, "Trích BHXH, BHYT, BHTN phần NLĐ (10.5%) tháng " + month));
+            if (totalTax > 0)
+                journalRepo.save(new JournalEntry(v2, acc334, acc3335, totalTax, "Trích thuế TNCN tháng " + month));
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // CHỨNG TỪ 3: GHI NHẬN CHI PHÍ BH & KPCĐ PHẦN DN ĐÓNG
+        //   - Nợ 642 / Có 338 (BH phần DN đóng 23.5%)
+        // ═══════════════════════════════════════════════════════════
+        if (totalInsuranceER > 0) {
+            String voucherNo3 = String.format("PK-BHDN-%02d-%d", month, year % 100);
+            Voucher v3 = new Voucher(voucherNo3, "PHIEU_KE_TOAN", LocalDate.now(), totalInsuranceER, "Trích chi phí BHXH, BHYT, BHTN, KPCĐ phần DN tháng " + month + "/" + year);
+            v3.setTargetMonth(month);
+            v3.setTargetYear(year);
+            v3 = voucherRepo.save(v3);
+
+            journalRepo.save(new JournalEntry(v3, acc642, acc338, totalInsuranceER, "Chi phí BH & KPCĐ phần DN (23.5%) tháng " + month));
+        }
+
+        // Cập nhật trạng thái -> APPROVED
         payrolls.forEach(p -> {
             p.setStatus(PayrollStatus.APPROVED);
             p.setApprovedBy("KE_TOAN_TRUONG");
@@ -100,32 +127,92 @@ public class PayrollService {
         List<Payroll> payrolls = payrollRepository.findByMonthAndYearSortedList(month, year);
         if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương để thanh toán");
         
-        // Kiểm tra xem đã APPROVED chưa
-        boolean allApproved = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.APPROVED);
+        boolean allApproved = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID);
         if (!allApproved) throw new RuntimeException("Chỉ được thanh toán sau khi bảng lương đã được Phê duyệt (APPROVED)");
 
         Double totalNet = payrolls.stream().mapToDouble(Payroll::getNetPay).sum();
 
-        // 1. Tạo Voucher Thanh toán (PC/UNC)
+        // Tạo Voucher Thanh toán lương (PC/UNC)
         String prefix = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PC" : "UNC";
         String type = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PHIEU_CHI" : "UNC";
-        String voucherNo = String.format("%s%02d-%d", prefix, month, year % 100);
+        String voucherNo = String.format("%s-LUONG-%02d-%d", prefix, month, year % 100);
         
         Voucher v = new Voucher(voucherNo, type, LocalDate.now(), totalNet, "Thanh toán lương tháng " + month + "/" + year);
         v.setTargetMonth(month);
         v.setTargetYear(year);
         v = voucherRepo.save(v);
 
-        // 2. Hạch toán: Nợ 334 / Có 111, 112
+        // Hạch toán: Nợ 334 / Có 111 hoặc 112
         AccountCategory acc334 = accountRepo.findById("334").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 334"));
         AccountCategory accMethod = accountRepo.findById("PAYMENT".equalsIgnoreCase(paymentMethod) ? "111" : "112")
                 .orElseThrow(() -> new RuntimeException("Thiếu tài khoản thanh toán (111/112)"));
 
         journalRepo.save(new JournalEntry(v, acc334, accMethod, totalNet, "Thực chi tiền lương tháng " + month));
 
-        // 3. Cập nhật trạng thái -> PAID
+        // Cập nhật trạng thái -> PAID
         payrolls.forEach(p -> p.setStatus(PayrollStatus.PAID));
         payrollRepository.saveAll(payrolls);
+    }
+
+    @Transactional
+    public void payInsurance(Integer month, Integer year, String paymentMethod) {
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYearSortedList(month, year);
+        if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương");
+        
+        boolean valid = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID);
+        if (!valid) throw new RuntimeException("Bảng lương phải ở trạng thái Đã duyệt hoặc Đã thanh toán lương");
+
+        // Tổng BH Nhân viên + BH Công ty
+        Double totalInsuranceEE = payrolls.stream().mapToDouble(Payroll::getTotalInsurance).sum();
+        Double totalInsuranceER = payrolls.stream().mapToDouble(Payroll::getTotalEmployerInsurance).sum();
+        Double totalInsurance = totalInsuranceEE + totalInsuranceER;
+
+        if (totalInsurance <= 0) throw new RuntimeException("Không có khoản bảo hiểm cần thanh toán");
+
+        String prefix = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PC" : "UNC";
+        String type = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PHIEU_CHI" : "UNC";
+        String voucherNo = String.format("%s-BH-%02d-%d", prefix, month, year % 100);
+
+        Voucher v = new Voucher(voucherNo, type, LocalDate.now(), totalInsurance, "Nộp bảo hiểm tháng " + month + "/" + year + " (NLĐ + DN)");
+        v.setTargetMonth(month);
+        v.setTargetYear(year);
+        v = voucherRepo.save(v);
+
+        // Hạch toán: Nợ 338 / Có 111 hoặc 112
+        AccountCategory acc338 = accountRepo.findById("338").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 338"));
+        AccountCategory accMethod = accountRepo.findById("PAYMENT".equalsIgnoreCase(paymentMethod) ? "111" : "112")
+                .orElseThrow(() -> new RuntimeException("Thiếu tài khoản thanh toán (111/112)"));
+
+        journalRepo.save(new JournalEntry(v, acc338, accMethod, totalInsurance, "Nộp BHXH, BHYT, BHTN, KPCĐ tháng " + month));
+    }
+
+    @Transactional
+    public void payTax(Integer month, Integer year, String paymentMethod) {
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYearSortedList(month, year);
+        if (payrolls.isEmpty()) throw new RuntimeException("Không tìm thấy bảng lương");
+
+        boolean valid = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID);
+        if (!valid) throw new RuntimeException("Bảng lương phải ở trạng thái Đã duyệt hoặc Đã thanh toán lương");
+
+        Double totalTax = payrolls.stream().mapToDouble(Payroll::getTaxAmount).sum();
+
+        if (totalTax <= 0) throw new RuntimeException("Không có khoản thuế TNCN cần nộp");
+
+        String prefix = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PC" : "UNC";
+        String type = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PHIEU_CHI" : "UNC";
+        String voucherNo = String.format("%s-THUE-%02d-%d", prefix, month, year % 100);
+
+        Voucher v = new Voucher(voucherNo, type, LocalDate.now(), totalTax, "Nộp thuế TNCN tháng " + month + "/" + year);
+        v.setTargetMonth(month);
+        v.setTargetYear(year);
+        v = voucherRepo.save(v);
+
+        // Hạch toán: Nợ 3335 / Có 111 hoặc 112
+        AccountCategory acc3335 = accountRepo.findById("3335").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 3335"));
+        AccountCategory accMethod = accountRepo.findById("PAYMENT".equalsIgnoreCase(paymentMethod) ? "111" : "112")
+                .orElseThrow(() -> new RuntimeException("Thiếu tài khoản thanh toán (111/112)"));
+
+        journalRepo.save(new JournalEntry(v, acc3335, accMethod, totalTax, "Nộp thuế TNCN tháng " + month));
     }
 
     @Transactional
@@ -164,7 +251,19 @@ public class PayrollService {
         }
         
         for (Employee emp : employees) {
-            if (!emp.getActive()) continue;
+            if (!emp.getActive()) {
+                // Kiểm tra xem có phải mới nghỉ trong tháng này không
+                if (emp.getResignationDate() != null) {
+                    int resMonth = emp.getResignationDate().getMonthValue();
+                    int resYear = emp.getResignationDate().getYear();
+                    if (resYear < year || (resYear == year && resMonth < month)) {
+                        continue; // Đã nghỉ từ các tháng trước -> Bỏ qua
+                    }
+                    // Nếu nghỉ trong tháng này -> Vẫn cho tính lương (để trả nốt ngày công)
+                } else {
+                    continue; 
+                }
+            }
 
             // Ưu tiên lấy dữ liệu chấm công đã có trong DB (do kế toán đã xác nhận hoặc sửa tay)
             Optional<Attendance> optAttendance = attendanceRepository.findByEmployeeIdAndMonthAndYear(emp.getId(), month, year);
@@ -194,6 +293,7 @@ public class PayrollService {
             payroll.setContractSalary(emp.getContractSalary());
             payroll.setRealWorkDays(realDays);
             payroll.setPaidLeaveDays(paidLeaveDays);
+            payroll.setStandardWorkDays(standardDays);
 
             // Bước 2: Tính lương theo thời gian
             Double totalPaidDays = realDays + (paidLeaveDays != null ? paidLeaveDays : 0.0);
@@ -216,8 +316,24 @@ public class PayrollService {
             payroll.setSeniorityAllowance(seniorityAllowance);
             // Giữ nguyên Bonus, Penalty, OtherAllowances nếu đã được nhập từ trước
             if (payroll.getOtherAllowances() == null) payroll.setOtherAllowances(0.0);
-            if (payroll.getBonus() == null) payroll.setBonus(0.0);
-            if (payroll.getPenalty() == null) payroll.setPenalty(0.0);
+            
+            // Tự động lấy khen thưởng/kỷ luật từ biến động lương (SalaryChange)
+            LocalDate firstDay = LocalDate.of(year, month, 1);
+            LocalDate lastDay = firstDay.withDayOfMonth(firstDay.lengthOfMonth());
+            List<SalaryChange> changes = salaryChangeRepository.findApprovedInMonth(emp.getId(), firstDay, lastDay);
+            
+            Double totalReward = changes.stream()
+                .filter(c -> "REWARD".equals(c.getChangeType()))
+                .mapToDouble(c -> c.getNewValue() != null ? c.getNewValue() : 0.0)
+                .sum();
+            Double totalDiscipline = changes.stream()
+                .filter(c -> "DISCIPLINE".equals(c.getChangeType()))
+                .mapToDouble(c -> c.getNewValue() != null ? c.getNewValue() : 0.0)
+                .sum();
+
+            payroll.setBonus(totalReward);
+            payroll.setPenalty(totalDiscipline);
+            
             if (payroll.getCharityDeduction() == null) payroll.setCharityDeduction(0.0);
 
 
@@ -235,6 +351,10 @@ public class PayrollService {
             payroll.setOtWeekendPay(otWeekend);
             payroll.setOtHolidayPay(otHoliday);
             payroll.setOtPay(otNormal + otWeekend + otHoliday);
+            
+            payroll.setOtNormalHours(otNormHours);
+            payroll.setOtWeekendHours(otWeekHours);
+            payroll.setOtHolidayHours(otHoliHours);
 
             // Phần OT miễn thuế (chênh lệch hệ số)
             Double otPremiumExempt = (double) Math.round(hourlyRate * (
@@ -350,14 +470,17 @@ public class PayrollService {
             .collect(Collectors.toList());
         
         if (tiers.isEmpty()) {
-            // Default PIT brackets
-            if (income <= 5000000) return income * 0.05;
-            if (income <= 10000000) return income * 0.1 - 250000;
-            if (income <= 18000000) return income * 0.15 - 750000;
-            if (income <= 32000000) return income * 0.2 - 1650000;
-            if (income <= 52000000) return income * 0.25 - 3250000;
-            if (income <= 80000000) return income * 0.3 - 5850000;
-            return income * 0.35 - 9850000;
+            // Mặc định 5 bậc thuế luỹ tiến từng phần theo quy định pháp luật
+            // Bậc 1: Đến 10 triệu/tháng -> 5%
+            if (income <= 10000000) return (double) Math.round(income * 0.05);
+            // Bậc 2: Trên 10 đến 30 triệu -> 10%
+            if (income <= 30000000) return (double) Math.round(income * 0.10 - 500000);
+            // Bậc 3: Trên 30 đến 60 triệu -> 20%
+            if (income <= 60000000) return (double) Math.round(income * 0.20 - 3500000);
+            // Bậc 4: Trên 60 đến 100 triệu -> 30%
+            if (income <= 100000000) return (double) Math.round(income * 0.30 - 9500000);
+            // Bậc 5: Trên 100 triệu -> 35%
+            return (double) Math.round(income * 0.35 - 14500000);
         }
         
         tiers.sort(Comparator.comparing(TaxTier::getTierLevel));

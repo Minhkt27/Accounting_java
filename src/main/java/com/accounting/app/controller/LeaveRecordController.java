@@ -38,6 +38,35 @@ public class LeaveRecordController {
         return leaveRepo.save(record); 
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("@perm.check('HR_LEAVE')")
+    public LeaveRecord update(@PathVariable Long id, @Valid @RequestBody LeaveRecord record) {
+        LeaveRecord existing = leaveRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bản ghi nghỉ phép với ID: " + id));
+
+        if (record.getStartDate().isAfter(record.getEndDate())) {
+            throw new RuntimeException("Ngày bắt đầu không thể sau ngày kết thúc");
+        }
+
+        boolean overlaps = leaveRepo.existsByEmployeeIdAndOverlapExcludingId(
+            record.getEmployee().getId(),
+            id,
+            record.getStartDate(),
+            record.getEndDate()
+        );
+
+        if (overlaps) {
+            throw new RuntimeException("Nhân viên đã có lịch nghỉ trùng với khoảng thời gian này");
+        }
+
+        existing.setEmployee(record.getEmployee());
+        existing.setLeaveType(record.getLeaveType());
+        existing.setStartDate(record.getStartDate());
+        existing.setEndDate(record.getEndDate());
+
+        return leaveRepo.save(existing);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.check('HR_LEAVE')")
     public void delete(@PathVariable Long id) { leaveRepo.deleteById(id); }

@@ -69,6 +69,28 @@ public class PayrollController {
         }
     }
 
+    @PostMapping("/pay-insurance")
+    @PreAuthorize("@perm.check('PAYROLL_PAY')")
+    public ResponseEntity<String> payInsurance(@RequestParam Integer month, @RequestParam Integer year, @RequestParam String paymentMethod) {
+        try {
+            payrollService.payInsurance(month, year, paymentMethod);
+            return ResponseEntity.ok("Nộp bảo hiểm tháng " + month + "/" + year + " thành công.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Lỗi: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/pay-tax")
+    @PreAuthorize("@perm.check('PAYROLL_PAY')")
+    public ResponseEntity<String> payTax(@RequestParam Integer month, @RequestParam Integer year, @RequestParam String paymentMethod) {
+        try {
+            payrollService.payTax(month, year, paymentMethod);
+            return ResponseEntity.ok("Nộp thuế TNCN tháng " + month + "/" + year + " thành công.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Lỗi: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/reject")
     @PreAuthorize("@perm.check('PAYROLL_APPROVE')")
     public ResponseEntity<String> rejectPayroll(

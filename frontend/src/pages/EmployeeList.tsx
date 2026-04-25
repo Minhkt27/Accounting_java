@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -26,13 +26,18 @@ interface Employee {
   address?: string
   position?: string
   joinDate?: string
+  resignationDate?: string
 }
 
 export default function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([])
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterType, setFilterType] = useState("")
+  const [filterMonth, setFilterMonth] = useState("")
+
   const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [totalElements, setTotalElements] = useState(0)
   const [pageSize] = useState(20)
 
   const [showForm, setShowForm] = useState(false)
@@ -43,24 +48,56 @@ export default function EmployeeList() {
     positionCoefficient: 0.0, seniorityAllowance: 0.0,
     employeeType: "FULL_TIME", 
     status: 'WORKING', dob: "", phone: "", email: "", hometown: "",
-    department: "Kế toán"
+    department: "Kế toán", gender: "Nam", resignationDate: ""
   })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const fetchEmployees = useCallback(async () => {
     try {
-      const res = await axios.get(`/api/employees?page=${page}&size=${pageSize}`, {
+      const res = await axios.get(`/api/employees?page=0&size=2000`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       setEmployees(res.data.content)
-      setTotalPages(res.data.totalPages)
-      setTotalElements(res.data.totalElements)
     } catch (err: unknown) { 
         console.error(err) 
     }
-  }, [page, pageSize])
+  }, [])
 
   useEffect(() => { fetchEmployees() }, [fetchEmployees])
+
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(emp => {
+      const matchSearch = !searchTerm || 
+          (emp.id || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+          (emp.fullName || "").toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchType = !filterType || emp.employeeType === filterType;
+
+      let matchMonth = true;
+      if (filterMonth) {
+        // filterMonth is YYYY-MM
+        const [yyyy, mm] = filterMonth.split('-');
+        const targetDate = new Date(parseInt(yyyy), parseInt(mm) - 1, 1);
+        if (emp.status === 'LEFT' && emp.resignationDate) {
+          const resDate = new Date(emp.resignationDate);
+          if (resDate < targetDate) {
+             matchMonth = false;
+          }
+        }
+        // Could also check if joinDate > end of targetMonth, but let's just check if they left before target month
+      }
+
+      return matchSearch && matchType && matchMonth;
+    });
+  }, [employees, searchTerm, filterType, filterMonth]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, filterType, filterMonth]);
+
+  const pagedEmployees = filteredEmployees.slice(page * pageSize, (page + 1) * pageSize)
+  const totalElements = filteredEmployees.length
+  const totalPages = Math.ceil(totalElements / pageSize)
 
   const validate = () => {
     if (!currentEmp.id) {
@@ -117,12 +154,18 @@ export default function EmployeeList() {
     if (!validate()) return
     try {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      
+      // Sanitize payload to prevent Java LocalDate parsing errors on empty strings
+      const payload: any = { ...currentEmp }
+      if (!payload.resignationDate) payload.resignationDate = null;
+      if (!payload.dob) payload.dob = null;
+
       let savedEmp: Employee | null = null
       if (isEditing) {
-        const res = await axios.put(`/api/employees/${currentEmp.id}`, currentEmp, auth)
+        const res = await axios.put(`/api/employees/${payload.id}`, payload, auth)
         savedEmp = res.data
       } else {
-        const res = await axios.post("/api/employees", currentEmp, auth)
+        const res = await axios.post("/api/employees", payload, auth)
         savedEmp = res.data
       }
 
@@ -178,7 +221,7 @@ export default function EmployeeList() {
     setShowForm(false)
     setIsEditing(false)
     setViewOnly(false)
-    setCurrentEmp({ id: "", fullName: "", contractSalary: 0, dependentCount: 0, seniorityAllowance: 0.0, employeeType: "FULL_TIME", active: true, dob: "", phone: "", email: "", hometown: "", department: "Kế toán" })
+    setCurrentEmp({ id: "", fullName: "", contractSalary: 0, dependentCount: 0, seniorityAllowance: 0.0, employeeType: "FULL_TIME", status: 'WORKING', dob: "", phone: "", email: "", hometown: "", department: "Kế toán", gender: "Nam", resignationDate: "" })
     setSelectedFile(null)
   }
 
@@ -302,17 +345,17 @@ export default function EmployeeList() {
               /></div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Phụ cấp thâm niên (VNĐ)</label>
-                <Input 
-                  type="text" 
-                  value={new Intl.NumberFormat('vi-VN').format(currentEmp.seniorityAllowance || 0)} 
-                  onChange={e => {
-                    const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
-                    const val = raw === "" ? 0 : Number(raw);
-                    setCurrentEmp({...currentEmp, seniorityAllowance: Math.max(0, val)})
-                  }} 
-                  disabled={viewOnly}
-                  placeholder="0"
-                />
+                <select 
+                  value={currentEmp.seniorityAllowance || 0} 
+                  onChange={e => setCurrentEmp({...currentEmp, seniorityAllowance: Number(e.target.value)})} 
+                  disabled={viewOnly} 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
+                >
+                  <option value={0}>0</option>
+                  <option value={200000}>200.000</option>
+                  <option value={300000}>300.000</option>
+                  <option value={500000}>500.000</option>
+                </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Phòng ban</label>
@@ -321,6 +364,13 @@ export default function EmployeeList() {
                   <option value="Nhân sự">Nhân sự</option>
                   <option value="Kinh doanh">Kinh doanh</option>
                   <option value="Kỹ thuật">Kỹ thuật</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Giới tính <span className="text-red-500">*</span></label>
+                <select value={currentEmp.gender} onChange={e => setCurrentEmp({...currentEmp, gender: e.target.value})} disabled={viewOnly} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="Nam">Nam</option>
+                  <option value="Nữ">Nữ</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -350,6 +400,12 @@ export default function EmployeeList() {
                        currentEmp.onLeave ? "Đang nghỉ phép" : "Đang làm việc"}
                     </span>
                   </div>
+                </div>
+              )}
+              {currentEmp.status === 'LEFT' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-red-600 font-bold">Ngày nghỉ việc</label>
+                  <Input type="date" value={currentEmp.resignationDate} onChange={e => setCurrentEmp({...currentEmp, resignationDate: e.target.value})} disabled={viewOnly} className="border-red-200 bg-red-50" />
                 </div>
               )}
             </div>
@@ -383,9 +439,72 @@ export default function EmployeeList() {
         </div>
       )}
       {!showForm && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+              <Input 
+                  placeholder="Tìm kiếm theo Tên hoặc Mã NV..." 
+                  value={searchTerm} 
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="max-w-xs bg-slate-50"
+              />
+              <select 
+                  value={filterType} 
+                  onChange={e => setFilterType(e.target.value)}
+                  className="flex h-10 w-[200px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                  <option value="">Tất cả loại nhân sự</option>
+                  <option value="FULL_TIME">Chính thức</option>
+                  <option value="PROBATION">Thử việc</option>
+                  <option value="INTERN">Thực tập sinh</option>
+                  <option value="OTHER">Khác</option>
+              </select>
+              <div className="flex items-center gap-2">
+                 <span className="text-sm font-medium text-slate-500 whitespace-nowrap">Tháng:</span>
+                 <select 
+                     value={filterMonth ? filterMonth.split('-')[1] : ""}
+                     onChange={e => {
+                         const m = e.target.value;
+                         if (!m) setFilterMonth("");
+                         else {
+                           const y = filterMonth ? filterMonth.split('-')[0] : new Date().getFullYear().toString();
+                           setFilterMonth(`${y}-${m}`);
+                         }
+                     }}
+                     className="flex h-10 w-[120px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                 >
+                     <option value="">Cả năm</option>
+                     {Array.from({length: 12}, (_, i) => {
+                       const mStr = String(i + 1).padStart(2, '0');
+                       return <option key={mStr} value={mStr}>Tháng {i + 1}</option>
+                     })}
+                 </select>
+
+                 {filterMonth && (
+                   <select 
+                       value={filterMonth.split('-')[0]}
+                       onChange={e => {
+                           const y = e.target.value;
+                           const m = filterMonth.split('-')[1];
+                           setFilterMonth(`${y}-${m}`);
+                       }}
+                       className="flex h-10 w-[110px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                   >
+                       {Array.from({length: 11}, (_, i) => {
+                         const year = new Date().getFullYear() - 5 + i;
+                         return <option key={year} value={year}>Năm {year}</option>
+                       })}
+                   </select>
+                 )}
+              </div>
+              {(searchTerm || filterType || filterMonth) && (
+                  <Button variant="ghost" onClick={() => {setSearchTerm(""); setFilterType(""); setFilterMonth("");}} className="text-red-500 hover:bg-red-50 hover:text-red-600">
+                     Xóa lọc
+                  </Button>
+              )}
+          </div>
           <div className="border border-slate-100 rounded-[2rem] bg-white/70 backdrop-blur-xl shadow-2xl shadow-slate-200/50 overflow-hidden">
               <table className="w-full text-sm text-left">
-                  <thead className="bg-[#111827] text-white">
+                  <thead className="bg-primary text-primary-foreground">
                       <tr>
                           <th className="px-6 py-5 font-black uppercase tracking-tighter">Mã NV</th>
                           <th className="px-6 py-5 font-black uppercase tracking-tighter">Họ tên nhân viên</th>
@@ -396,7 +515,7 @@ export default function EmployeeList() {
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                      {employees.map((employee) => (
+                      {pagedEmployees.map((employee) => (
                           <tr key={employee.id} className="hover:bg-slate-50/80 transition-all group">
                               <td className="px-6 py-5 font-black text-slate-400 group-hover:text-primary transition-colors tabular-nums">{employee.id}</td>
                               <td className="px-6 py-5">
@@ -435,10 +554,13 @@ export default function EmployeeList() {
                                           ? 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'
                                           : 'bg-green-50 text-green-600 border-green-200'
                                   }`}>
-                                      {employee.status === 'LEFT' ? 'Đã nghỉ việc' : 
-                                       employee.onLeave ? 'Đang nghỉ phép' : 'Đang làm việc'}
-                                  </span>
-                              </td>
+                                       {employee.status === 'LEFT' ? 'Đã nghỉ việc' : 
+                                        employee.onLeave ? 'Đang nghỉ phép' : 'Đang làm việc'}
+                                   </span>
+                                   {employee.status === 'LEFT' && employee.resignationDate && (
+                                     <div className="text-[10px] text-red-400 font-bold mt-1">Nghỉ từ: {employee.resignationDate}</div>
+                                   )}
+                               </td>
                               <td className="px-6 py-5">
                                   <div className="flex items-center gap-2">
                                       <Button variant="ghost" size="icon" onClick={() => handleView(employee)}>
@@ -454,9 +576,9 @@ export default function EmployeeList() {
                               </td>
                           </tr>
                       ))}
-                      {employees.length === 0 && (
+                      {pagedEmployees.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="text-center py-20 text-slate-300 italic">Chưa có dữ liệu nhân sự.</td>
+                          <td colSpan={6} className="text-center py-20 text-slate-300 italic">Chưa có dữ liệu nhân sự.</td>
                         </tr>
                       )}
                   </tbody>
@@ -469,6 +591,7 @@ export default function EmployeeList() {
                 onPageChange={setPage}
               />
           </div>
+        </div>
       )}
     </div>
   )

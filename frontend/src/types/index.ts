@@ -71,9 +71,11 @@ export interface Employee {
     seniorityAllowance?: number;
     status: 'WORKING' | 'LEFT' | 'ON_LEAVE';
     onLeave?: boolean;
+    gender?: string;
+    resignationDate?: string;
 }
 
-export type LeaveType = "ANNUAL" | "SICK" | "MATERNITY";
+export type LeaveType = "ANNUAL" | "MATERNITY";
 
 export interface Leave {
     id: number;

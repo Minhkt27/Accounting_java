@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -28,14 +28,14 @@ interface Attendance {
 
 export default function AttendancePage() {
   const [attendances, setAttendances] = useState<Attendance[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+
   const [month, setMonth] = useState(new Date().getMonth() + 1)
   const [year, setYear] = useState(new Date().getFullYear())
   const [standardDays, setStandardDays] = useState(26)
   const [isLocked, setIsLocked] = useState(false)
 
   const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [totalElements, setTotalElements] = useState(0)
   const [pageSize] = useState(20)
 
   const getStandardDays = (m: number, y: number) => {
@@ -64,14 +64,12 @@ export default function AttendancePage() {
       }
       setStandardDays(std)
       
-      // 2. Lấy danh sách nhân viên phân trang để hiển thị bảng
-      const resEmp = await axios.get(`/api/employees?page=${page}&size=${pageSize}`, auth)
+      // 2. Lấy danh sách nhân viên phân trang để hiển thị bảng (lọc theo tháng/năm)
+      const resEmp = await axios.get(`/api/employees?page=0&size=2000&month=${month}&year=${year}`, auth)
       const empList = resEmp.data.content
-      setTotalPages(resEmp.data.totalPages)
-      setTotalElements(resEmp.data.totalElements)
  
        // Lấy dữ liệu công đã lưu (nếu có) - API này cũng cần phân trang theo nhân sự
-       const resAtt = await axios.get(`/api/attendance/${month}/${year}?page=${page}&size=${pageSize}`, auth)
+       const resAtt = await axios.get(`/api/attendance/${month}/${year}?page=0&size=2000`, auth)
        const savedAtt: Attendance[] = resAtt.data.content
  
        // Lấy gợi ý hàng loạt (Bulk Suggestion) cho trang hiện tại
@@ -130,10 +128,27 @@ export default function AttendancePage() {
  
    useEffect(() => { fetchData() }, [fetchData])
 
-  const handleUpdateLine = (index: number, field: string, value: number) => {
-    const newAtt = [...attendances]
-    newAtt[index] = { ...newAtt[index], [field]: value }
-    setAttendances(newAtt)
+   const filteredAttendances = useMemo(() => {
+    return attendances.filter(att => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      return (att.employee.id || "").toLowerCase().includes(term) ||
+             (att.employee.fullName || "").toLowerCase().includes(term);
+    });
+  }, [attendances, searchTerm]);
+
+  useEffect(() => {
+    setPage(0)
+  }, [searchTerm])
+
+  const pagedAttendances = filteredAttendances.slice(page * pageSize, (page + 1) * pageSize)
+  const totalElements = filteredAttendances.length
+  const totalPages = Math.ceil(totalElements / pageSize)
+
+  const handleUpdateLine = (empId: string, field: string, value: number) => {
+    setAttendances(prev => prev.map(a => 
+      a.employee.id === empId ? { ...a, [field]: value } : a
+    ))
   }
 
   const handleSave = async () => {
@@ -217,6 +232,15 @@ export default function AttendancePage() {
             </Button>
         </div>
       </div>
+      
+      <div className="flex bg-white p-3 rounded-xl shadow-sm border">
+          <Input 
+              placeholder="Tìm kiếm theo Tên hoặc Mã NV..." 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)}
+              className="max-w-sm bg-slate-50"
+          />
+      </div>
 
         <div className="border rounded-xl bg-card shadow-lg overflow-hidden overflow-x-auto">
           <table className="w-full text-sm text-left whitespace-nowrap">
@@ -233,7 +257,7 @@ export default function AttendancePage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {attendances.map((att, idx) => (
+              {pagedAttendances.map((att) => (
                 <tr key={att.employee.id} className="hover:bg-muted/50 transition-colors group">
                   <td className="px-6 py-4 font-bold text-muted-foreground">{att.employee.id}</td>
                   <td className="px-6 py-4">
@@ -254,15 +278,15 @@ export default function AttendancePage() {
                               if (isNaN(val)) val = 0;
                               if (val < 0) val = 0;
                               if (val > standardDays) val = standardDays;
-                              handleUpdateLine(idx, "realWorkDays", val);
+                              handleUpdateLine(att.employee.id, "realWorkDays", val);
                           }} 
                       />
                       {att.suggestedDays !== undefined && (Number(att.realWorkDays) || 0) === 0 && (
                           <div 
                               className="text-[10px] text-blue-600 cursor-pointer mt-1.5 hover:bg-blue-50 border border-blue-200 rounded-md py-0.5 w-24 mx-auto font-medium transition-all animate-pulse shadow-sm"
                               onClick={() => {
-                                  handleUpdateLine(idx, "realWorkDays", att.suggestedDays!);
-                                  if ((Number(att.paidLeaveDays) || 0) === 0) handleUpdateLine(idx, "paidLeaveDays", att.suggestedPaidLeaveDays!);
+                                  handleUpdateLine(att.employee.id, "realWorkDays", att.suggestedDays!);
+                                  if ((Number(att.paidLeaveDays) || 0) === 0) handleUpdateLine(att.employee.id, "paidLeaveDays", att.suggestedPaidLeaveDays!);
                               }}
                               title="Bấm để tự động điền cả Công mặt và Phép"
                           >
@@ -284,13 +308,13 @@ export default function AttendancePage() {
                               if (isNaN(val)) val = 0;
                               if (val < 0) val = 0;
                               if (val > standardDays) val = standardDays;
-                              handleUpdateLine(idx, "paidLeaveDays", val);
+                              handleUpdateLine(att.employee.id, "paidLeaveDays", val);
                           }} 
                       />
                       {att.suggestedPaidLeaveDays !== undefined && (Number(att.paidLeaveDays) || 0) === 0 && att.suggestedPaidLeaveDays > 0 && (
                           <div 
                               className="text-[10px] text-green-600 cursor-pointer mt-1.5 hover:bg-blue-50 border border-green-300 rounded-md py-0.5 w-24 mx-auto font-medium transition-all shadow-sm"
-                              onClick={() => handleUpdateLine(idx, "paidLeaveDays", att.suggestedPaidLeaveDays!)}
+                              onClick={() => handleUpdateLine(att.employee.id, "paidLeaveDays", att.suggestedPaidLeaveDays!)}
                               title="Bấm để điền riêng ngày nghỉ hưởng lương"
                           >
                               💡 Phép: {att.suggestedPaidLeaveDays}
@@ -302,7 +326,7 @@ export default function AttendancePage() {
                           type="number"
                           className="w-16 mx-auto text-center" 
                           value={att.otNormalHours || 0} 
-                          onChange={e => handleUpdateLine(idx, "otNormalHours", Math.max(0, Number(e.target.value)))} 
+                          onChange={e => handleUpdateLine(att.employee.id, "otNormalHours", Math.max(0, Number(e.target.value)))} 
                       />
                   </td>
                   <td className="px-4 py-4 text-center">
@@ -310,7 +334,7 @@ export default function AttendancePage() {
                           type="number"
                           className="w-16 mx-auto text-center" 
                           value={att.otWeekendHours || 0} 
-                          onChange={e => handleUpdateLine(idx, "otWeekendHours", Math.max(0, Number(e.target.value)))} 
+                          onChange={e => handleUpdateLine(att.employee.id, "otWeekendHours", Math.max(0, Number(e.target.value)))} 
                       />
                   </td>
                   <td className="px-4 py-4 text-center">
@@ -318,7 +342,7 @@ export default function AttendancePage() {
                           type="number"
                           className="w-16 mx-auto text-center" 
                           value={att.otHolidayHours || 0} 
-                          onChange={e => handleUpdateLine(idx, "otHolidayHours", Math.max(0, Number(e.target.value)))} 
+                          onChange={e => handleUpdateLine(att.employee.id, "otHolidayHours", Math.max(0, Number(e.target.value)))} 
                       />
                   </td>
                   <td className="px-6 py-4 text-center font-black text-primary text-base">
