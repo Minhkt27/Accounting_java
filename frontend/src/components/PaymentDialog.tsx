@@ -12,7 +12,7 @@ interface PaymentDialogProps {
 const CONFIG = {
   SALARY: {
     icon: DollarSign,
-    title: "Thanh toán Lương",
+    title: "Thanh toán ",
     description: "Chi trả lương thực lĩnh (NET) cho toàn bộ nhân viên. Hệ thống sẽ sinh Phiếu chi/UNC và hạch toán Nợ 334 / Có 111 hoặc 112.",
     color: "green",
     bgClass: "bg-green-600 hover:bg-green-700",
@@ -49,7 +49,7 @@ export default function PaymentDialog({ onPay, disabled, paymentType }: PaymentD
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
-        <Button 
+        <Button
           disabled={disabled}
           className={`gap-2 h-9 text-white font-bold shadow-md ${cfg.bgClass} ${!disabled ? 'animate-pulse' : ''}`}
         >
@@ -67,7 +67,7 @@ export default function PaymentDialog({ onPay, disabled, paymentType }: PaymentD
           </p>
 
           <div className="grid grid-cols-2 gap-4 pt-4">
-            <button 
+            <button
               onClick={() => handlePay("PAYMENT")}
               className="flex flex-col items-center justify-center p-6 border-2 border-slate-100 rounded-2xl hover:border-amber-400 hover:bg-amber-50 transition-all group"
             >
@@ -76,7 +76,7 @@ export default function PaymentDialog({ onPay, disabled, paymentType }: PaymentD
               <span className="text-[10px] text-muted-foreground uppercase opacity-70">Sổ quỹ - 111</span>
             </button>
 
-            <button 
+            <button
               onClick={() => handlePay("BANK")}
               className="flex flex-col items-center justify-center p-6 border-2 border-slate-100 rounded-2xl hover:border-blue-400 hover:bg-blue-50 transition-all group"
             >

@@ -22,6 +22,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(e) FROM Employee e WHERE e.status = 'WORKING' OR e.status = 'ON_LEAVE'")
     Long countActive();
 
+    @org.springframework.data.jpa.repository.Query("SELECT MAX(e.id) FROM Employee e WHERE e.id LIKE 'NV%'")
+    String findMaxId();
+
     default Long countByActiveTrue() {
         return countActive();
     }

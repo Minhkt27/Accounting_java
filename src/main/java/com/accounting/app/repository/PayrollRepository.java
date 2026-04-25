@@ -30,4 +30,6 @@ public interface PayrollRepository extends JpaRepository<Payroll, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT p FROM Payroll p JOIN p.employee e WHERE p.status = :status ORDER BY e.createdAt DESC NULLS LAST, e.id DESC")
     List<Payroll> findByStatusSortedList(
             @org.springframework.data.repository.query.Param("status") PayrollStatus status);
+
+    long countByMonthAndYear(Integer month, Integer year);
 }

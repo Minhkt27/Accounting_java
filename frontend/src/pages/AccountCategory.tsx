@@ -55,7 +55,10 @@ export default function AccountCategoryPage() {
   }, [])
 
   useEffect(() => {
-    fetchAccounts()
+    const timer = setTimeout(() => {
+      fetchAccounts()
+    }, 0)
+    return () => clearTimeout(timer)
   }, [fetchAccounts])
 
   const handleSave = async (e: React.FormEvent) => {
@@ -95,8 +98,7 @@ export default function AccountCategoryPage() {
         headers: { Authorization: `Bearer ${token}` }
       })
       fetchAccounts()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
+    } catch {
       setError("Không thể xóa tài khoản. Lưu ý: Tài khoản đã phát sinh giao dịch sẽ không thể xóa.")
     }
   }

@@ -42,7 +42,6 @@ export default function HRTrackingPage() {
   }, [leaves, filterMonth]);
 
   const maternityCount = filteredLeaves.filter(l => l.leaveType === 'MATERNITY').length
-  const sickCount = filteredLeaves.filter(l => l.leaveType === 'SICK').length
 
   const formatVND = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0)
@@ -110,7 +109,7 @@ export default function HRTrackingPage() {
           </div>
           <div className="p-6 bg-amber-50 border border-amber-200 rounded-2xl shadow-sm flex flex-col items-center">
               <Calendar className="w-10 h-10 text-amber-500 mb-2" />
-              <p className="text-3xl font-black text-amber-600">{maternityCount + sickCount}</p>
+              <p className="text-3xl font-black text-amber-600">{maternityCount}</p>
               <p className="text-[10px] uppercase font-bold text-amber-700">Nhân viên nghỉ chế độ (Trong tháng)</p>
           </div>
       </div>

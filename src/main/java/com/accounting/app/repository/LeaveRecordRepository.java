@@ -17,4 +17,7 @@ public interface LeaveRecordRepository extends JpaRepository<LeaveRecord, Long> 
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(lr) > 0 FROM LeaveRecord lr WHERE lr.employee.id = :empId AND lr.id <> :excludeId AND lr.startDate <= :end AND lr.endDate >= :start")
     boolean existsByEmployeeIdAndOverlapExcludingId(@org.springframework.data.repository.query.Param("empId") String empId, @org.springframework.data.repository.query.Param("excludeId") Long excludeId, @org.springframework.data.repository.query.Param("start") java.time.LocalDate start, @org.springframework.data.repository.query.Param("end") java.time.LocalDate end);
+
+    @org.springframework.data.jpa.repository.Query("SELECT lr FROM LeaveRecord lr WHERE lr.startDate <= :end AND lr.endDate >= :start")
+    List<LeaveRecord> findLeavesInPeriod(@org.springframework.data.repository.query.Param("start") java.time.LocalDate start, @org.springframework.data.repository.query.Param("end") java.time.LocalDate end);
 }

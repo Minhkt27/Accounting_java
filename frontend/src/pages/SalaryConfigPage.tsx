@@ -9,6 +9,15 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import type { SalaryParameter, TaxTier, DeductionSetting, EmployeeTaxConfig, InsuranceConfig } from "../types"
 
+// Mặc định 5 bậc thuế luỹ tiến từng phần theo quy định pháp luật
+const DEFAULT_5_TAX_TIERS: TaxTier[] = [
+  { lowerBound: 0, upperBound: 10000000, lowerBoundYearly: 0, upperBoundYearly: 120000000, taxRate: 5, tierLevel: 1, status: 'PENDING' },
+  { lowerBound: 10000000, upperBound: 30000000, lowerBoundYearly: 120000000, upperBoundYearly: 360000000, taxRate: 10, tierLevel: 2, status: 'PENDING' },
+  { lowerBound: 30000000, upperBound: 60000000, lowerBoundYearly: 360000000, upperBoundYearly: 720000000, taxRate: 20, tierLevel: 3, status: 'PENDING' },
+  { lowerBound: 60000000, upperBound: 100000000, lowerBoundYearly: 720000000, upperBoundYearly: 1200000000, taxRate: 30, tierLevel: 4, status: 'PENDING' },
+  { lowerBound: 100000000, upperBound: 999999999, lowerBoundYearly: 1200000000, upperBoundYearly: 999999999999, taxRate: 35, tierLevel: 5, status: 'PENDING' },
+]
+
 export default function SalaryConfigPage() {
   const [activeTab, setActiveTab] = useState<"params" | "insurance" | "tax">("params")
   const headers = useMemo(() => ({ 
@@ -31,16 +40,7 @@ export default function SalaryConfigPage() {
     bhxhEmployer: 17.5, bhytEmployer: 3.0, bhtnEmployer: 1.0, kpcdEmployer: 2.0,
     effectiveDate: new Date().toISOString().split('T')[0]
   })
-  
-  // --- State for Tax Config ---
-  // Mặc định 5 bậc thuế luỹ tiến từng phần theo quy định pháp luật
-  const DEFAULT_5_TAX_TIERS: TaxTier[] = [
-    { lowerBound: 0, upperBound: 10000000, lowerBoundYearly: 0, upperBoundYearly: 120000000, taxRate: 5, tierLevel: 1, status: 'PENDING' },
-    { lowerBound: 10000000, upperBound: 30000000, lowerBoundYearly: 120000000, upperBoundYearly: 360000000, taxRate: 10, tierLevel: 2, status: 'PENDING' },
-    { lowerBound: 30000000, upperBound: 60000000, lowerBoundYearly: 360000000, upperBoundYearly: 720000000, taxRate: 20, tierLevel: 3, status: 'PENDING' },
-    { lowerBound: 60000000, upperBound: 100000000, lowerBoundYearly: 720000000, upperBoundYearly: 1200000000, taxRate: 30, tierLevel: 4, status: 'PENDING' },
-    { lowerBound: 100000000, upperBound: 999999999, lowerBoundYearly: 1200000000, upperBoundYearly: 999999999999, taxRate: 35, tierLevel: 5, status: 'PENDING' },
-  ]
+
   const [taxTiers, setTaxTiers] = useState<TaxTier[]>(DEFAULT_5_TAX_TIERS)
   const [deductions, setDeductions] = useState<DeductionSetting>({ personalDeduction: 15500000, dependentDeduction: 6200000 })
   const [taxRules, setTaxRules] = useState<EmployeeTaxConfig[]>([])
@@ -922,14 +922,14 @@ export default function SalaryConfigPage() {
                                             { type: "INTERN", label: "Thực tập sinh" },
                                             { type: "FULL_TIME", label: "Chính thức" }
                                         ].map((row) => {
-                                            const config = taxRules.find(r => r.employeeType === row.type) || { employeeType: row.type as any, taxMethod: "PROGRESSIVE" };
+                                            const config = taxRules.find(r => r.employeeType === row.type) || { employeeType: row.type as EmployeeTaxConfig['employeeType'], taxMethod: "PROGRESSIVE" };
                                             const updateMethod = (method: "EXEMPT" | "FIXED_10" | "PROGRESSIVE") => {
                                                 const newRules = [...taxRules];
                                                 const idx = newRules.findIndex(r => r.employeeType === row.type);
                                                 if (idx > -1) {
                                                     newRules[idx] = { ...newRules[idx], taxMethod: method };
                                                 } else {
-                                                    newRules.push({ employeeType: row.type as any, taxMethod: method });
+                                                    newRules.push({ employeeType: row.type as EmployeeTaxConfig['employeeType'], taxMethod: method });
                                                 }
                                                 setTaxRules(newRules);
                                             };

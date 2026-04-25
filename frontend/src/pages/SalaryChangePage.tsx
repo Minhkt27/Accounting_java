@@ -75,11 +75,14 @@ export default function SalaryChangePage() {
   const [allowedFunctions, setAllowedFunctions] = useState<string[]>([])
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (!token) return
-    axios.get("/api/auth/my-permissions", {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setAllowedFunctions(res.data)).catch(() => { })
+    const timer = setTimeout(() => {
+      const token = localStorage.getItem("token")
+      if (!token) return
+      axios.get("/api/auth/my-permissions", {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(res => setAllowedFunctions(res.data)).catch(() => { })
+    }, 0)
+    return () => clearTimeout(timer)
   }, [])
 
   const userRoles = useMemo(() => {
@@ -93,9 +96,25 @@ export default function SalaryChangePage() {
   const isDirectAdmin = userRoles.includes("ROLE_NHAN_SU") || userRoles.includes("ROLE_ADMIN")
   const canApprove = userRoles.includes("ROLE_ADMIN") || userRoles.includes("ROLE_KE_TOAN_TRUONG") || allowedFunctions.includes("HR_SALARY_CHANGE_APPROVE")
 
-  useEffect(() => {
+  const handleFilterStatus = (s: string) => {
+    setFilterStatus(s)
     setPage(0)
-  }, [filterStatus, searchTerm, filterType, filterMonth])
+  }
+
+  const handleSearchTerm = (t: string) => {
+    setSearchTerm(t)
+    setPage(0)
+  }
+
+  const handleFilterType = (t: string) => {
+    setFilterType(t)
+    setPage(0)
+  }
+
+  const handleFilterMonth = (m: string) => {
+    setFilterMonth(m)
+    setPage(0)
+  }
 
   const fetchChanges = useCallback(async () => {
     try {
@@ -140,20 +159,23 @@ export default function SalaryChangePage() {
   }, [headers])
 
   useEffect(() => { 
-    fetchChanges(); 
-    fetchEmployees(); 
+    const timer = setTimeout(() => {
+      fetchChanges(); 
+      fetchEmployees(); 
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchChanges, fetchEmployees])
 
-  // Auto-fill old salary when employee is selected (only when creating new)
-  useEffect(() => {
-    if (formEmployeeId && !editingId) {
-      const emp = employees.find(e => e.id === formEmployeeId)
+  const handleEmployeeChange = (id: string) => {
+    setFormEmployeeId(id)
+    if (id && !editingId) {
+      const emp = employees.find(e => e.id === id)
       if (emp) {
         setFormOldValue(emp.contractSalary)
-        setFormNewValue(emp.contractSalary) 
+        setFormNewValue(emp.contractSalary)
       }
     }
-  }, [formEmployeeId, employees, editingId])
+  }
 
   const validate = () => {
     if (!formEmployeeId) {
@@ -254,8 +276,9 @@ export default function SalaryChangePage() {
       await axios.post(`/api/salary-changes/${id}/approve`, {}, { headers })
       alert("Đã phê duyệt thành công!")
       fetchChanges()
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Lỗi")
+    } catch (err: unknown) {
+      const serverMsg = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : String(err)
+      alert("Lỗi: " + serverMsg)
     }
   }
 
@@ -267,8 +290,9 @@ export default function SalaryChangePage() {
       setRejectId(null)
       setRejectReason("")
       fetchChanges()
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Lỗi")
+    } catch (err: unknown) {
+      const serverMsg = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : String(err)
+      alert("Lỗi: " + serverMsg)
     }
   }
 
@@ -324,7 +348,7 @@ export default function SalaryChangePage() {
                 disabled={!!editingId}
                 className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary/20 outline-none disabled:bg-slate-50"
                 value={formEmployeeId} 
-                onChange={e => setFormEmployeeId(e.target.value)}
+                onChange={e => handleEmployeeChange(e.target.value)}
               >
                 <option value="">-- Chọn nhân viên --</option>
                 {employees.map(e => (
@@ -390,7 +414,7 @@ export default function SalaryChangePage() {
           ].map(tab => (
             <button
               key={tab.value}
-              onClick={() => setFilterStatus(tab.value)}
+              onClick={() => handleFilterStatus(tab.value)}
               className={`px-4 py-2 text-xs font-black rounded-xl transition-all border ${
                 filterStatus === tab.value
                   ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
@@ -406,12 +430,12 @@ export default function SalaryChangePage() {
             <Input 
                 placeholder="Tìm kiếm Tên hoặc Mã NV..." 
                 value={searchTerm} 
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={e => handleSearchTerm(e.target.value)}
                 className="max-w-xs bg-slate-50"
             />
             <select 
                 value={filterType} 
-                onChange={e => setFilterType(e.target.value)}
+                onChange={e => handleFilterType(e.target.value)}
                 className="flex h-10 w-[200px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
             >
                 <option value="">Tất cả loại biến động</option>
@@ -425,10 +449,10 @@ export default function SalaryChangePage() {
                    value={filterMonth ? filterMonth.split('-')[1] : ""}
                    onChange={e => {
                        const m = e.target.value;
-                       if (!m) setFilterMonth("");
+                       if (!m) handleFilterMonth("");
                        else {
                          const y = filterMonth ? filterMonth.split('-')[0] : new Date().getFullYear().toString();
-                         setFilterMonth(`${y}-${m}`);
+                         handleFilterMonth(`${y}-${m}`);
                        }
                    }}
                    className="flex h-10 w-[120px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
@@ -446,7 +470,7 @@ export default function SalaryChangePage() {
                      onChange={e => {
                          const y = e.target.value;
                          const m = filterMonth.split('-')[1];
-                         setFilterMonth(`${y}-${m}`);
+                         handleFilterMonth(`${y}-${m}`);
                      }}
                      className="flex h-10 w-[110px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                  >

@@ -109,7 +109,12 @@ export default function ReportsPage() {
     } catch (err: unknown) { console.error(err) }
   }, [month, year, headers])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => { 
+    const timer = setTimeout(() => {
+      fetchAll() 
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchAll])
 
   const handleExportExcel = useCallback(() => {
     if (activeTab === 'summary' && data) {

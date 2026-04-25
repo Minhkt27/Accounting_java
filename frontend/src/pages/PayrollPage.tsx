@@ -13,6 +13,7 @@ export interface Employee {
   dob?: string
   phone?: string
   email?: string
+  department?: string
   resignationDate?: string
 }
 
@@ -105,9 +106,9 @@ export default function PayrollPage() {
       })
       alert(`Đã tính lương xong cho tháng ${month}/${year}`)
       fetchPayrolls()
-    } catch (err: any) {
-      const serverMsg = err.response?.data?.message || err.message
-      alert("Lỗi khi tính lương: " + serverMsg)
+    } catch (err: unknown) {
+      const serverMsg = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : String(err)
+      alert("Lỗi: " + serverMsg)
     } finally {
       setLoading(false)
     }
@@ -121,8 +122,8 @@ export default function PayrollPage() {
       })
       alert("Đã chốt lương thành công!")
       fetchPayrolls()
-    } catch (err: any) {
-      const serverMsg = err.response?.data?.message || err.message
+    } catch (err: unknown) {
+      const serverMsg = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : String(err)
       alert("Lỗi khi chốt: " + serverMsg)
     }
   }
@@ -141,8 +142,8 @@ export default function PayrollPage() {
       setShowRejectDialog(false)
       setRejectReason("")
       fetchPayrolls()
-    } catch (err: any) {
-      const serverMsg = err.response?.data?.message || err.message
+    } catch (err: unknown) {
+      const serverMsg = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : String(err)
       alert("Lỗi khi từ chối: " + serverMsg)
     }
   }

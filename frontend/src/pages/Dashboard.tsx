@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import axios from "axios"
 import { motion } from "framer-motion"
 import { 
@@ -19,7 +19,16 @@ interface DashboardSummary {
   totalTax: number;
 }
 
-const Card = ({ title, value, subtitle, icon: Icon, color, delay }: any) => (
+interface CardProps {
+  title: string;
+  value: string | number;
+  subtitle: string;
+  icon: React.ElementType;
+  color: string;
+  delay: number;
+}
+
+const Card = ({ title, value, subtitle, icon: Icon, color, delay }: CardProps) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -53,7 +62,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   const auth = useMemo(() => ({ 
-    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } 
+    headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } 
   }), [])
 
   useEffect(() => {
@@ -63,12 +72,12 @@ export default function DashboardPage() {
         const month = now.getMonth() === 0 ? 12 : now.getMonth()
         const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
         
-        const sumRes = await axios.get(`/api/accounting/summary?month=${month}&year=${year}`, auth)
+        const sumRes = await axios.get<DashboardSummary>(`/api/accounting/summary?month=${month}&year=${year}`, auth)
         setSummary(sumRes.data)
       } catch (err: unknown) { 
         console.error(err) 
       } finally {
-        setTimeout(() => setIsLoading(false), 800)
+        setIsLoading(false)
       }
     }
     fetchData()

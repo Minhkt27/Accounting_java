@@ -56,7 +56,7 @@ export default function AttendancePage() {
       try {
           const resParams = await axios.get("/api/config/params", auth)
           params = resParams.data.length > 0 ? resParams.data[0] : null
-      } catch (e) { console.warn("cannot fetch params") }
+      } catch { console.warn("cannot fetch params") }
       
       let std = getStandardDays(month, year)
       if (params && params.standardWorkDayMode === 'FIXED') {
@@ -91,7 +91,7 @@ export default function AttendancePage() {
         try {
           const resPayroll = await axios.get(`/api/payroll/${month}/${year}?page=0&size=1`, auth)
           const payrolls = resPayroll.data.content
-          const isCalculationDone = payrolls.length > 0 && payrolls.some((p: any) => p.status !== 'REJECTED')
+          const isCalculationDone = payrolls.length > 0 && payrolls.some((p: { status: string }) => p.status !== 'REJECTED')
           setIsLocked(isCalculationDone)
         } catch (e) {
          console.error("Fetch payroll failed", e)
@@ -124,9 +124,14 @@ export default function AttendancePage() {
        })
        setAttendances(initialAtt)
      } catch (err: unknown) { console.error(err) }
-   }, [month, year, page, pageSize])
+   }, [month, year])
  
-   useEffect(() => { fetchData() }, [fetchData])
+    useEffect(() => { 
+      const timer = setTimeout(() => {
+        fetchData() 
+      }, 0)
+      return () => clearTimeout(timer)
+    }, [fetchData])
 
    const filteredAttendances = useMemo(() => {
     return attendances.filter(att => {
@@ -137,9 +142,10 @@ export default function AttendancePage() {
     });
   }, [attendances, searchTerm]);
 
-  useEffect(() => {
+  const handleSearchTerm = (val: string) => {
+    setSearchTerm(val)
     setPage(0)
-  }, [searchTerm])
+  }
 
   const pagedAttendances = filteredAttendances.slice(page * pageSize, (page + 1) * pageSize)
   const totalElements = filteredAttendances.length
@@ -158,8 +164,8 @@ export default function AttendancePage() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       })
       alert("Đã lưu bảng chấm công!")
-    } catch (err: any) { 
-        const serverMsg = err.response?.data?.message || err.message
+    } catch (err: unknown) { 
+        const serverMsg = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : String(err)
         alert("Lỗi khi lưu bảng công: " + serverMsg) 
     }
   }
@@ -237,7 +243,7 @@ export default function AttendancePage() {
           <Input 
               placeholder="Tìm kiếm theo Tên hoặc Mã NV..." 
               value={searchTerm} 
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={e => handleSearchTerm(e.target.value)}
               className="max-w-sm bg-slate-50"
           />
       </div>

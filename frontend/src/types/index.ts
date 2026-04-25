@@ -60,11 +60,11 @@ export interface AccountCategory {
 
 export interface Employee {
     id: number | string;
-    code: string;
+    code?: string;
     fullName: string;
     contractSalary: number;
-    dependents: number;
-    type: "OFFICIAL" | "PROBATION";
+    dependents?: number;
+    type?: "OFFICIAL" | "PROBATION" | "FULL_TIME" | "TRAINEE" | "INTERN" | "OTHER";
     department?: string;
     dob?: string;
     positionCoefficient?: number;
@@ -73,6 +73,9 @@ export interface Employee {
     onLeave?: boolean;
     gender?: string;
     resignationDate?: string;
+    phone?: string;
+    email?: string;
+    hometown?: string;
 }
 
 export type LeaveType = "ANNUAL" | "MATERNITY";

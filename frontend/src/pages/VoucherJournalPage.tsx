@@ -50,10 +50,23 @@ export default function VoucherJournalPage() {
     Authorization: `Bearer ${localStorage.getItem("token")}` 
   }), [])
 
-  useEffect(() => {
+  const handleMonthChange = (m: number) => {
+    setMonth(m)
     setVPage(0)
     setJPage(0)
-  }, [month, year, tab])
+  }
+
+  const handleYearChange = (y: number) => {
+    setYear(y)
+    setVPage(0)
+    setJPage(0)
+  }
+
+  const handleTabChange = (t: "vouchers" | "journal") => {
+    setTab(t)
+    setVPage(0)
+    setJPage(0)
+  }
 
   const fetchData = useCallback(async () => {
     try {
@@ -74,7 +87,10 @@ export default function VoucherJournalPage() {
   }, [month, year, headers, tab, vPage, jPage])
 
   useEffect(() => {
-    fetchData()
+    const timer = setTimeout(() => {
+      fetchData()
+    }, 0)
+    return () => clearTimeout(timer)
   }, [fetchData])
 
   const handleExportExcel = useCallback(() => {
@@ -105,9 +121,9 @@ export default function VoucherJournalPage() {
         <div className="flex items-center gap-3 bg-muted/30 p-2 rounded-xl border shadow-sm">
           <div className="flex items-center gap-2 border-r pr-3">
             <span className="text-[10px] font-black uppercase text-muted-foreground">Kỳ</span>
-            <Input type="number" className="w-16 h-8 text-center font-bold" value={month} onChange={e => setMonth(Math.max(1, Math.min(12, Number(e.target.value))))} />
+            <Input type="number" className="w-16 h-8 text-center font-bold" value={month} onChange={e => handleMonthChange(Math.max(1, Math.min(12, Number(e.target.value))))} />
             <span className="text-muted-foreground">/</span>
-            <Input type="number" className="w-20 h-8 text-center font-bold" value={year} onChange={e => setYear(Math.max(2000, Number(e.target.value)))} />
+            <Input type="number" className="w-20 h-8 text-center font-bold" value={year} onChange={e => handleYearChange(Math.max(2000, Number(e.target.value)))} />
           </div>
           <Button variant="outline" onClick={handleExportExcel} className="gap-2 h-8 border-green-600 text-green-600 hover:bg-green-50 shadow-sm">
             <FileSpreadsheet className="w-4 h-4" /> Excel
@@ -118,7 +134,7 @@ export default function VoucherJournalPage() {
       {/* Tab nav */}
       <div className="flex gap-1 bg-muted/30 p-1 rounded-xl border w-fit">
         <button
-          onClick={() => setTab("vouchers")}
+          onClick={() => handleTabChange("vouchers")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
             tab === "vouchers" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           }`}
@@ -126,7 +142,7 @@ export default function VoucherJournalPage() {
           <Receipt className="w-4 h-4" /> Chứng từ ({vouchers.length})
         </button>
         <button
-          onClick={() => setTab("journal")}
+          onClick={() => handleTabChange("journal")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
             tab === "journal" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           }`}

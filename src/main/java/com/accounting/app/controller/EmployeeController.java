@@ -46,10 +46,16 @@ public class EmployeeController {
             result = employeeRepository.findAllSorted(org.springframework.data.domain.PageRequest.of(page, size));
         }
 
-        // Detect active leaves for today
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.util.List<com.accounting.app.model.LeaveRecord> activeLeaves = leaveRepository.findActiveLeaves(today);
-        java.util.Set<String> onLeaveIds = activeLeaves.stream()
+        // Detect active leaves for the period
+        java.time.LocalDate startOfPeriod = (month != null && year != null) 
+                ? java.time.LocalDate.of(year, month, 1) 
+                : java.time.LocalDate.now();
+        java.time.LocalDate endOfPeriod = (month != null && year != null)
+                ? startOfPeriod.withDayOfMonth(startOfPeriod.lengthOfMonth())
+                : startOfPeriod;
+
+        java.util.List<com.accounting.app.model.LeaveRecord> periodLeaves = leaveRepository.findLeavesInPeriod(startOfPeriod, endOfPeriod);
+        java.util.Set<String> onLeaveIds = periodLeaves.stream()
                 .map(lr -> lr.getEmployee().getId())
                 .collect(java.util.stream.Collectors.toSet());
 
@@ -72,20 +78,15 @@ public class EmployeeController {
     @GetMapping("/next-id")
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public String getNextId() {
-        List<Employee> all = employeeRepository.findAll();
-        OptionalInt max = all.stream()
-                .map(Employee::getId)
-                .filter(id -> id != null && id.startsWith("NV"))
-                .mapToInt(id -> {
-                    try {
-                        return Integer.parseInt(id.substring(2));
-                    } catch (Exception e) {
-                        return 0;
-                    }
-                })
-                .max();
-
-        int next = max.isPresent() ? max.getAsInt() + 1 : 1;
+        String maxId = employeeRepository.findMaxId();
+        int next = 1;
+        if (maxId != null && maxId.startsWith("NV")) {
+            try {
+                next = Integer.parseInt(maxId.substring(2)) + 1;
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
         return String.format("NV%03d", next);
     }
 

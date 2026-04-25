@@ -29,7 +29,12 @@ export default function LeaveManagementPage() {
     }
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { 
+    const timer = setTimeout(() => {
+      fetchData() 
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchData])
 
   const resetForm = () => {
     setEditingId(null)
@@ -65,8 +70,8 @@ export default function LeaveManagementPage() {
       }
       fetchData()
       resetForm()
-    } catch (err: any) { 
-        const message = err.response?.data || (err instanceof Error ? err.message : String(err))
+    } catch (err: unknown) { 
+        const message = axios.isAxiosError(err) ? (err.response?.data || err.message) : String(err)
         alert("Lỗi lưu dữ liệu: " + message) 
     }
   }

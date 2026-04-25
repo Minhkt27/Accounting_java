@@ -20,7 +20,6 @@ export default function SystemParamsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setLoading(true)
     axios.get("/api/config/params", {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
     }).then(res => { 

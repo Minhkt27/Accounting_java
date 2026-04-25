@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -12,17 +12,22 @@ export default function PaymentsPage() {
   const [month, setMonth] = useState(new Date().getMonth() === 0 ? 12 : new Date().getMonth())
   const [year, setYear] = useState(new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear())
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       const resP = await axios.get(`/api/payroll/${month}/${year}?size=10000`, auth)
       setPayrolls(resP.data.content || [])
       const resV = await axios.get(`/api/accounting/vouchers?month=${month}&year=${year}&size=10000`, auth)
       setPayments(resV.data.content || [])
-    } catch (err) { console.error(err) }
-  }
+    } catch (err: unknown) { console.error(err) }
+  }, [month, year])
 
-  useEffect(() => { fetchData() }, [month, year])
+  useEffect(() => { 
+    const timer = setTimeout(() => {
+      fetchData() 
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchData])
 
   const handleExportExcel = () => {
     ExportService.exportToExcel(
@@ -46,7 +51,10 @@ export default function PaymentsPage() {
       })
       alert("Đã lập chứng từ thanh toán lương thành công!")
       fetchData()
-    } catch (err: any) { alert(err.response?.data || "Lỗi khi thanh toán lương") }
+    } catch (err: unknown) { 
+      const serverMsg = axios.isAxiosError(err) ? (err.response?.data || err.message) : String(err)
+      alert("Lỗi: " + serverMsg) 
+    }
   }
 
   const handlePayInsurance = async (method: string) => {
@@ -56,7 +64,10 @@ export default function PaymentsPage() {
       })
       alert("Đã lập chứng từ nộp bảo hiểm thành công!")
       fetchData()
-    } catch (err: any) { alert(err.response?.data || "Lỗi khi nộp bảo hiểm") }
+    } catch (err: unknown) { 
+      const msg = axios.isAxiosError(err) ? (err.response?.data || err.message) : String(err)
+      alert("Lỗi: " + msg) 
+    }
   }
 
   const handlePayTax = async (method: string) => {
@@ -66,7 +77,10 @@ export default function PaymentsPage() {
       })
       alert("Đã lập chứng từ nộp thuế TNCN thành công!")
       fetchData()
-    } catch (err: any) { alert(err.response?.data || "Lỗi khi nộp thuế") }
+    } catch (err: unknown) { 
+      const msg = axios.isAxiosError(err) ? (err.response?.data || err.message) : String(err)
+      alert("Lỗi: " + msg) 
+    }
   }
 
   const formatVND = (val: number) => {
@@ -76,16 +90,16 @@ export default function PaymentsPage() {
   const approvedOrPaidPayrolls = payrolls.filter(p => p.status === 'APPROVED' || p.status === 'PAID');
   const canPay = approvedOrPaidPayrolls.length > 0;
 
-  const totalNetPay = approvedOrPaidPayrolls.reduce((a: number, b: any) => a + (b.netPay || 0), 0);
-  const totalInsuranceEE = approvedOrPaidPayrolls.reduce((a: number, b: any) => a + (b.totalInsurance || 0), 0);
-  const totalInsuranceER = approvedOrPaidPayrolls.reduce((a: number, b: any) => a + (b.totalEmployerInsurance || 0), 0);
+  const totalNetPay = approvedOrPaidPayrolls.reduce((a: number, b: any) => a + (Number(b.netPay) || 0), 0);
+  const totalInsuranceEE = approvedOrPaidPayrolls.reduce((a: number, b: any) => a + (Number(b.totalInsurance) || 0), 0);
+  const totalInsuranceER = approvedOrPaidPayrolls.reduce((a: number, b: any) => a + (Number(b.totalEmployerInsurance) || 0), 0);
   const totalInsurance = totalInsuranceEE + totalInsuranceER;
-  const totalTax = approvedOrPaidPayrolls.reduce((a: number, b: any) => a + (b.taxAmount || 0), 0);
+  const totalTax = approvedOrPaidPayrolls.reduce((a: number, b: any) => a + (Number(b.taxAmount) || 0), 0);
 
   // Kiểm tra loại nào đã thanh toán rồi (dựa trên prefix của voucherNumber)
-  const paidSalary = payments.some((p: any) => p.voucherNumber?.includes("-LUONG-") && (p.type === "PHIEU_CHI" || p.type === "UNC"));
-  const paidInsurance = payments.some((p: any) => p.voucherNumber?.includes("-BH-") && (p.type === "PHIEU_CHI" || p.type === "UNC"));
-  const paidTax = payments.some((p: any) => p.voucherNumber?.includes("-THUE-") && (p.type === "PHIEU_CHI" || p.type === "UNC"));
+  const paidSalary = payments.some((p: any) => String(p.voucherNumber || "").includes("-LUONG-") && (p.type === "PHIEU_CHI" || p.type === "UNC"));
+  const paidInsurance = payments.some((p: any) => String(p.voucherNumber || "").includes("-BH-") && (p.type === "PHIEU_CHI" || p.type === "UNC"));
+  const paidTax = payments.some((p: any) => String(p.voucherNumber || "").includes("-THUE-") && (p.type === "PHIEU_CHI" || p.type === "UNC"));
 
   return (
     <div className="space-y-8">

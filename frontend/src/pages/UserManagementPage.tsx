@@ -110,7 +110,10 @@ export default function UserManagementPage() {
       setPermDirty(false)
       fetchData()
       alert("Cập nhật phân quyền thành công!")
-    } catch (err: any) { alert(err.response?.data || "Lỗi!") }
+    } catch (err: unknown) { 
+      const errorMessage = axios.isAxiosError(err) ? (err.response?.data || "Lỗi!") : "Lỗi!";
+      alert(errorMessage); 
+    }
   }
 
   const openCreate = () => {
@@ -154,14 +157,20 @@ export default function UserManagementPage() {
         await axios.post("/api/admin/users", { username: formUsername, email: formEmail, password: formPassword, roles: formRoles }, { headers })
       }
       setShowForm(false); fetchData()
-    } catch (err: any) { alert(err.response?.data || "Lỗi!") }
+    } catch (err: unknown) { 
+      const errorMessage = axios.isAxiosError(err) ? (err.response?.data || "Lỗi!") : "Lỗi!";
+      alert(errorMessage); 
+    }
   }
 
   const handleDelete = async (id: number) => {
     if (!confirm("Xác nhận xóa tài khoản?")) return
     try {
       await axios.delete(`/api/admin/users/${id}`, { headers }); fetchData()
-    } catch (err: any) { alert(err.response?.data || "Lỗi!") }
+    } catch (err: unknown) { 
+      const errorMessage = axios.isAxiosError(err) ? (err.response?.data || "Lỗi!") : "Lỗi!";
+      alert(errorMessage); 
+    }
   }
 
   const handleResetPassword = async () => {

@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error - xlsx/xlsx.mjs doesn't have type definitions
 import * as XLSX from 'xlsx/xlsx.mjs';
 
 /**
@@ -16,12 +16,12 @@ export const ExportService = {
   exportToExcel: (data: any[], fileName: string, sheetName: string = 'Sheet1', headers?: Record<string, string>) => {
     try {
       // 1. Prepare data (apply custom headers if provided)
-      let formattedData = data;
+      let formattedData: any[] = data;
       if (headers) {
         formattedData = data.map(item => {
-          const newItem: any = {};
+          const newItem: Record<string, unknown> = {};
           Object.keys(headers).forEach(key => {
-            if (item.hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(item, key)) {
               newItem[headers[key]] = item[key];
             }
           });

@@ -177,8 +177,8 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
                          <div>{formatVND(payroll.otHolidayPay)}</div>
                       </div>
                       <div className="pt-6">{formatVND(payroll.mealAllowance)}</div>
-                      <div>{formatVND(payroll.bonus)}</div>
-                      <div className="text-red-500">-{formatVND(payroll.penalty)}</div>
+                                             <div>{formatVND(payroll.bonus || 0)}</div>
+                                             <div className="text-red-500">-{formatVND(payroll.penalty || 0)}</div>
                    </div>
                 </div>
                 <div className="flex border-t border-black font-black bg-slate-100 py-3 uppercase">

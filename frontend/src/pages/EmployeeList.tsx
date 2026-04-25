@@ -17,6 +17,7 @@ interface Employee {
   employeeType: "OFFICIAL" | "FULL_TIME" | "PROBATION" | "TRAINEE" | "INTERN" | "OTHER"
   department?: string
   status: 'WORKING' | 'LEFT' | 'ON_LEAVE'
+  onLeave?: boolean
   dob: string
   phone: string
   email: string
@@ -63,7 +64,12 @@ export default function EmployeeList() {
     }
   }, [])
 
-  useEffect(() => { fetchEmployees() }, [fetchEmployees])
+  useEffect(() => { 
+    const timer = setTimeout(() => {
+      fetchEmployees() 
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchEmployees])
 
   const filteredEmployees = useMemo(() => {
     return employees.filter(emp => {
@@ -91,9 +97,20 @@ export default function EmployeeList() {
     });
   }, [employees, searchTerm, filterType, filterMonth]);
 
-  useEffect(() => {
-    setPage(0);
-  }, [searchTerm, filterType, filterMonth]);
+  const handleSearchTerm = (val: string) => {
+    setSearchTerm(val)
+    setPage(0)
+  }
+
+  const handleFilterType = (val: string) => {
+    setFilterType(val)
+    setPage(0)
+  }
+
+  const handleFilterMonth = (val: string) => {
+    setFilterMonth(val)
+    setPage(0)
+  }
 
   const pagedEmployees = filteredEmployees.slice(page * pageSize, (page + 1) * pageSize)
   const totalElements = filteredEmployees.length
@@ -156,7 +173,7 @@ export default function EmployeeList() {
       const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       
       // Sanitize payload to prevent Java LocalDate parsing errors on empty strings
-      const payload: any = { ...currentEmp }
+      const payload: Record<string, unknown> = { ...currentEmp }
       if (!payload.resignationDate) payload.resignationDate = null;
       if (!payload.dob) payload.dob = null;
 
@@ -237,7 +254,7 @@ export default function EmployeeList() {
       })
       setCurrentEmp(prev => ({ ...prev, id: res.data }))
       setShowForm(true)
-    } catch (err: unknown) {
+    } catch {
       setShowForm(true)
     }
   }, [])
@@ -375,7 +392,7 @@ export default function EmployeeList() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Loại nhân sự <span className="text-red-500">*</span></label>
-                <select value={currentEmp.employeeType} onChange={e => setCurrentEmp({...currentEmp, employeeType: e.target.value as any})} disabled={viewOnly} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select value={currentEmp.employeeType} onChange={e => setCurrentEmp({...currentEmp, employeeType: e.target.value as Employee['employeeType']})} disabled={viewOnly} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="FULL_TIME">Chính thức</option>
                   <option value="PROBATION">Thử việc</option>
                   <option value="INTERN">Thực tập sinh</option>
@@ -444,12 +461,12 @@ export default function EmployeeList() {
               <Input 
                   placeholder="Tìm kiếm theo Tên hoặc Mã NV..." 
                   value={searchTerm} 
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={e => handleSearchTerm(e.target.value)}
                   className="max-w-xs bg-slate-50"
               />
               <select 
                   value={filterType} 
-                  onChange={e => setFilterType(e.target.value)}
+                  onChange={e => handleFilterType(e.target.value)}
                   className="flex h-10 w-[200px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
               >
                   <option value="">Tất cả loại nhân sự</option>
@@ -464,10 +481,10 @@ export default function EmployeeList() {
                      value={filterMonth ? filterMonth.split('-')[1] : ""}
                      onChange={e => {
                          const m = e.target.value;
-                         if (!m) setFilterMonth("");
+                         if (!m) handleFilterMonth("");
                          else {
                            const y = filterMonth ? filterMonth.split('-')[0] : new Date().getFullYear().toString();
-                           setFilterMonth(`${y}-${m}`);
+                           handleFilterMonth(`${y}-${m}`);
                          }
                      }}
                      className="flex h-10 w-[120px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
@@ -485,7 +502,7 @@ export default function EmployeeList() {
                        onChange={e => {
                            const y = e.target.value;
                            const m = filterMonth.split('-')[1];
-                           setFilterMonth(`${y}-${m}`);
+                           handleFilterMonth(`${y}-${m}`);
                        }}
                        className="flex h-10 w-[110px] rounded-md border border-input bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                    >
@@ -497,7 +514,7 @@ export default function EmployeeList() {
                  )}
               </div>
               {(searchTerm || filterType || filterMonth) && (
-                  <Button variant="ghost" onClick={() => {setSearchTerm(""); setFilterType(""); setFilterMonth("");}} className="text-red-500 hover:bg-red-50 hover:text-red-600">
+                  <Button variant="ghost" onClick={() => {handleSearchTerm(""); handleFilterType(""); handleFilterMonth("");}} className="text-red-500 hover:bg-red-50 hover:text-red-600">
                      Xóa lọc
                   </Button>
               )}

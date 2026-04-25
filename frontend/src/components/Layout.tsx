@@ -4,14 +4,20 @@ import {
   ShieldCheck,
   Database, ChevronRight, Wallet, PieChart, Home
 } from "lucide-react"
-import { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useState, useEffect } from "react"
 import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
 
-function FunctionIcon(props: any) {
+interface IconProps extends React.SVGProps<SVGSVGElement> {
+  size?: number | string
+}
+
+function FunctionIcon(props: IconProps) {
   return (
     <svg
       {...props}
+      width={props.size || 24}
+      height={props.size || 24}
       viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
       className={`${props.className} w-[1.1rem] h-[1.1rem]`}
     >
@@ -124,13 +130,14 @@ export default function Layout() {
   const [expandedItems, setExpandedItems] = useState<string[]>([])
   const [allowedFunctions, setAllowedFunctions] = useState<string[]>([])
 
+  const rolesKey = roles.join(",")
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) return
     axios.get("/api/auth/my-permissions", {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => setAllowedFunctions(res.data)).catch(() => { })
-  }, [roles.join(",")])
+  }, [rolesKey])
 
   const hasPermission = (functionCode?: string): boolean => {
     if (!functionCode) return true;

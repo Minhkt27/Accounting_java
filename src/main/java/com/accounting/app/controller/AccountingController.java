@@ -117,7 +117,7 @@ public class AccountingController {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("month", month);
         summary.put("year", year);
-        summary.put("employeeCount", employeeRepo.countByActiveTrue());
+        summary.put("employeeCount", payrollRepo.countByMonthAndYear(month, year));
         summary.put("totalGrossIncome",
                 payrolls.stream().mapToDouble(p -> p.getGrossIncome() != null ? p.getGrossIncome() : 0).sum());
         summary.put("totalBaseSalary",
