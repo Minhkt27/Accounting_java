@@ -336,10 +336,10 @@ export default function SalaryConfigPage() {
       {/* Header Area */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex flex-col gap-1">
-            <h1 className="text-4xl font-black tracking-tighter text-slate-800 flex items-center gap-3 uppercase">
+            <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3 leading-tight">
                 <Settings className="w-10 h-10 text-primary" /> Cấu hình Lương
             </h1>
-            <p className="text-muted-foreground font-medium text-sm">Thiết lập các tham số tài chính, bảo hiểm và biểu thuế TNCN</p>
+            <p className="text-muted-foreground font-medium text-sm">Thiết lập các tham số lương, bảo hiểm và biểu thuế TNCN</p>
         </div>
         
         <AnimatePresence>
@@ -503,7 +503,7 @@ export default function SalaryConfigPage() {
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <h3 className="text-2xl font-black text-slate-800 tracking-tight uppercase italic">Tỷ lệ trích nộp</h3>
+                                            <h3 className="text-2xl font-bold text-slate-800 tracking-tight">Tỷ lệ trích nộp</h3>
                                             {insuranceConfig.status === 'PENDING' ? (
                                                 <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-200">Chờ duyệt</span>
                                             ) : (
@@ -518,7 +518,7 @@ export default function SalaryConfigPage() {
                                                 </button>
                                             )}
                                         </div>
-                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Cấu hình tỷ lệ đóng BHXH, BHYT, BHTN & KPCĐ</p>
+                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Tỷ lệ đóng BHXH, BHYT, BHTN & KPCĐ</p>
                                     </div>
                                 </div>
 

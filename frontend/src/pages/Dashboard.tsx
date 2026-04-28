@@ -60,6 +60,14 @@ const Card = ({ title, value, subtitle, icon: Icon, color, delay }: CardProps) =
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const m = new Date().getMonth();
+    return m === 0 ? 12 : m;
+  });
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const d = new Date();
+    return d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
+  });
 
   const auth = useMemo(() => ({ 
     headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } 
@@ -67,12 +75,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true)
       try {
-        const now = new Date()
-        const month = now.getMonth() === 0 ? 12 : now.getMonth()
-        const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
-        
-        const sumRes = await axios.get<DashboardSummary>(`/api/accounting/summary?month=${month}&year=${year}`, auth)
+        const sumRes = await axios.get<DashboardSummary>(`/api/accounting/summary?month=${selectedMonth}&year=${selectedYear}`, auth)
         setSummary(sumRes.data)
       } catch (err: unknown) { 
         console.error(err) 
@@ -81,7 +86,7 @@ export default function DashboardPage() {
       }
     }
     fetchData()
-  }, [auth])
+  }, [auth, selectedMonth, selectedYear])
 
   const formatVND = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { 
@@ -120,13 +125,42 @@ export default function DashboardPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                Báo cáo <span className="text-primary italic">Tổng quan</span>
+            <h1 className="text-3xl font-bold text-slate-900 leading-tight">
+                Báo cáo <span className="text-primary">Tổng quan</span>
             </h1>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                 <Calendar size={14} className="text-primary/60" />
                 Kỳ dữ liệu: {summary?.month}/{summary?.year}
             </p>
+        </div>
+        
+        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+            <div className="flex items-center gap-2 px-3">
+                <span className="text-xs font-bold text-slate-500 uppercase">Tháng:</span>
+                <select 
+                    className="bg-transparent text-sm font-black text-slate-900 outline-none cursor-pointer"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                        <option key={m} value={m}>Tháng {m}</option>
+                    ))}
+                </select>
+            </div>
+            <div className="w-px h-6 bg-slate-100"></div>
+            <div className="flex items-center gap-2 px-3">
+                <span className="text-xs font-bold text-slate-500 uppercase">Năm:</span>
+                <select 
+                    className="bg-transparent text-sm font-black text-slate-900 outline-none cursor-pointer"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                >
+                    {[...Array(5)].map((_, i) => {
+                        const y = new Date().getFullYear() - 2 + i;
+                        return <option key={y} value={y}>{y}</option>;
+                    })}
+                </select>
+            </div>
         </div>
       </div>
 
@@ -177,7 +211,7 @@ export default function DashboardPage() {
         >
             <div className="flex items-center justify-between mb-10">
                 <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic">Cơ cấu <span className="text-primary italic">Chi phí</span></h3>
+                    <h3 className="text-xl font-bold text-slate-900 leading-tight">Cơ cấu <span className="text-primary">Chi phí</span></h3>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 px-1">Phân bổ nguồn vốn theo các hạng mục</p>
                 </div>
                 <div className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-2xl text-slate-400 group cursor-pointer hover:bg-primary/10 transition-colors">
@@ -221,7 +255,7 @@ export default function DashboardPage() {
             transition={{ delay: 0.6 }}
             className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] flex flex-col"
         >
-            <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic mb-2">Tỷ trọng <span className="text-primary italic">Chi</span></h3>
+            <h3 className="text-xl font-bold text-slate-900 leading-tight mb-2">Tỷ trọng <span className="text-primary">Chi</span></h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Phần trăm phân bổ</p>
             
             <div className="h-[250px] w-full my-auto">
@@ -271,7 +305,7 @@ export default function DashboardPage() {
       >
         <div className="p-8 border-b border-slate-50 flex items-center justify-between">
             <div>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic">Dữ liệu <span className="text-primary italic">Chi tiết</span></h3>
+                <h3 className="text-xl font-bold text-slate-900 leading-tight">Dữ liệu <span className="text-primary">Chi tiết</span></h3>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Báo cáo tổng hợp số liệu kỳ {summary?.month}/{summary?.year}</p>
             </div>
             <button className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-colors">
@@ -317,15 +351,7 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
-      <footer className="pt-10 flex items-center justify-between px-4">
-        <div className="flex items-center gap-3 text-slate-300">
-            <ShieldAlert size={14} />
-            <p className="text-[9px] font-black uppercase tracking-[0.2em]">Hệ thống đồng bộ dữ liệu thời gian thực</p>
-        </div>
-        <p className="text-[9px] font-bold text-slate-300 italic uppercase tracking-widest">
-            Generated by Phuc Anh OS Engine &copy; 2026
-        </p>
-      </footer>
+
     </div>
   )
 }

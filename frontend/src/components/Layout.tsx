@@ -199,8 +199,8 @@ export default function Layout() {
               <ShieldCheck className="text-primary w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-white font-black text-xl leading-none uppercase italic tracking-tighter">PHUC ANH</h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Accounting OS</p>
+              <h1 className="text-white font-bold text-base leading-tight whitespace-nowrap">Công ty Phúc Anh</h1>
+              <p className="text-blue-400 text-[11px] font-bold mt-0.5 whitespace-nowrap tracking-wide">Hệ thống kế toán tiền lương</p>
             </div>
           </div>
         </div>
