@@ -248,10 +248,10 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
           </div>
 
           {/* NET PAY SECTION */}
-          <div className="border border-black bg-[#111827] text-white p-6 flex flex-col items-center justify-center space-y-4 rounded-b-xl shadow-inner">
-             <div className="flex items-baseline gap-6 w-full justify-center">
-                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">TỔNG SỐ TIỀN LƯƠNG THỰC NHẬN:</h3>
-                 <span className="text-4xl font-black text-yellow-400 tracking-tighter tabular-nums drop-shadow-md">{formatVND(payroll.netPay)}</span>
+          <div className="bg-[#111827] text-white p-6 flex flex-col items-center justify-center space-y-4 rounded-b-xl shadow-inner">
+             <div className="flex items-baseline gap-4 w-full justify-center">
+                 <h3 className="text-2xl font-bold text-emerald-400">TỔNG SỐ TIỀN LƯƠNG THỰC NHẬN:</h3>
+                 <span className="text-2xl font-bold text-emerald-400 tabular-nums drop-shadow-md">{formatVND(payroll.netPay)}</span>
              </div>
              <div className="flex gap-4 w-full justify-center pt-2 border-t border-white/10 italic">
                 <span className="font-bold text-slate-400">Bằng chữ:</span>

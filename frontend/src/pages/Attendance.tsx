@@ -287,18 +287,6 @@ export default function AttendancePage() {
                               handleUpdateLine(att.employee.id, "realWorkDays", val);
                           }} 
                       />
-                      {att.suggestedDays !== undefined && (Number(att.realWorkDays) || 0) === 0 && (
-                          <div 
-                              className="text-[10px] text-blue-600 cursor-pointer mt-1.5 hover:bg-blue-50 border border-blue-200 rounded-md py-0.5 w-24 mx-auto font-medium transition-all animate-pulse shadow-sm"
-                              onClick={() => {
-                                  handleUpdateLine(att.employee.id, "realWorkDays", att.suggestedDays!);
-                                  if ((Number(att.paidLeaveDays) || 0) === 0) handleUpdateLine(att.employee.id, "paidLeaveDays", att.suggestedPaidLeaveDays!);
-                              }}
-                              title="Bấm để tự động điền cả Công mặt và Phép"
-                          >
-                              💡 Gợi ý: {att.suggestedDays}
-                          </div>
-                      )}
                   </td>
                   <td className="px-6 py-4 text-center">
                       <Input 
@@ -317,15 +305,6 @@ export default function AttendancePage() {
                               handleUpdateLine(att.employee.id, "paidLeaveDays", val);
                           }} 
                       />
-                      {att.suggestedPaidLeaveDays !== undefined && (Number(att.paidLeaveDays) || 0) === 0 && att.suggestedPaidLeaveDays > 0 && (
-                          <div 
-                              className="text-[10px] text-green-600 cursor-pointer mt-1.5 hover:bg-blue-50 border border-green-300 rounded-md py-0.5 w-24 mx-auto font-medium transition-all shadow-sm"
-                              onClick={() => handleUpdateLine(att.employee.id, "paidLeaveDays", att.suggestedPaidLeaveDays!)}
-                              title="Bấm để điền riêng ngày nghỉ hưởng lương"
-                          >
-                              💡 Phép: {att.suggestedPaidLeaveDays}
-                          </div>
-                      )}
                   </td>
                   <td className="px-4 py-4 text-center">
                       <Input 

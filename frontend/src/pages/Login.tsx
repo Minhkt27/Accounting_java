@@ -54,11 +54,11 @@ export default function Login() {
             </motion.div>
             
             <div className="space-y-1">
-              <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                PHUC ANH
+              <h1 className="text-2xl font-bold text-slate-900 leading-tight whitespace-nowrap">
+                Công ty Phúc Anh
               </h1>
-              <p className="text-slate-400 text-[10px] font-black tracking-[0.2em] uppercase">
-                Accounting OS / v2.0
+              <p className="text-indigo-600 text-[13px] font-bold tracking-wide whitespace-nowrap mt-1">
+                Hệ thống kế toán tiền lương / v2.0
               </p>
             </div>
 
@@ -125,9 +125,7 @@ export default function Login() {
               </motion.button>
             </form>
             
-            <p className="text-slate-300 text-[9px] font-bold uppercase tracking-widest pt-4">
-              Secure authentication layer • phuc anh tech group
-            </p>
+
           </div>
         </div>
       </motion.div>
