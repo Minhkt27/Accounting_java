@@ -118,6 +118,7 @@ public class AccountingController {
         summary.put("month", month);
         summary.put("year", year);
         summary.put("employeeCount", payrollRepo.countByMonthAndYear(month, year));
+        summary.put("activeEmployeeCount", employeeRepo.countActive());
         summary.put("totalGrossIncome",
                 payrolls.stream().mapToDouble(p -> p.getGrossIncome() != null ? p.getGrossIncome() : 0).sum());
         summary.put("totalBaseSalary",

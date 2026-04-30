@@ -268,7 +268,6 @@ export default function AttendancePage() {
                   <td className="px-6 py-4 font-bold text-muted-foreground">{att.employee.id}</td>
                   <td className="px-6 py-4">
                       <div className="font-medium text-base">{att.employee.fullName}</div>
-                      <div className="text-[10px] text-muted-foreground">{att.employee.employeeType}</div>
                   </td>
                   <td className="px-6 py-4 text-center">
                       <Input 

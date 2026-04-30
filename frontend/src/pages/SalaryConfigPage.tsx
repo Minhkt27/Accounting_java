@@ -99,17 +99,20 @@ export default function SalaryConfigPage() {
       }
       
       const allTax = resTax.data
+      let finalTiers: TaxTier[] = []
       if (allTax.length === 0) {
-          // Nếu DB chưa có biểu thuế -> hiển thị mặc định 5 bậc theo luật
-          setTaxTiers(DEFAULT_5_TAX_TIERS)
+          finalTiers = [...DEFAULT_5_TAX_TIERS]
       } else {
           const hasPendingTax = allTax.some((x: TaxTier) => x.status === 'PENDING')
-          if (hasPendingTax) {
-              setTaxTiers(allTax.filter((x: TaxTier) => x.status === 'PENDING'))
-          } else {
-              setTaxTiers(allTax.filter((x: TaxTier) => x.status === 'APPROVED'))
-          }
+          finalTiers = hasPendingTax 
+            ? allTax.filter((x: TaxTier) => x.status === 'PENDING')
+            : allTax.filter((x: TaxTier) => x.status === 'APPROVED')
       }
+      setTaxTiers(finalTiers.map(t => ({
+        ...t,
+        lowerBoundYearly: t.lowerBoundYearly ?? (t.lowerBound * 12),
+        upperBoundYearly: t.upperBoundYearly ?? (t.upperBound * 12)
+      })))
       
       setTaxRules(resTaxRules.data)
       
@@ -745,10 +748,10 @@ export default function SalaryConfigPage() {
                                         </thead>
                                         <tbody className="divide-y divide-slate-400">
                                             {[...taxTiers].sort((a,b)=>a.tierLevel - b.tierLevel).map((t) => {
-                                                const minM_month = t.lowerBound / 1000000;
-                                                const maxM_month = t.upperBound / 1000000;
-                                                const minM_year = (t.lowerBound * 12) / 1000000;
-                                                const maxM_year = (t.upperBound * 12) / 1000000;
+                                                const minM_month = (t.lowerBound || 0) / 1000000;
+                                                const maxM_month = (t.upperBound || 0) / 1000000;
+                                                const minM_year = (t.lowerBoundYearly || 0) / 1000000;
+                                                const maxM_year = (t.upperBoundYearly || 0) / 1000000;
                                                 
                                                 const renderText = (min: number, max: number) => {
                                                     if (min === 0) return `Đến ${max}`;
@@ -764,37 +767,37 @@ export default function SalaryConfigPage() {
                                                     <td className="px-6 py-4 text-left border-r border-slate-400">
                                                         {isPitEditing ? (
                                                             <div className="flex items-center gap-2 w-full justify-center">
-                                                                <Input 
-                                                                    type="number" 
-                                                                    className="h-9 w-20 text-center border-slate-300" 
-                                                                    value={minM_year} 
-                                                                    onChange={e => {
-                                                                        const val = Math.max(0, Number(e.target.value)) * 1000000;
-                                                                        const monthlyLower = Math.round(val / 12);
-                                                                        const n = taxTiers.map(tier => {
-                                                                            if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: monthlyLower };
-                                                                            if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: monthlyLower };
-                                                                            return tier;
-                                                                        });
-                                                                        setTaxTiers(n);
-                                                                    }} 
-                                                                />
-                                                                <span className="text-slate-500 font-medium whitespace-nowrap">-</span>
-                                                                <Input 
-                                                                    type="number" 
-                                                                    className="h-9 w-20 text-center border-slate-300" 
-                                                                    value={maxM_year > 900 ? 999 : maxM_year} 
-                                                                    onChange={e => {
-                                                                        const val = Math.max(0, Number(e.target.value)) * 1000000;
-                                                                        const monthlyUpper = Math.round(val / 12);
-                                                                        const n = taxTiers.map(tier => {
-                                                                            if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: monthlyUpper };
-                                                                            if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: monthlyUpper };
-                                                                            return tier;
-                                                                        });
-                                                                        setTaxTiers(n);
-                                                                    }} 
-                                                                />
+                                                                  <Input 
+                                                                      type="number" 
+                                                                      className="h-9 w-20 text-center border-slate-300" 
+                                                                      value={minM_year} 
+                                                                      onChange={e => {
+                                                                          const val = Number(e.target.value) * 1000000;
+                                                                          const monthlyVal = val / 12;
+                                                                          const n = taxTiers.map(tier => {
+                                                                              if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBoundYearly: val, lowerBound: monthlyVal };
+                                                                              if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBoundYearly: val, upperBound: monthlyVal };
+                                                                              return tier;
+                                                                          });
+                                                                          setTaxTiers(n);
+                                                                      }} 
+                                                                  />
+                                                                  <span className="text-slate-500 font-medium whitespace-nowrap">-</span>
+                                                                  <Input 
+                                                                      type="number" 
+                                                                      className="h-9 w-20 text-center border-slate-300" 
+                                                                      value={maxM_year > 900 ? 999 : maxM_year} 
+                                                                      onChange={e => {
+                                                                          const val = Number(e.target.value) * 1000000;
+                                                                          const monthlyVal = val / 12;
+                                                                          const n = taxTiers.map(tier => {
+                                                                              if (tier.tierLevel === t.tierLevel) return { ...tier, upperBoundYearly: val, upperBound: monthlyVal };
+                                                                              if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBoundYearly: val, lowerBound: monthlyVal };
+                                                                              return tier;
+                                                                          });
+                                                                          setTaxTiers(n);
+                                                                      }} 
+                                                                  />
                                                             </div>
                                                         ) : (
                                                             renderText(minM_year, maxM_year)
@@ -805,35 +808,37 @@ export default function SalaryConfigPage() {
                                                     <td className="px-6 py-4 text-left border-r border-slate-400">
                                                         {isPitEditing ? (
                                                             <div className="flex items-center gap-2 w-full justify-center">
-                                                                <Input 
-                                                                    type="number" 
-                                                                    className="h-9 w-20 text-center border-slate-300" 
-                                                                    value={minM_month} 
-                                                                    onChange={e => {
-                                                                        const val = Math.max(0, Number(e.target.value)) * 1000000;
-                                                                        const n = taxTiers.map(tier => {
-                                                                            if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: val };
-                                                                            if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: val };
-                                                                            return tier;
-                                                                        });
-                                                                        setTaxTiers(n);
-                                                                    }} 
-                                                                />
-                                                                <span className="text-slate-500 font-medium whitespace-nowrap">-</span>
-                                                                <Input 
-                                                                    type="number" 
-                                                                    className="h-9 w-20 text-center border-slate-300" 
-                                                                    value={maxM_month > 900 ? 999 : maxM_month} 
-                                                                    onChange={e => {
-                                                                        const val = Math.max(0, Number(e.target.value)) * 1000000;
-                                                                        const n = taxTiers.map(tier => {
-                                                                            if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: val };
-                                                                            if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: val };
-                                                                            return tier;
-                                                                        });
-                                                                        setTaxTiers(n);
-                                                                    }} 
-                                                                />
+                                                                  <Input 
+                                                                      type="number" 
+                                                                      className="h-9 w-20 text-center border-slate-300" 
+                                                                      value={minM_month} 
+                                                                      onChange={e => {
+                                                                          const val = Number(e.target.value) * 1000000;
+                                                                          const yearlyVal = val * 12;
+                                                                          const n = taxTiers.map(tier => {
+                                                                              if (tier.tierLevel === t.tierLevel) return { ...tier, lowerBound: val, lowerBoundYearly: yearlyVal };
+                                                                              if (tier.tierLevel === t.tierLevel - 1) return { ...tier, upperBound: val, upperBoundYearly: yearlyVal };
+                                                                              return tier;
+                                                                          });
+                                                                          setTaxTiers(n);
+                                                                      }} 
+                                                                  />
+                                                                  <span className="text-slate-500 font-medium whitespace-nowrap">-</span>
+                                                                  <Input 
+                                                                      type="number" 
+                                                                      className="h-9 w-20 text-center border-slate-300" 
+                                                                      value={maxM_month > 900 ? 999 : maxM_month} 
+                                                                      onChange={e => {
+                                                                          const val = Number(e.target.value) * 1000000;
+                                                                          const yearlyVal = val * 12;
+                                                                          const n = taxTiers.map(tier => {
+                                                                              if (tier.tierLevel === t.tierLevel) return { ...tier, upperBound: val, upperBoundYearly: yearlyVal };
+                                                                              if (tier.tierLevel === t.tierLevel + 1) return { ...tier, lowerBound: val, lowerBoundYearly: yearlyVal };
+                                                                              return tier;
+                                                                          });
+                                                                          setTaxTiers(n);
+                                                                      }} 
+                                                                  />
                                                             </div>
                                                         ) : (
                                                             renderText(minM_month, maxM_month)
