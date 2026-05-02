@@ -76,12 +76,12 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
       <DialogContent className="max-w-4xl bg-white text-black p-0 payslip-modal print:p-0 print:m-0 print:shadow-none sm:rounded-[0.5rem] border-none shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
         <div id="payslip-content" className="flex-1 overflow-y-auto p-10 space-y-8 scrollbar-hide text-[13px] font-medium leading-relaxed">
           {/* Header Section */}
-          <div className="flex flex-col items-center text-center space-y-1 mb-6">
+          <div className="flex flex-col items-start text-left space-y-1 mb-6">
             <h1 className="text-sm font-bold uppercase w-full text-left">Công ty TNHH thiết bị kỹ thuật tin học Phúc Anh</h1>
             <p className="text-[12px] w-full text-left">Số 43, Tổ 4, Xã Sóc Sơn, TP Hà Nội, Việt Nam</p>
             <p className="text-[12px] w-full text-left">Mã số thuế: 0110465135</p>
             
-            <div className="py-4 space-y-1">
+            <div className="py-4 space-y-1 text-left w-full">
                 <h2 className="text-xl font-black uppercase tracking-tight">PHIẾU LƯƠNG NHÂN VIÊN</h2>
                 <p className="text-sm font-bold">Kỳ lương: Tháng {payroll.month} / {payroll.year}</p>
             </div>
@@ -90,47 +90,47 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
           {/* Employee & Work Info Grid */}
           <div className="grid grid-cols-2 gap-x-20 gap-y-1 border-t border-b py-4">
              <div className="flex">
-                <span className="w-40 shrink-0">Họ tên nhân viên:</span>
+                <span className="font-bold mr-2">Họ tên nhân viên:</span>
                 <span className="font-bold uppercase">{payroll.employee?.fullName}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">Ngày sinh:</span>
+             <div className="flex text-left">
+                <span className="mr-2">Ngày sinh:</span>
                 <span>{payroll.employee?.dob || '---'}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">SĐT:</span>
+             <div className="flex text-left">
+                <span className="mr-2">SĐT:</span>
                 <span>{payroll.employee?.phone || '---'}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">Mã nhân viên:</span>
+             <div className="flex text-left">
+                <span className="font-bold mr-2">Mã nhân viên:</span>
                 <span className="font-bold">{payroll.employee?.id}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">Chức danh/Phòng ban:</span>
+             <div className="flex text-left">
+                <span className="mr-2">Chức danh/Phòng ban:</span>
                 <span>{payroll.employee?.department || 'Văn phòng'}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0 italic">Lương đóng Bảo hiểm:</span>
+             <div className="flex text-left">
+                <span className="italic mr-2">Lương đóng Bảo hiểm:</span>
                 <span className="font-bold">{formatVND(payroll.contractSalary)}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">Ngày công chuẩn:</span>
+             <div className="flex text-left">
+                <span className="mr-2">Ngày công chuẩn:</span>
                 <span className="font-bold underline">{payroll.standardWorkDays || 26}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">Ngày công đi làm thực tế:</span>
+             <div className="flex text-left">
+                <span className="mr-2">Ngày công đi làm thực tế:</span>
                 <span className="font-bold">{payroll.realWorkDays}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">Ngày nghỉ không tính phép:</span>
+             <div className="flex text-left">
+                <span className="mr-2">Ngày nghỉ không tính phép:</span>
                 <span>{(payroll.standardWorkDays || 26) - (payroll.realWorkDays + (payroll.paidLeaveDays || 0))}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">Ngày nghỉ hưởng lương:</span>
+             <div className="flex text-left">
+                <span className="mr-2">Ngày nghỉ hưởng lương:</span>
                 <span className="font-bold text-blue-600">{payroll.paidLeaveDays || 0}</span>
              </div>
-             <div className="flex">
-                <span className="w-40 shrink-0">Giờ làm ngoài giờ (OT):</span>
+             <div className="flex text-left">
+                <span className="mr-2">Giờ làm ngoài giờ (OT):</span>
                 <span className="font-bold text-orange-600">{(payroll.otNormalHours || 0) + (payroll.otWeekendHours || 0) + (payroll.otHolidayHours || 0)} giờ</span>
              </div>
           </div>
@@ -139,9 +139,9 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
           <div className="grid grid-cols-2 gap-0 border-l border-r border-t border-black">
              {/* LEFT COLUMN: INCOME */}
              <div className="border-r border-black flex flex-col">
-                <div className="flex border-b border-black font-bold text-center bg-slate-50">
+                <div className="flex border-b border-black font-bold text-left bg-slate-50">
                    <div className="w-12 border-r border-black py-2">STT</div>
-                   <div className="flex-1 border-r border-black py-2">Các khoản thu nhập</div>
+                   <div className="flex-1 border-r border-black py-2 px-2">Các khoản thu nhập</div>
                    <div className="w-32 py-2">Số tiền</div>
                 </div>
                 
@@ -154,7 +154,7 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
                       <div className="pt-2">5</div>
                       <div className="pt-2">6</div>
                    </div>
-                   <div className="flex-1 border-r border-black py-2 space-y-4">
+                   <div className="flex-1 border-r border-black py-2 space-y-4 text-left">
                       <div className="px-2">Lương theo thời gian</div>
                       <div className="px-2">Phụ cấp thâm niên</div>
                       <div className="px-2 font-bold bg-slate-50 py-1">Tổng tiền làm ngoài giờ</div>
@@ -190,9 +190,9 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
 
              {/* RIGHT COLUMN: DEDUCTIONS */}
              <div className="flex flex-col">
-                <div className="flex border-b border-black font-bold text-center bg-slate-50">
+                <div className="flex border-b border-black font-bold text-left bg-slate-50">
                    <div className="w-12 border-r border-black py-2">STT</div>
-                   <div className="flex-1 border-r border-black py-2">Các khoản khấu trừ vào Lương NLĐ</div>
+                   <div className="flex-1 border-r border-black py-2 px-2">Các khoản khấu trừ vào Lương NLĐ</div>
                    <div className="w-32 py-2 text-right pr-2">Số tiền</div>
                 </div>
 
@@ -207,7 +207,7 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
                       <div className="pt-2">4.3</div>
                       <div className="pt-2">4.4</div>
                    </div>
-                   <div className="flex-1 border-r border-black py-2 space-y-4">
+                   <div className="flex-1 border-r border-black py-2 space-y-4 text-left">
                       <div className="px-2">Bảo hiểm xã hội (8%)</div>
                       <div className="px-2">Bảo hiểm y tế (1.5%)</div>
                       <div className="px-2">Bảo hiểm thất nghiệp (1%)</div>
@@ -248,19 +248,19 @@ export default function PayslipDialog({ payroll }: PayslipDialogProps) {
           </div>
 
           {/* NET PAY SECTION */}
-          <div className="bg-[#111827] text-white p-6 flex flex-col items-center justify-center space-y-4 rounded-b-xl shadow-inner">
-             <div className="flex items-baseline gap-4 w-full justify-center">
+          <div className="bg-[#111827] text-white p-6 flex flex-col items-start justify-start space-y-4 rounded-b-xl shadow-inner">
+             <div className="flex items-baseline gap-4 w-full justify-start">
                  <h3 className="text-2xl font-bold text-emerald-400">TỔNG SỐ TIỀN LƯƠNG THỰC NHẬN:</h3>
                  <span className="text-2xl font-bold text-emerald-400 tabular-nums drop-shadow-md">{formatVND(payroll.netPay)}</span>
              </div>
-             <div className="flex gap-4 w-full justify-center pt-2 border-t border-white/10 italic">
+             <div className="flex gap-4 w-full justify-start pt-2 border-t border-white/10 italic">
                 <span className="font-bold text-slate-400">Bằng chữ:</span>
                 <span className="font-black text-white capitalize">{toVietnameseWords(payroll.netPay)}</span>
              </div>
           </div>
 
           {/* Footer Signatures */}
-          <div className="grid grid-cols-2 pt-10 text-center uppercase tracking-widest text-[11px] font-black">
+          <div className="grid grid-cols-2 pt-10 text-left uppercase tracking-widest text-[11px] font-black">
              <div className="space-y-20">
                 <p>Người lập phiếu</p>
                 <div className="h-20" />

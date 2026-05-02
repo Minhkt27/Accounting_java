@@ -202,7 +202,7 @@ export default function PayrollPage() {
     return new Intl.NumberFormat('vi-VN').format(Math.round(val || 0))
   }
 
-  const isCurrentOrFuture = year * 12 + month >= (new Date().getFullYear() * 12 + new Date().getMonth() + 1);
+  const isCurrentOrFuture = year * 12 + month > (new Date().getFullYear() * 12 + new Date().getMonth() + 1);
   const isDraftAll = payrolls.length > 0 && payrolls.every(p => p.status === 'DRAFT');
   const isApprovedAll = payrolls.length > 0 && payrolls.every(p => p.status === 'APPROVED');
   const isPaidAll = payrolls.length > 0 && payrolls.every(p => p.status === 'PAID');

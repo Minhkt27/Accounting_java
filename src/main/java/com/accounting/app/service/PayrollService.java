@@ -223,8 +223,8 @@ public class PayrollService {
 
         System.out.println("Payroll Check: Target=" + targetMonthValue + " vs Current=" + currentMonthValue);
 
-        if (targetMonthValue >= currentMonthValue) {
-            throw new RuntimeException("Không thể tính lương cho tháng đang diễn ra hoặc tương lai (Yêu cầu: " + month + "/" + year + ", Hiện tại: " + now.getMonthValue() + "/" + now.getYear() + ")");
+        if (targetMonthValue > currentMonthValue) {
+            throw new RuntimeException("Không thể tính lương cho tháng tương lai (Yêu cầu: " + month + "/" + year + ", Hiện tại: " + now.getMonthValue() + "/" + now.getYear() + ")");
         }
 
         // Kiểm tra xem đã chấm công cho tháng này chưa
