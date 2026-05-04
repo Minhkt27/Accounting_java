@@ -540,7 +540,7 @@ export default function SalaryConfigPage() {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                                 {/* Employee Contribution */}
                                 <div className="p-8 rounded-[2rem] bg-indigo-50/30 border border-indigo-100/50 space-y-6">
-                                    <h4 className="text-sm font-black text-indigo-900 uppercase tracking-widest flex items-center gap-3">
+                                    <h4 className="text-base font-bold text-black flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-indigo-500" /> Người lao động đóng (%)
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -550,16 +550,16 @@ export default function SalaryConfigPage() {
                                             { label: "BHTN", key: "bhtnEmployee" as const }
                                         ].map(item => (
                                             <div key={item.key} className="space-y-2">
-                                                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-1">{item.label}</label>
+                                                <label className="text-sm font-medium text-black pl-1">{item.label}</label>
                                                 <div className="relative">
                                                     <Input 
                                                         type="number" min={0} step="0.01" 
                                                         readOnly={!isInsuranceEditing}
-                                                        className={`h-14 rounded-2xl text-lg font-black pr-10 transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default select-none' : 'bg-white border-indigo-100 focus:ring-indigo-500/10 text-indigo-900'}`}
+                                                        className={`h-14 rounded-2xl text-lg font-normal pr-14 transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default select-none' : 'bg-white border-indigo-100 focus:ring-indigo-500/10 text-black'}`}
                                                         value={insuranceConfig[item.key]}
                                                         onChange={e => setInsuranceConfig({...insuranceConfig, [item.key]: Math.max(0, Number(e.target.value))})}
                                                     />
-                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-indigo-300">%</span>
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-normal text-black">%</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -568,7 +568,7 @@ export default function SalaryConfigPage() {
 
                                 {/* Employer Contribution */}
                                 <div className="p-8 rounded-[2rem] bg-emerald-50/30 border border-emerald-100/50 space-y-6">
-                                    <h4 className="text-sm font-black text-emerald-900 uppercase tracking-widest flex items-center gap-3">
+                                    <h4 className="text-base font-bold text-black flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-emerald-500" /> Doanh nghiệp đóng (%)
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -579,16 +579,16 @@ export default function SalaryConfigPage() {
                                             { label: "KPCĐ", key: "kpcdEmployer" as const }
                                         ].map(item => (
                                             <div key={item.key} className="space-y-2">
-                                                <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest pl-1">{item.label}</label>
+                                                <label className="text-sm font-medium text-black pl-1">{item.label}</label>
                                                 <div className="relative">
                                                     <Input 
                                                         type="number" min={0} step="0.01" 
                                                         readOnly={!isInsuranceEditing}
-                                                        className={`h-14 rounded-2xl text-lg font-black pr-10 transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default select-none' : 'bg-white border-emerald-100 focus:ring-emerald-500/10 text-emerald-900'}`}
+                                                        className={`h-14 rounded-2xl text-lg font-normal pr-14 transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default select-none' : 'bg-white border-emerald-100 focus:ring-emerald-500/10 text-black'}`}
                                                         value={insuranceConfig[item.key]}
                                                         onChange={e => setInsuranceConfig({...insuranceConfig, [item.key]: Math.max(0, Number(e.target.value))})}
                                                     />
-                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-300">%</span>
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-normal text-black">%</span>
                                                 </div>
                                             </div>
                                         ))}

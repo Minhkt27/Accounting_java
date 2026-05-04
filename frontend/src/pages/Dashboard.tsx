@@ -23,8 +23,8 @@ interface DashboardSummary {
 interface CardProps {
   title: string;
   value: string | number;
-  subtitle: string;
-  icon: React.ElementType;
+  subtitle?: string;
+  icon?: React.ElementType;
   color: string;
   delay: number;
 }
@@ -39,16 +39,20 @@ const Card = ({ title, value, subtitle, icon: Icon, color, delay }: CardProps) =
     <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity bg-${color}-500`} />
     <div className="flex items-start justify-between relative z-10">
       <div className="space-y-4">
-        <div className={`w-12 h-12 rounded-2xl bg-${color}-50 flex items-center justify-center text-${color}-600 group-hover:scale-110 transition-transform`}>
-           <Icon size={24} />
-        </div>
+        {Icon && (
+          <div className={`w-12 h-12 rounded-2xl bg-${color}-50 flex items-center justify-center text-${color}-600 group-hover:scale-110 transition-transform`}>
+             <Icon size={24} />
+          </div>
+        )}
         <div>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{title}</p>
           <h2 className="text-2xl font-black text-slate-900 mt-1 tracking-tight">{value}</h2>
-          <div className="flex items-center gap-1 mt-2">
-            <TrendingUp size={12} className="text-green-500" />
-            <p className="text-[10px] font-bold text-slate-500">{subtitle}</p>
-          </div>
+          {subtitle && (
+            <div className="flex items-center gap-1 mt-2">
+              <TrendingUp size={12} className="text-green-500" />
+              <p className="text-[10px] font-bold text-slate-500">{subtitle}</p>
+            </div>
+          )}
         </div>
       </div>
       <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-primary/10 transition-colors">
@@ -170,32 +174,24 @@ export default function DashboardPage() {
         <Card 
           title="Tổng nhân sự" 
           value={summary?.activeEmployeeCount || '0'} 
-          subtitle="Toàn bộ lao động" 
-          icon={Users} 
           color="blue"
           delay={0.1}
         />
         <Card 
           title="Tổng thực lĩnh" 
           value={formatVND(summary?.totalNetPay || 0)} 
-          subtitle="Chi phí lương thực trả" 
-          icon={Wallet} 
           color="green"
           delay={0.2}
         />
         <Card 
           title="Bảo hiểm (DN)" 
           value={formatVND(summary?.totalEmployerInsurance || 0)} 
-          subtitle="Trách nhiệm doanh nghiệp" 
-          icon={ShieldAlert} 
           color="orange"
           delay={0.3}
         />
         <Card 
           title="Thuế TNCN" 
           value={formatVND(summary?.totalTax || 0)} 
-          subtitle="Số khấu trừ tạm tính" 
-          icon={BadgePercent} 
           color="red"
           delay={0.4}
         />
@@ -317,34 +313,24 @@ export default function DashboardPage() {
             <table className="w-full">
                 <thead>
                     <tr className="bg-slate-50/50">
-                        <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Chỉ số thống kê</th>
-                        <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Giá trị (VNĐ)</th>
-                        <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Tỷ trọng</th>
+                        <th className="px-8 py-5 text-left text-sm font-normal text-black border-b border-slate-100">Chỉ số thống kê</th>
+                        <th className="px-8 py-5 text-right text-sm font-normal text-black border-b border-slate-100">Giá trị</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                     {[
-                        { label: 'Tổng nhân sự (FTE)', value: summary?.employeeCount, raw: summary?.employeeCount, type: 'number' },
-                        { label: 'Tổng lương Net payable', value: formatVND(summary?.totalNetPay || 0), raw: summary?.totalNetPay, type: 'currency' },
-                        { label: 'Bảo hiểm XH doanh nghiệp', value: formatVND(summary?.totalEmployerInsurance || 0), raw: summary?.totalEmployerInsurance, type: 'currency' },
-                        { label: 'Thuế TNCN tạm tính', value: formatVND(summary?.totalTax || 0), raw: summary?.totalTax, type: 'currency' },
+                        { label: 'Tổng nhân sự', value: summary?.employeeCount },
+                        { label: 'Tổng lương thực lĩnh', value: formatVND(summary?.totalNetPay || 0) },
+                        { label: 'Bảo hiểm xã hội doanh nghiệp đóng', value: formatVND(summary?.totalEmployerInsurance || 0) },
+                        { label: 'Thuế TNCN', value: formatVND(summary?.totalTax || 0) },
                     ].map((row, idx) => (
                         <motion.tr 
                             whileHover={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
                             key={idx} 
-                            className="transition-colors group"
+                            className="transition-colors"
                         >
-                            <td className="px-8 py-6 text-xs font-bold text-slate-700 tracking-wide uppercase">{row.label}</td>
-                            <td className="px-8 py-6 text-right text-sm font-black text-slate-900 tracking-tight group-hover:text-primary transition-colors font-sans">{row.value}</td>
-                            <td className="px-8 py-6 text-right">
-                                {row.type === 'currency' ? (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-                                        Tỷ trọng: {((row.raw || 0) / (summary?.totalNetPay || 1) * 100).toFixed(1)}%
-                                    </div>
-                                ) : (
-                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">Chỉ số gốc</span>
-                                )}
-                            </td>
+                            <td className="px-8 py-6 text-sm font-normal text-black">{row.label}</td>
+                            <td className="px-8 py-6 text-right text-sm font-normal text-black">{row.value}</td>
                         </motion.tr>
                     ))}
                 </tbody>

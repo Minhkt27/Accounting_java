@@ -15,6 +15,7 @@ export interface Employee {
   email?: string
   department?: string
   resignationDate?: string
+  employeeType?: string
 }
 
 export interface Payroll {
