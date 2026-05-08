@@ -1,12 +1,12 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import {
   LogOut, Settings, Users, CalendarCheck,
-  ShieldCheck,
   Database, ChevronRight, Wallet, PieChart, Home
 } from "lucide-react"
 import React, { useMemo, useState, useEffect } from "react"
 import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
+import logo from "../assets/logo.jpg"
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   size?: number | string
@@ -195,8 +195,8 @@ export default function Layout() {
       <aside className="w-72 bg-slate-950 flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] relative z-20 no-print border-r border-white/5">
         <div className="p-8 pb-6">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-2xl border border-primary/20 shadow-inner">
-              <ShieldCheck className="text-primary w-7 h-7" />
+            <div className="w-12 h-12 bg-white flex items-center justify-center rounded-2xl shadow-inner overflow-hidden border border-white/10">
+              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-white font-bold text-base leading-tight whitespace-nowrap">Công ty Phúc Anh</h1>
