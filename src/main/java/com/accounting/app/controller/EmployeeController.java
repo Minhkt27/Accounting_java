@@ -46,16 +46,22 @@ public class EmployeeController {
             result = employeeRepository.findAllSorted(org.springframework.data.domain.PageRequest.of(page, size));
         }
 
-        // Detect active leaves for the period
-        java.time.LocalDate startOfPeriod = (month != null && year != null) 
-                ? java.time.LocalDate.of(year, month, 1) 
-                : java.time.LocalDate.now();
-        java.time.LocalDate endOfPeriod = (month != null && year != null)
-                ? startOfPeriod.withDayOfMonth(startOfPeriod.lengthOfMonth())
-                : startOfPeriod;
+        // Detect active leaves at a specific snapshot date
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate checkDate;
+        if (month != null && year != null) {
+            if (year == today.getYear() && month == today.getMonthValue()) {
+                checkDate = today;
+            } else {
+                java.time.LocalDate firstDayOfMonth = java.time.LocalDate.of(year, month, 1);
+                checkDate = firstDayOfMonth.withDayOfMonth(firstDayOfMonth.lengthOfMonth());
+            }
+        } else {
+            checkDate = today;
+        }
 
-        java.util.List<com.accounting.app.model.LeaveRecord> periodLeaves = leaveRepository.findLeavesInPeriod(startOfPeriod, endOfPeriod);
-        java.util.Set<String> onLeaveIds = periodLeaves.stream()
+        java.util.List<com.accounting.app.model.LeaveRecord> activeLeaves = leaveRepository.findActiveLeaves(checkDate);
+        java.util.Set<String> onLeaveIds = activeLeaves.stream()
                 .map(lr -> lr.getEmployee().getId())
                 .collect(java.util.stream.Collectors.toSet());
 
