@@ -178,6 +178,32 @@ export default function Layout() {
     },
   ], [])
 
+  const routeNames: Record<string, string> = {
+    "": "Tổng quan hệ thống",
+    "employees": "Hồ sơ nhân sự",
+    "attendance": "Chấm công tháng",
+    "leaves": "Danh sách nghỉ phép",
+    "salary-changes": "Biến động lương",
+    "hr-tracking": "Biến động nhân sự",
+    "payroll": "Bảng tính lương tháng",
+    "accounting": "Nhật ký hạch toán",
+    "ledger": "Sổ cái tài khoản",
+    "payments": "Thanh toán & UNC",
+    "reports": "Báo cáo & Phân tích",
+    "admin": "Quản trị hệ thống",
+    "users": "Quản lý người dùng",
+    "config": "Cấu hình hệ thống",
+    "salary": "Cấu hình lương",
+    "accounts": "Danh mục tài khoản"
+  };
+
+  const getPageTitle = () => {
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    if (pathParts.length === 0) return routeNames[""];
+    const lastPart = pathParts[pathParts.length - 1];
+    return routeNames[lastPart] || lastPart.toUpperCase();
+  };
+
   const toggleExpand = (label: string) => {
     setExpandedItems(prev =>
       prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
@@ -192,15 +218,15 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen bg-background font-sans antialiased text-foreground print:bg-white print:block">
-      <aside className="w-72 bg-slate-950 flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] relative z-20 no-print border-r border-white/5">
+      <aside className="w-80 bg-slate-950 flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] relative z-20 no-print border-r border-white/5">
         <div className="p-8 pb-6">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-12 h-12 bg-white flex items-center justify-center rounded-2xl shadow-inner overflow-hidden border border-white/10">
-              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+            <div className="w-12 h-12 flex-shrink-0 bg-white flex items-center justify-center rounded-xl shadow-sm overflow-hidden border border-white/10">
+              <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h1 className="text-white font-bold text-base leading-tight whitespace-nowrap">Công ty Phúc Anh</h1>
-              <p className="text-blue-400 text-[11px] font-bold mt-0.5 whitespace-nowrap tracking-wide">Hệ thống kế toán tiền lương</p>
+              <h1 className="text-white font-bold text-xl leading-tight whitespace-nowrap">Công ty Phúc Anh</h1>
+              <p className="text-blue-400 text-sm font-bold mt-0.5 whitespace-nowrap tracking-wide">Hệ thống kế toán tiền lương</p>
             </div>
           </div>
         </div>
@@ -253,7 +279,7 @@ export default function Layout() {
         <header className="h-20 flex items-center justify-between px-10 border-b border-slate-200/60 sticky top-0 bg-background/80 backdrop-blur-xl z-10 no-print">
           <div className="flex items-center gap-4">
             <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{location.pathname.split('/').pop() || 'Tổng quan hệ thống'}</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{getPageTitle()}</span>
           </div>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
