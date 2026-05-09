@@ -40,6 +40,8 @@ public class AccountCategoryController {
         AccountCategory existing = repository.findById(id).orElseThrow();
         existing.setName(acc.getName());
         existing.setType(acc.getType());
+        existing.setEnglishName(acc.getEnglishName());
+        existing.setParentId(acc.getParentId());
         
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAutoApprove = auth.getAuthorities().stream()

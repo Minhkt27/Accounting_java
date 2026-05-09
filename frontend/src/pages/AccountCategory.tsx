@@ -3,7 +3,7 @@ import axios from "axios"
 import { 
   Plus, Search, ShieldAlert,
   BookOpen, Pencil, Trash2, X,
-  ChevronDown, SquarePlus
+  ChevronDown, SquarePlus, SquareMinus
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "../components/ui/button"
@@ -14,8 +14,11 @@ interface AccountCategory {
   name: string;
   type: string;
   status: string;
+  parentId?: string;
   englishName?: string;
   description?: string;
+  level?: number;
+  hasChildren?: boolean;
 }
 
 function useCurrentUser() {
@@ -27,43 +30,23 @@ function useCurrentUser() {
   } catch { return { username: "?", roles: [] as string[] } }
 }
 
-// Helper mapping for English names (symbolic)
-const englishTranslations: Record<string, string> = {
-  "111": "Cash in hand",
-  "112": "Cash at bank",
-  "113": "Cash in transit",
-  "121": "Trading securities",
-  "128": "Held-to-maturity investments",
-  "131": "Accounts receivable",
-  "133": "VAT receivable",
-  "136": "Internal receivables",
-  "138": "Other receivables",
-  "141": "Advances",
-  "151": "Goods in transit",
-  "152": "Raw materials",
-  "153": "Tools and equipments",
-  "154": "Work in progress",
-  "155": "Finished goods",
-  "156": "Goods",
-  "157": "Goods on consignment",
-  "158": "Goods in bonded warehouses",
-  "334": "Payables to employees",
-  "338": "Other payables",
-  "642": "General and administrative expenses"
-}
-
 export default function AccountCategoryPage() {
   const [accounts, setAccounts] = useState<AccountCategory[]>([])
   const [id, setId] = useState("")
   const [name, setName] = useState("")
+  const [englishName, setEnglishName] = useState("")
   const [type, setType] = useState("Dư Nợ")
+  const [parentId, setParentId] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState("")
   const [isEditing, setIsEditing] = useState(false)
   const [showForm, setShowForm] = useState(false)
   
+  // New state for expand/collapse
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  
   // Pagination state
-  const [pageSize, setPageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(50)
 
   const { roles } = useCurrentUser()
   const isApprover = roles.includes("ROLE_ADMIN") || roles.includes("ROLE_KE_TOAN_TRUONG")
@@ -74,12 +57,31 @@ export default function AccountCategoryPage() {
       const res = await axios.get("/api/config/accounts", {
         headers: { Authorization: `Bearer ${token}` }
       })
-      // Enhance accounts with English names for display
-      const enhanced = res.data.map((acc: AccountCategory) => ({
-        ...acc,
-        englishName: englishTranslations[acc.id] || (acc.name.includes("Tiền") ? "Cash/Bank" : "Accounting Account")
-      }))
-      setAccounts(enhanced)
+      
+      const rawAccounts = res.data as AccountCategory[]
+      
+      // Build hierarchy logic
+      const processed = rawAccounts.map(acc => {
+        // Find if this account is a parent to others
+        const hasChildren = rawAccounts.some(other => other.parentId === acc.id || (other.id.startsWith(acc.id) && other.id !== acc.id))
+        
+        // Determine level (based on code length for standard VN accounts)
+        let level = 0
+        if (acc.id.length > 3) {
+            level = acc.id.length - 3
+        }
+
+        return {
+          ...acc,
+          level,
+          hasChildren
+        }
+      })
+
+      // Sort: parents then their children
+      const sorted = [...processed].sort((a, b) => a.id.localeCompare(b.id))
+      
+      setAccounts(sorted)
       setError("")
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
@@ -94,18 +96,51 @@ export default function AccountCategoryPage() {
     fetchAccounts()
   }, [fetchAccounts])
 
+  const toggleExpand = (accountId: string) => {
+    setExpandedIds(prev => {
+        const next = new Set(prev)
+        if (next.has(accountId)) {
+            next.delete(accountId)
+        } else {
+            next.add(accountId)
+        }
+        return next
+    })
+  }
+
+  // Filter accounts to show only root or those whose parents are expanded
+  const visibleAccounts = accounts.filter(acc => {
+      if (searchTerm) return true // Show all when searching
+      
+      if (acc.level === 0) return true
+      
+      // Check if all ancestor parents are expanded
+      // For simplicity, check the immediate parent
+      const parentCode = acc.parentId || acc.id.substring(0, acc.id.length - 1)
+      // Check if parentCode exists in accounts and if it is expanded
+      return expandedIds.has(parentCode)
+  })
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       const token = localStorage.getItem("token")
       const accountType = type === 'Dư Nợ' ? 'DEBIT' : type === 'Dư Có' ? 'CREDIT' : 'BOTH'
       
+      const payload = { 
+        id, 
+        name, 
+        englishName,
+        type: accountType, 
+        parentId: parentId || null 
+      }
+
       if (isEditing) {
-        await axios.put(`/api/config/accounts/${id}`, { name, type: accountType }, {
+        await axios.put(`/api/config/accounts/${id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         })
       } else {
-        await axios.post("/api/config/accounts", { id, name, type: accountType }, {
+        await axios.post("/api/config/accounts", payload, {
           headers: { Authorization: `Bearer ${token}` }
         })
       }
@@ -122,7 +157,9 @@ export default function AccountCategoryPage() {
   const handleEdit = (acc: AccountCategory) => {
     setId(acc.id)
     setName(acc.name)
+    setEnglishName(acc.englishName || "")
     setType(acc.type === 'DEBIT' ? 'Dư Nợ' : acc.type === 'CREDIT' ? 'Dư Có' : 'Lưỡng tính')
+    setParentId(acc.parentId || "")
     setIsEditing(true)
     setShowForm(true)
   }
@@ -143,7 +180,9 @@ export default function AccountCategoryPage() {
   const cancelEdit = () => {
     setId("")
     setName("")
+    setEnglishName("")
     setType("Dư Nợ")
+    setParentId("")
     setIsEditing(false)
   }
 
@@ -212,7 +251,7 @@ export default function AccountCategoryPage() {
           >
             <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-4">
               <h3 className="text-lg font-bold text-gray-800 mb-4">{isEditing ? "Cập nhật tài khoản" : "Thêm tài khoản mới"}</h3>
-              <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Mã số tài khoản</label>
                   <Input 
@@ -234,6 +273,15 @@ export default function AccountCategoryPage() {
                     className="h-11 rounded-lg border-gray-300 focus:border-blue-500"
                   />
                 </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Tên tiếng Anh</label>
+                  <Input 
+                    value={englishName} 
+                    onChange={(e) => setEnglishName(e.target.value)} 
+                    placeholder="English Name" 
+                    className="h-11 rounded-lg border-gray-300 focus:border-blue-500"
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Tính chất</label>
                   <select 
@@ -246,7 +294,20 @@ export default function AccountCategoryPage() {
                     <option>Lưỡng tính</option>
                   </select>
                 </div>
-                <div className="md:col-span-4 flex justify-end gap-2 pt-2">
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Tài khoản cha</label>
+                  <select 
+                    value={parentId}
+                    onChange={(e) => setParentId(e.target.value)}
+                    className="w-full h-11 px-3 bg-white border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  >
+                    <option value="">-- Không có --</option>
+                    {accounts.filter(a => a.id !== id && a.id.length < id.length || a.id.length <= 3).map(a => (
+                        <option key={a.id} value={a.id}>{a.id} - {a.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-6 flex justify-end gap-2 pt-2">
                   <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]">
                     {isEditing ? "Cập nhật" : "Lưu dữ liệu"}
                   </Button>
@@ -263,7 +324,7 @@ export default function AccountCategoryPage() {
           <table className="w-full text-sm text-left border-collapse">
             <thead>
               <tr className="bg-[#E6F4F1] border-b border-gray-300">
-                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 w-24">Số tài khoản</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 w-40">Số tài khoản</th>
                 <th className="px-4 py-3 font-bold text-black border-r border-gray-300">Tên tài khoản</th>
                 <th className="px-4 py-3 font-bold text-black border-r border-gray-300 w-32">Tính chất</th>
                 <th className="px-4 py-3 font-bold text-black border-r border-gray-300">Tên tiếng Anh</th>
@@ -273,19 +334,35 @@ export default function AccountCategoryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredAccounts.length === 0 ? (
+              {visibleAccounts.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-20 text-gray-400 italic bg-white">
                     Không có dữ liệu nào phù hợp với tìm kiếm
                   </td>
                 </tr>
-              ) : filteredAccounts.map((acc, idx) => (
-                <tr key={idx} className="hover:bg-[#FFF8E1] transition-colors group">
-                  <td className="px-4 py-2.5 border-r border-gray-200 font-medium text-gray-700 flex items-center gap-2">
-                    {acc.id.length <= 3 && <SquarePlus size={14} className="text-gray-400" />}
-                    {acc.id}
+              ) : visibleAccounts.map((acc, idx) => (
+                <tr key={idx} className={`hover:bg-[#FFF8E1] transition-colors group ${acc.hasChildren ? 'bg-gray-50/50' : ''}`}>
+                  <td 
+                    className="px-4 py-2.5 border-r border-gray-200 font-medium text-gray-700 flex items-center gap-2"
+                    style={{ paddingLeft: `${(acc.level || 0) * 20 + 16}px` }}
+                  >
+                    {acc.hasChildren ? (
+                        <button 
+                            onClick={() => toggleExpand(acc.id)}
+                            className="p-1 hover:bg-blue-100 rounded transition-colors"
+                        >
+                            {expandedIds.has(acc.id) ? (
+                                <SquareMinus size={14} className="text-blue-600 fill-blue-50" />
+                            ) : (
+                                <SquarePlus size={14} className="text-blue-600 fill-blue-50" />
+                            )}
+                        </button>
+                    ) : (
+                        <div className="w-[22px]" />
+                    )}
+                    <span className={acc.hasChildren ? "font-bold text-blue-800" : ""}>{acc.id}</span>
                   </td>
-                  <td className="px-4 py-2.5 border-r border-gray-200 text-gray-900 font-medium">
+                  <td className={`px-4 py-2.5 border-r border-gray-200 text-gray-900 ${acc.hasChildren ? 'font-bold' : 'font-medium'}`}>
                     {acc.name}
                   </td>
                   <td className="px-4 py-2.5 border-r border-gray-200 text-gray-700 text-xs">
