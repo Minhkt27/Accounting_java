@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%; /* Slate 50 */
+    --background: 189 33% 92%; /* Light MISA teal */
     --foreground: 222 47% 11%; /* Slate 900 */
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -51,4 +51,3 @@
     @apply bg-slate-800/50 rounded-full;
   }
 }
-

@@ -192,15 +192,15 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen bg-background font-sans antialiased text-foreground print:bg-white print:block">
-      <aside className="w-72 bg-slate-950 flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] relative z-20 no-print border-r border-white/5">
+      <aside className="w-80 bg-slate-950 flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] relative z-20 no-print border-r border-white/5">
         <div className="p-8 pb-6">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-12 h-12 bg-white flex items-center justify-center rounded-2xl shadow-inner overflow-hidden border border-white/10">
-              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+            <div className="w-12 h-12 flex-shrink-0 bg-white flex items-center justify-center rounded-xl shadow-sm overflow-hidden border border-white/10">
+              <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h1 className="text-white font-bold text-base leading-tight whitespace-nowrap">Công ty Phúc Anh</h1>
-              <p className="text-blue-400 text-[11px] font-bold mt-0.5 whitespace-nowrap tracking-wide">Hệ thống kế toán tiền lương</p>
+              <h1 className="text-white font-bold text-xl leading-tight whitespace-nowrap">Công ty Phúc Anh</h1>
+              <p className="text-blue-400 text-sm font-bold mt-0.5 whitespace-nowrap tracking-wide">Hệ thống kế toán tiền lương</p>
             </div>
           </div>
         </div>

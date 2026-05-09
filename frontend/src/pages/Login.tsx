@@ -34,7 +34,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-100 p-4 font-sans">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background p-4 font-sans">
       <motion.div 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
