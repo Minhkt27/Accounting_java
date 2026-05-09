@@ -354,7 +354,7 @@ export default function SalaryConfigPage() {
                     }`}
                 >
                     {message.type === "success" ? <CheckCircle2 className="w-5 h-5"/> : <AlertCircle className="w-5 h-5"/>}
-                    <span className="font-black text-xs uppercase tracking-tight">{message.text}</span>
+                    <span className="font-bold text-xs uppercase tracking-tight">{message.text}</span>
                 </motion.div>
             )}
         </AnimatePresence>
@@ -370,7 +370,7 @@ export default function SalaryConfigPage() {
             <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id as "params" | "insurance" | "tax")}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all duration-500 ${
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-500 ${
                     activeTab === t.id 
                         ? "bg-white text-primary shadow-xl shadow-slate-200" 
                         : "text-slate-400 hover:text-slate-600"
@@ -401,11 +401,11 @@ export default function SalaryConfigPage() {
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <h3 className="text-xl font-black text-slate-800">Tham số tính lương</h3>
+                                    <h3 className="text-xl font-bold text-slate-800">Tham số tính lương</h3>
                                     {params.status === 'PENDING' ? (
-                                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-200">Chờ duyệt</span>
+                                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-widest border border-amber-200">Chờ duyệt</span>
                                     ) : (
-                                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-200">Đang áp dụng</span>
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest border border-emerald-200">Đang áp dụng</span>
                                     )}
                                 </div>
                             </div>
@@ -414,11 +414,11 @@ export default function SalaryConfigPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Số công chuẩn (ngày)</label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Số công chuẩn (ngày)</label>
                                 <Input 
                                     type="number" 
                                     min={0}
-                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800"
+                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-bold text-slate-800"
                                     value={params.standardWorkDays} 
                                     onChange={e => {
                                         e.target.value = e.target.value.replace(/^0+(?!$)/, '');
@@ -428,10 +428,10 @@ export default function SalaryConfigPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Lương cơ sở (VNĐ)</label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Lương cơ sở (VNĐ)</label>
                                 <Input 
                                     type="text" 
-                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800"
+                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-bold text-slate-800"
                                     value={new Intl.NumberFormat('vi-VN').format(params.baseSalary || 0)} 
                                     onChange={e => {
                                         const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
@@ -446,18 +446,18 @@ export default function SalaryConfigPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Mức trần đóng BHXH/BHYT (VNĐ)</label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Mức trần đóng BHXH/BHYT (VNĐ)</label>
                                 <Input 
                                     disabled
-                                    className="h-14 rounded-2xl bg-slate-100 border-slate-200 text-lg font-black text-slate-500 cursor-not-allowed"
+                                    className="h-14 rounded-2xl bg-slate-100 border-slate-200 text-lg font-bold text-slate-500 cursor-not-allowed"
                                     value={new Intl.NumberFormat('vi-VN').format(params.insuranceCeiling || 0)} 
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Phụ cấp ăn ca (VNĐ/ngày)</label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Phụ cấp ăn ca (VNĐ/ngày)</label>
                                 <Input 
                                     type="text" 
-                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-black text-slate-800"
+                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-lg font-bold text-slate-800"
                                     value={new Intl.NumberFormat('vi-VN').format(params.mealAllowance || 0)} 
                                     onChange={e => {
                                         const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
@@ -472,14 +472,14 @@ export default function SalaryConfigPage() {
                                 <div className="flex gap-4">
                                     <Button 
                                         onClick={() => approveParams(params.id)} 
-                                        className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-black text-sm transition-all hover:scale-105 active:scale-95"
+                                        className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-bold text-sm transition-all hover:scale-105 active:scale-95"
                                     >
                                         <CheckCircle2 size={18} /> PHÊ DUYỆT
                                     </Button>
                                     <Button 
                                         onClick={() => rejectParams(params.id)} 
                                         variant="outline"
-                                        className="gap-2 h-14 px-10 rounded-2xl border-red-200 text-red-600 hover:bg-red-50 font-black text-sm transition-all hover:scale-105 active:scale-95"
+                                        className="gap-2 h-14 px-10 rounded-2xl border-red-200 text-red-600 hover:bg-red-50 font-bold text-sm transition-all hover:scale-105 active:scale-95"
                                     >
                                         <AlertCircle size={18} /> TỪ CHỐI
                                     </Button>
@@ -487,7 +487,7 @@ export default function SalaryConfigPage() {
                             ) : (
                                 <Button 
                                     onClick={saveParams}
-                                    className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm"
+                                    className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-bold text-sm"
                                 >
                                     <Save size={18} /> {userRoles.includes("ROLE_ADMIN") ? "LƯU THAY ĐỔI NGAY" : "GỬI ĐỀ XUẤT THAY ĐỔI"}
                                 </Button>
@@ -508,15 +508,15 @@ export default function SalaryConfigPage() {
                                         <div className="flex items-center gap-2">
                                             <h3 className="text-2xl font-bold text-slate-800 tracking-tight">Tỷ lệ trích nộp</h3>
                                             {insuranceConfig.status === 'PENDING' ? (
-                                                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-200">Chờ duyệt</span>
+                                                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-widest border border-amber-200">Chờ duyệt</span>
                                             ) : (
-                                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-200">Đang áp dụng</span>
+                                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest border border-emerald-200">Đang áp dụng</span>
                                             )}
                                             {!isInsuranceEditing && (
                                                 <button onClick={() => {
                                                     setOriginalInsuranceConfig({...insuranceConfig});
                                                     setIsInsuranceEditing(true);
-                                                }} className="ml-2 text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 flex items-center transition-all hover:scale-105">
+                                                }} className="ml-2 text-[10px] font-bold uppercase text-blue-600 hover:text-blue-700 flex items-center transition-all hover:scale-105">
                                                     <Pencil size={12} className="mr-1" /> Chỉnh sửa
                                                 </button>
                                             )}
@@ -526,11 +526,11 @@ export default function SalaryConfigPage() {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngày hiệu lực:</label>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ngày hiệu lực:</label>
                                     <Input 
                                         type="date" 
                                         readOnly={!isInsuranceEditing}
-                                        className={`h-10 w-44 rounded-xl font-black text-sm transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default' : 'bg-slate-50 border-slate-200 focus:bg-white text-primary'}`}
+                                        className={`h-10 w-44 rounded-xl font-bold text-sm transition-all ${!isInsuranceEditing ? 'bg-slate-200/50 border-slate-300 text-black opacity-100 cursor-default' : 'bg-slate-50 border-slate-200 focus:bg-white text-primary'}`}
                                         value={insuranceConfig.effectiveDate}
                                         onChange={e => setInsuranceConfig({...insuranceConfig, effectiveDate: e.target.value})}
                                     />
@@ -601,14 +601,14 @@ export default function SalaryConfigPage() {
                                     <div className="flex gap-4">
                                         <Button 
                                             onClick={saveInsuranceConfig}
-                                            className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm flex items-center transition-all hover:scale-105 active:scale-95"
+                                            className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-bold text-sm flex items-center transition-all hover:scale-105 active:scale-95"
                                         >
                                             <Save size={18} /> {userRoles.includes("ROLE_ADMIN") ? "LƯU THAY ĐỔI NGAY" : "GỬI ĐỀ XUẤT THAY ĐỔI"}
                                         </Button>
                                         <Button 
                                             onClick={cancelInsuranceEdit}
                                             variant="outline"
-                                            className="gap-2 h-14 px-10 rounded-2xl border-slate-200 text-slate-600 hover:bg-slate-50 font-black text-sm transition-all hover:scale-105 active:scale-95"
+                                            className="gap-2 h-14 px-10 rounded-2xl border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-sm transition-all hover:scale-105 active:scale-95"
                                         >
                                             Hủy bỏ
                                         </Button>
@@ -618,14 +618,14 @@ export default function SalaryConfigPage() {
                                         <div className="flex gap-4">
                                             <Button 
                                                 onClick={() => approveInsuranceConfig(insuranceConfig.id)} 
-                                                className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-black text-sm transition-all hover:scale-105 active:scale-95"
+                                                className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-bold text-sm transition-all hover:scale-105 active:scale-95"
                                             >
                                                 <CheckCircle2 size={18} /> PHÊ DUYỆT CẤU HÌNH
                                             </Button>
                                             <Button 
                                                 onClick={() => rejectInsuranceConfig(insuranceConfig.id)} 
                                                 variant="outline"
-                                                className="gap-2 h-14 px-10 rounded-2xl border-red-200 text-red-600 hover:bg-red-50 font-black text-sm transition-all hover:scale-105 active:scale-95"
+                                                className="gap-2 h-14 px-10 rounded-2xl border-red-200 text-red-600 hover:bg-red-50 font-bold text-sm transition-all hover:scale-105 active:scale-95"
                                             >
                                                 <AlertCircle size={18} /> TỪ CHỐI
                                             </Button>
@@ -646,34 +646,34 @@ export default function SalaryConfigPage() {
                                     <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-200">
                                         <Calculator size={20} />
                                     </div>
-                                    <h3 className="text-xl font-black text-slate-800">Giảm trừ Gia cảnh</h3>
+                                    <h3 className="text-xl font-bold text-slate-800">Giảm trừ Gia cảnh</h3>
                                     {!isDeductionEditing && (
                                         <button onClick={() => {
                                             setOriginalDeductions({...deductions});
                                             setIsDeductionEditing(true);
-                                        }} className="text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 flex items-center">
+                                        }} className="text-[10px] font-bold uppercase text-blue-600 hover:text-blue-700 flex items-center">
                                             <Pencil size={12} className="mr-1" /> Chỉnh sửa
                                         </button>
                                     )}
                                 </div>
                                 <div className="p-8 rounded-3xl bg-slate-50 border border-slate-200 space-y-6">
                                     <div className="flex items-center justify-between px-2">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trạng thái</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trạng thái</span>
                                         {deductions.status === 'PENDING' ? (
-                                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest animate-pulse">Đang chờ duyệt</span>
+                                            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest animate-pulse">Đang chờ duyệt</span>
                                         ) : (
-                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Hoạt động</span>
+                                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Hoạt động</span>
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Giảm trừ Bản thân</label>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Giảm trừ Bản thân</label>
                                         <Input type="text" className="h-12 rounded-xl" value={new Intl.NumberFormat('vi-VN').format(deductions.personalDeduction || 0)} disabled={!isDeductionEditing} onChange={e => {
                                             const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
                                             setDeductions({...deductions, personalDeduction: Math.max(0, Number(raw))});
                                         }} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Giảm trừ Phụ thuộc</label>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Giảm trừ Phụ thuộc</label>
                                         <Input type="text" className="h-12 rounded-xl" value={new Intl.NumberFormat('vi-VN').format(deductions.dependentDeduction || 0)} disabled={!isDeductionEditing} onChange={e => {
                                             const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
                                             setDeductions({...deductions, dependentDeduction: Math.max(0, Number(raw))});
@@ -683,17 +683,17 @@ export default function SalaryConfigPage() {
                                         <div className="flex gap-2">
                                             {(deductions.status === 'PENDING' && (userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN"))) ? (
                                                 <div className="flex flex-col w-full gap-2">
-                                                    <Button onClick={approveTax} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase shadow-lg shadow-emerald-200">
+                                                    <Button onClick={approveTax} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase shadow-lg shadow-emerald-200">
                                                         PHÊ DUYỆT
                                                     </Button>
-                                                    <Button onClick={rejectTax} variant="outline" className="w-full h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50 font-black text-xs uppercase">
+                                                    <Button onClick={rejectTax} variant="outline" className="w-full h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs uppercase">
                                                         TỪ CHỐI
                                                     </Button>
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <Button variant="outline" onClick={cancelDeductionEdit} className="flex-1 h-12 rounded-xl font-black text-xs uppercase">HỦY</Button>
-                                                    <Button onClick={saveDeductions} className="flex-1 h-12 rounded-xl bg-[#111827] text-white font-black text-xs uppercase shadow-lg shadow-slate-200">
+                                                    <Button variant="outline" onClick={cancelDeductionEdit} className="flex-1 h-12 rounded-xl font-bold text-xs uppercase">HỦY</Button>
+                                                    <Button onClick={saveDeductions} className="flex-1 h-12 rounded-xl bg-[#111827] text-white font-bold text-xs uppercase shadow-lg shadow-slate-200">
                                                         {userRoles.includes("ROLE_ADMIN") ? "LƯU NGAY" : "GỬI ĐỀ XUẤT"}
                                                     </Button>
                                                 </>
@@ -709,9 +709,9 @@ export default function SalaryConfigPage() {
                                         <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-200">
                                             <ShieldCheck size={20} />
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-800">Biểu thuế lũy tiến từng phần</h3>
+                                        <h3 className="text-xl font-bold text-slate-800">Biểu thuế lũy tiến từng phần</h3>
                                         {taxTiers.some((x: TaxTier) => x.status === 'PENDING') && (
-                                            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-200">Dữ liệu nháp</span>
+                                            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-widest border border-amber-200">Dữ liệu nháp</span>
                                         )}
                                     </div>
                                     {isPitEditing && (
@@ -719,11 +719,11 @@ export default function SalaryConfigPage() {
                                             <Button 
                                                 variant="outline" 
                                                 onClick={() => setTaxTiers([...DEFAULT_5_TAX_TIERS])} 
-                                                className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-blue-100 text-blue-600 hover:bg-blue-50"
+                                                className="rounded-xl font-bold text-[10px] uppercase gap-2 h-9 border-blue-100 text-blue-600 hover:bg-blue-50"
                                             >
                                                 <RefreshCw size={14}/> Khôi phục chuẩn 5 bậc
                                             </Button>
-                                            <Button variant="outline" onClick={() => setTaxTiers([...taxTiers, { lowerBound: 0, upperBound: 0, lowerBoundYearly: 0, upperBoundYearly: 0, taxRate: 0, tierLevel: taxTiers.length + 1, status: 'PENDING' }])} className="rounded-xl font-black text-[10px] uppercase gap-2 h-9 border-slate-200 hover:bg-slate-50">
+                                            <Button variant="outline" onClick={() => setTaxTiers([...taxTiers, { lowerBound: 0, upperBound: 0, lowerBoundYearly: 0, upperBoundYearly: 0, taxRate: 0, tierLevel: taxTiers.length + 1, status: 'PENDING' }])} className="rounded-xl font-bold text-[10px] uppercase gap-2 h-9 border-slate-200 hover:bg-slate-50">
                                                 <Plus size={14}/> Thêm bậc
                                             </Button>
                                         </div>
@@ -881,15 +881,15 @@ export default function SalaryConfigPage() {
                                         <Button onClick={() => {
                                             setOriginalTaxTiers([...taxTiers]);
                                             setIsPitEditing(true);
-                                        }} className="h-12 px-8 rounded-xl bg-slate-800 hover:bg-black text-white font-black text-xs uppercase shadow-lg shadow-slate-200 flex items-center gap-2">
+                                        }} className="h-12 px-8 rounded-xl bg-slate-800 hover:bg-black text-white font-bold text-xs uppercase shadow-lg shadow-slate-200 flex items-center gap-2">
                                             <Pencil size={14} /> CHỈNH SỬA BIỂU THUẾ
                                         </Button>
                                     ) : (
                                         <>
-                                            <Button variant="outline" onClick={cancelPitEdit} className="h-12 px-8 rounded-xl font-black text-xs uppercase border-slate-200">
+                                            <Button variant="outline" onClick={cancelPitEdit} className="h-12 px-8 rounded-xl font-bold text-xs uppercase border-slate-200">
                                                 HỦY BỎ
                                             </Button>
-                                            <Button onClick={savePitTiers} className="h-12 px-10 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase shadow-lg shadow-orange-500/20">
+                                            <Button onClick={savePitTiers} className="h-12 px-10 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs uppercase shadow-lg shadow-orange-500/20">
                                                 LƯU & CẬP NHẬT BIỂU THUẾ
                                             </Button>
                                         </>
@@ -905,7 +905,7 @@ export default function SalaryConfigPage() {
                                     <CheckCircle2 size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-slate-800 uppercase italic underline decoration-emerald-200 decoration-4 underline-offset-8">Thuế TNCN</h3>
+                                    <h3 className="text-xl font-bold text-slate-800 uppercase italic underline decoration-emerald-200 decoration-4 underline-offset-8">Thuế TNCN</h3>
                                 </div>
                             </div>
 
@@ -913,10 +913,10 @@ export default function SalaryConfigPage() {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-slate-50 border-b border-slate-100">
-                                            <th className="px-8 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400">Loại nhân sự</th>
-                                            <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Miễn thuế</th>
-                                            <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">10% Cố định</th>
-                                            <th className="px-6 py-5 font-black uppercase text-[10px] tracking-widest text-slate-400 text-center">Biểu thuế lũy tiến</th>
+                                            <th className="px-8 py-5 font-bold uppercase text-[10px] tracking-widest text-slate-400">Loại nhân sự</th>
+                                            <th className="px-6 py-5 font-bold uppercase text-[10px] tracking-widest text-slate-400 text-center">Miễn thuế</th>
+                                            <th className="px-6 py-5 font-bold uppercase text-[10px] tracking-widest text-slate-400 text-center">10% Cố định</th>
+                                            <th className="px-6 py-5 font-bold uppercase text-[10px] tracking-widest text-slate-400 text-center">Biểu thuế lũy tiến</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
@@ -985,11 +985,11 @@ export default function SalaryConfigPage() {
                             <div className="flex flex-col gap-4">
                                 <div className="pt-2 flex items-center gap-4">
                                     {taxRules.some(r => r.status === 'PENDING') && (userRoles.includes("ROLE_KE_TOAN_TRUONG") || userRoles.includes("ROLE_ADMIN")) ? (
-                                        <Button onClick={approveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-black text-sm">
+                                        <Button onClick={approveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 font-bold text-sm">
                                             <CheckCircle2 size={18} /> PHÊ DUYỆT PHƯƠNG THỨC TÍNH THUẾ
                                         </Button>
                                     ) : (
-                                        <Button onClick={saveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-black text-sm">
+                                        <Button onClick={saveTaxRules} className="gap-2 h-14 px-10 rounded-2xl bg-[#111827] hover:bg-black text-white shadow-xl shadow-slate-200 font-bold text-sm">
                                             <Save size={18} /> {userRoles.includes("ROLE_ADMIN") ? "LƯU CẤU HÌNH THUẾ NGAY" : "GỬI ĐỀ XUẤT CẤU HÌNH THUẾ"}
                                         </Button>
                                     )}

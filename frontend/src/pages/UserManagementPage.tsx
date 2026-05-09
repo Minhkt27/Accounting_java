@@ -201,14 +201,14 @@ export default function UserManagementPage() {
       {/* Header Area */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex flex-col gap-1">
-            <h1 className="text-4xl font-black tracking-tighter text-slate-800 flex items-center gap-3 uppercase">
+            <h1 className="text-4xl font-bold tracking-tighter text-slate-800 flex items-center gap-3 uppercase">
                 <Shield className="w-10 h-10 text-primary" /> Quản trị hệ thống
             </h1>
             <p className="text-muted-foreground font-medium text-sm">Quản lý tài khoản người dùng và phân quyền chức năng</p>
         </div>
         <Button 
             onClick={openCreate}
-            className="flex items-center gap-2 px-8 h-14 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
+            className="flex items-center gap-2 px-8 h-14 bg-primary text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
         >
             <Plus size={18} /> Thêm người dùng
         </Button>
@@ -222,12 +222,12 @@ export default function UserManagementPage() {
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                           <Settings size={16} />
                       </div>
-                      <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight italic">Ma trận <span className="text-primary italic">Phân quyền</span></h2>
+                      <h2 className="text-lg font-bold text-slate-900 uppercase tracking-tight italic">Ma trận <span className="text-primary italic">Phân quyền</span></h2>
                   </div>
                   <Button 
                     onClick={savePerms} 
                     disabled={!permDirty}
-                    className={`h-11 px-8 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+                    className={`h-11 px-8 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
                         permDirty ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600' : 'bg-slate-100 text-slate-400'
                     }`}
                   >
@@ -240,10 +240,10 @@ export default function UserManagementPage() {
                       <table className="w-full text-left">
                           <thead className="bg-primary text-primary-foreground">
                               <tr className="border-b border-white/10">
-                                  <th className="px-4 py-4 text-[9px] font-black uppercase text-white/70 tracking-widest pl-8">Chức năng hệ thống</th>
-                                  <th className="px-4 py-4 text-[9px] font-black uppercase text-white/70 tracking-widest text-center">Admin</th>
+                                  <th className="px-4 py-4 text-[9px] font-bold uppercase text-white/70 tracking-widest pl-8">Chức năng hệ thống</th>
+                                  <th className="px-4 py-4 text-[9px] font-bold uppercase text-white/70 tracking-widest text-center">Admin</th>
                                   {EDITABLE_ROLES.map(r => (
-                                      <th key={r} className="px-4 py-4 text-[9px] font-black uppercase text-white/70 tracking-widest text-center">{ROLE_LABELS[r]}</th>
+                                      <th key={r} className="px-4 py-4 text-[9px] font-bold uppercase text-white/70 tracking-widest text-center">{ROLE_LABELS[r]}</th>
                                   ))}
                               </tr>
                           </thead>
@@ -253,7 +253,7 @@ export default function UserManagementPage() {
                                       <td className="px-4 py-3 pl-8">
                                           <div className="flex items-center gap-3">
                                               <div className="w-1 h-1 rounded-full bg-primary/30 group-hover:bg-primary transition-all" />
-                                              <span className="font-black text-slate-700 text-xs italic">{FUNCTION_LABELS[fn]}</span>
+                                              <span className="font-bold text-slate-700 text-xs italic">{FUNCTION_LABELS[fn]}</span>
                                           </div>
                                       </td>
                                       <td className="px-4 py-3 text-center">
@@ -295,7 +295,7 @@ export default function UserManagementPage() {
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                           <Users size={20} />
                       </div>
-                      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Danh sách <span className="text-primary italic">Tài khoản</span></h2>
+                      <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight italic">Danh sách <span className="text-primary italic">Tài khoản</span></h2>
                   </div>
                   <div className="relative">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -314,9 +314,9 @@ export default function UserManagementPage() {
                       <table className="w-full text-left">
                           <thead className="bg-primary text-primary-foreground">
                               <tr className="border-b border-white/10">
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-white/70 tracking-widest pl-10">Người dùng</th>
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-white/70 tracking-widest">Email liên hệ</th>
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-white/70 tracking-widest">PF / Quyền hạn</th>
+                                  <th className="px-8 py-5 text-[10px] font-bold uppercase text-white/70 tracking-widest pl-10">Người dùng</th>
+                                  <th className="px-8 py-5 text-[10px] font-bold uppercase text-white/70 tracking-widest">Email liên hệ</th>
+                                  <th className="px-8 py-5 text-[10px] font-bold uppercase text-white/70 tracking-widest">PF / Quyền hạn</th>
                                   <th className="px-8 py-5 text-center pr-10">Thao tác</th>
                               </tr>
                           </thead>
@@ -329,7 +329,7 @@ export default function UserManagementPage() {
                                                   <User size={20} />
                                               </div>
                                               <div>
-                                                  <div className="font-black text-slate-800 text-sm italic">{u.username}</div>
+                                                  <div className="font-bold text-slate-800 text-sm italic">{u.username}</div>
                                                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: #{u.id}</div>
                                               </div>
                                           </div>
@@ -343,7 +343,7 @@ export default function UserManagementPage() {
                                       <td className="px-8 py-6">
                                           <div className="flex flex-wrap gap-2">
                                               {u.roles.map(r => (
-                                                  <span key={r} className="px-3 py-1 rounded-full bg-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-500 border border-slate-200">
+                                                  <span key={r} className="px-3 py-1 rounded-full bg-slate-50 text-[9px] font-bold uppercase tracking-widest text-slate-500 border border-slate-200">
                                                       {ROLE_LABELS[r]}
                                                   </span>
                                               ))}
@@ -386,43 +386,43 @@ export default function UserManagementPage() {
                                 <User size={24} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">{editingUser ? "Cập nhật" : "Tạo mới"} <span className="text-primary italic">Người dùng</span></h3>
+                                <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-tighter italic leading-none">{editingUser ? "Cập nhật" : "Tạo mới"} <span className="text-primary italic">Người dùng</span></h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Vui lòng nhập đầy đủ thông tin</p>
                             </div>
                         </div>
 
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Tên đăng nhập <span className="text-red-500">*</span></label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Tên đăng nhập <span className="text-red-500">*</span></label>
                                 <Input 
                                     value={formUsername} 
                                     onChange={e => setFormUsername(e.target.value)} 
                                     disabled={!!editingUser}
-                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-black text-slate-800"
+                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-bold text-slate-800"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Email liên hệ <span className="text-red-500">*</span></label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Email liên hệ <span className="text-red-500">*</span></label>
                                 <Input 
                                     value={formEmail} 
                                     onChange={e => setFormEmail(e.target.value)}
-                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-black text-slate-800"
+                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-bold text-slate-800"
                                 />
                             </div>
                             {!editingUser && (
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Mật khẩu ban đầu <span className="text-red-500">*</span></label>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Mật khẩu ban đầu <span className="text-red-500">*</span></label>
                                     <Input 
                                         type="password"
                                         value={formPassword} 
                                         onChange={e => setFormPassword(e.target.value)}
-                                        className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-black text-slate-800"
+                                        className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-bold text-slate-800"
                                     />
                                 </div>
                             )}
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Phân vai trò <span className="text-red-500">*</span></label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Phân vai trò <span className="text-red-500">*</span></label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {roles.filter(r => r.name !== "ROLE_ADMIN").map(r => {
                                         const selected = formRoles.includes(r.name)
@@ -437,7 +437,7 @@ export default function UserManagementPage() {
                                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selected ? 'bg-primary border-primary' : 'border-slate-200'}`}>
                                                     {selected && <CheckCircle2 size={12} className="text-white" />}
                                                 </div>
-                                                <span className="text-[10px] font-black uppercase tracking-widest">{r.displayName}</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">{r.displayName}</span>
                                             </button>
                                         )
                                     })}
@@ -446,10 +446,10 @@ export default function UserManagementPage() {
                         </div>
 
                         <div className="flex gap-4 pt-4 border-t border-slate-100 mt-4">
-                            <Button onClick={handleSave} className="flex-1 h-14 rounded-2xl bg-primary hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95">
+                            <Button onClick={handleSave} className="flex-1 h-14 rounded-2xl bg-primary hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95">
                                 <Save size={18} className="mr-2" /> Lưu thông tin
                             </Button>
-                            <Button variant="ghost" onClick={() => setShowForm(false)} className="px-8 h-14 rounded-2xl font-black text-xs uppercase text-slate-400 hover:bg-slate-50">
+                            <Button variant="ghost" onClick={() => setShowForm(false)} className="px-8 h-14 rounded-2xl font-bold text-xs uppercase text-slate-400 hover:bg-slate-50">
                                 Đóng
                             </Button>
                         </div>
@@ -472,7 +472,7 @@ export default function UserManagementPage() {
                             <div className="w-20 h-20 rounded-[2rem] bg-amber-100 flex items-center justify-center text-amber-500 mb-2">
                                 <Lock size={40} />
                             </div>
-                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">Đổi mật khẩu</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-tighter italic leading-none">Đổi mật khẩu</h3>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thiết lập mật khẩu truy cập mới</p>
                         </div>
 
@@ -484,7 +484,7 @@ export default function UserManagementPage() {
                                     placeholder="Nhập mật khẩu mới..."
                                     value={newPassword} 
                                     onChange={e => setNewPassword(e.target.value)}
-                                    className="h-16 pl-12 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-black text-slate-800"
+                                    className="h-16 pl-12 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-bold text-slate-800"
                                 />
                             </div>
                             <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
@@ -494,10 +494,10 @@ export default function UserManagementPage() {
                         </div>
 
                         <div className="flex flex-col gap-3 pt-4">
-                            <Button onClick={handleResetPassword} className="h-14 rounded-2xl bg-[#111827] hover:bg-black text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95">
+                            <Button onClick={handleResetPassword} className="h-14 rounded-2xl bg-[#111827] hover:bg-black text-white font-bold text-xs uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95">
                                 Xác nhận đổi
                             </Button>
-                            <Button variant="ghost" onClick={() => setResetUserId(null)} className="h-14 rounded-2xl font-black text-xs uppercase text-slate-400 hover:bg-slate-50">
+                            <Button variant="ghost" onClick={() => setResetUserId(null)} className="h-14 rounded-2xl font-bold text-xs uppercase text-slate-400 hover:bg-slate-50">
                                 Hủy bỏ
                             </Button>
                         </div>

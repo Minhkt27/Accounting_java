@@ -178,6 +178,32 @@ export default function Layout() {
     },
   ], [])
 
+  const routeNames: Record<string, string> = {
+    "": "Tổng quan hệ thống",
+    "employees": "Hồ sơ nhân sự",
+    "attendance": "Chấm công tháng",
+    "leaves": "Danh sách nghỉ phép",
+    "salary-changes": "Biến động lương",
+    "hr-tracking": "Biến động nhân sự",
+    "payroll": "Bảng tính lương tháng",
+    "accounting": "Nhật ký hạch toán",
+    "ledger": "Sổ cái tài khoản",
+    "payments": "Thanh toán & UNC",
+    "reports": "Báo cáo & Phân tích",
+    "admin": "Quản trị hệ thống",
+    "users": "Quản lý người dùng",
+    "config": "Cấu hình hệ thống",
+    "salary": "Cấu hình lương",
+    "accounts": "Danh mục tài khoản"
+  };
+
+  const getPageTitle = () => {
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    if (pathParts.length === 0) return routeNames[""];
+    const lastPart = pathParts[pathParts.length - 1];
+    return routeNames[lastPart] || lastPart.toUpperCase();
+  };
+
   const toggleExpand = (label: string) => {
     setExpandedItems(prev =>
       prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
@@ -253,7 +279,7 @@ export default function Layout() {
         <header className="h-20 flex items-center justify-between px-10 border-b border-slate-200/60 sticky top-0 bg-background/80 backdrop-blur-xl z-10 no-print">
           <div className="flex items-center gap-4">
             <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{location.pathname.split('/').pop() || 'Tổng quan hệ thống'}</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{getPageTitle()}</span>
           </div>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
