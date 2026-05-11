@@ -1,17 +1,16 @@
 version: '3.8'
 
 services:
-  postgres-db:
-    image: postgres:15-alpine
+  sqlserver-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: accounting_db
     environment:
-      POSTGRES_DB: accounting_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: AccountingApp@123
     ports:
-      - "5432:5432"
+      - "1433:1433"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - sqlserver_data:/var/opt/mssql
     restart: unless-stopped
 
   backend:
@@ -23,11 +22,11 @@ services:
       - ./uploads:/app/uploads # Lưu trữ hợp đồng PDF bền vững
       - ~/.m2:/root/.m2 # Cache maven dependencies locally
     depends_on:
-      - postgres-db
+      - sqlserver-db
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/accounting_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sqlserver-db:1433;databaseName=accounting_db;encrypt=true;trustServerCertificate=true
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=AccountingApp@123
     ports:
       - "8888:8888"
     command: mvn spring-boot:run
@@ -51,4 +50,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  sqlserver_data:

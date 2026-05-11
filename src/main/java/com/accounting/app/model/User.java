@@ -11,9 +11,9 @@ import java.util.Set;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "users",
+@Table(name = "nguoi_dung",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = "username"),
+                @UniqueConstraint(columnNames = "ten_dang_nhap"),
                 @UniqueConstraint(columnNames = "email")
         }) // Bảng Người dùng
 @Data
@@ -25,19 +25,22 @@ public class User extends BaseEntity {
     private Long id;
 
     @NotBlank
+    @Column(name = "ten_dang_nhap")
     private String username; // Tên đăng nhập
 
     @NotBlank
     @Email
+    @Column(name = "email")
     private String email; // Thư điện tử (Email)
 
     @NotBlank
+    @Column(name = "mat_khau")
     private String password; // Mật khẩu
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @JoinTable(name = "nguoi_dung_vai_tro",
+            joinColumns = @JoinColumn(name = "id_nguoi_dung"),
+            inverseJoinColumns = @JoinColumn(name = "id_vai_tro"))
     private Set<Role> roles = new HashSet<>(); // Danh sách vai trò
 
     public User(String username, String email, String password) {

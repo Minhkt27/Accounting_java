@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 @Data
 public abstract class BaseEntity {
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt; // Thời gian tạo
 
-    @Column(name = "updated_at")
+    @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt; // Thời gian cập nhật
 
     @PrePersist

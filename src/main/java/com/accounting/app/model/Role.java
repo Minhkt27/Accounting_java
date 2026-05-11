@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "roles") // Bảng Vai trò
+@Table(name = "vai_tro") // Bảng Vai trò
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -17,7 +17,7 @@ public class Role extends BaseEntity {
     private Integer id;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 50)
+    @Column(name = "ten_vai_tro", length = 50)
     private ERole name; // Tên vai trò
 
     public Role(ERole name) {

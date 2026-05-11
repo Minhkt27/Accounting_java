@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "salary_changes") // Bảng Biến động lương
+@Table(name = "bien_dong_luong") // Bảng Biến động lương
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -18,36 +18,40 @@ public class SalaryChange extends BaseEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "employee_id")
+    @JoinColumn(name = "ma_nhan_vien")
     private Employee employee; // Nhân viên
 
-    /**
-     * Loại biến động:
-     * SALARY_ADJUSTMENT - Điều chỉnh lương
-     * PROMOTION - Thăng chức / Tăng bậc lương
-     * REWARD - Khen thưởng
-     * DISCIPLINE - Kỷ luật
-     */
+    @Column(name = "loai_bien_dong")
     private String changeType; // Loại thay đổi
 
+    @Column(name = "gia_tri_cu")
     private Double oldValue;        // Giá trị cũ (lương cũ, hoặc 0 nếu thưởng/phạt)
+
+    @Column(name = "gia_tri_moi")
     private Double newValue;        // Giá trị mới (lương mới, hoặc số tiền thưởng/phạt)
+
+    @Column(name = "ly_do")
     private String reason;          // Lý do biến động
+
+    @Column(name = "ngay_hieu_luc")
     private LocalDate effectiveDate; // Ngày hiệu lực
 
-    /**
-     * Trạng thái phê duyệt:
-     * PENDING - Chờ phê duyệt
-     * APPROVED - Đã phê duyệt
-     * REJECTED - Đã từ chối
-     */
+    @Column(name = "trang_thai")
     private String status = "PENDING"; // Trạng thái phê duyệt
 
+    @Column(name = "nguoi_tao")
     private String createdBy;       // Người tạo đề xuất
+
+    @Column(name = "nguoi_duyet")
     private String approvedBy;      // Người phê duyệt / từ chối
+
+    @Column(name = "ngay_duyet")
     private LocalDateTime approvedAt; // Thời gian phê duyệt
+
+    @Column(name = "ly_do_tu_choi")
     private String rejectionReason; // Lý do từ chối (nếu REJECTED)
 
+    @Column(name = "phu_cap_tham_nien_moi")
     private Double newSeniorityAllowance; // Phụ cấp thâm niên mới
 
     @PrePersist

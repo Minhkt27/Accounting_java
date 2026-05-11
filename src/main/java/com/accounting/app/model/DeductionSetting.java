@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "deduction_settings") // Bảng Cài đặt giảm trừ
+@Table(name = "cai_dat_giam_tru") // Bảng Cài đặt giảm trừ
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -17,7 +17,12 @@ public class DeductionSetting extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // Mã định danh
 
+    @Column(name = "giam_tru_ban_than")
     private Double personalDeduction; // Giảm trừ gia cảnh bản thân
+
+    @Column(name = "giam_tru_phu_thuoc")
     private Double dependentDeduction; // Giảm trừ người phụ thuộc
+
+    @Column(name = "trang_thai")
     private String status = "APPROVED"; // Trạng thái (APPROVED, PENDING)
 }

@@ -40,7 +40,7 @@ public class EmployeeController {
         org.springframework.data.domain.Page<Employee> result;
         if (month != null && year != null) {
             java.time.LocalDate targetDate = java.time.LocalDate.of(year, month, 1);
-            java.time.LocalDateTime endDate = targetDate.plusMonths(1).atStartOfDay().minusSeconds(1);
+            java.time.LocalDate endDate = targetDate.withDayOfMonth(targetDate.lengthOfMonth());
             result = employeeRepository.findActiveAt(targetDate, endDate, org.springframework.data.domain.PageRequest.of(page, size));
         } else {
             result = employeeRepository.findAllSorted(org.springframework.data.domain.PageRequest.of(page, size));

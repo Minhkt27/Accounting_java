@@ -6,8 +6,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "role_permissions", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"role_name", "function_code"})
+@Table(name = "quyen_han_vai_tro", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"ten_vai_tro", "ma_chuc_nang"})
 }) // Bảng Quyền hạn vai trò
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -17,13 +17,13 @@ public class RolePermission extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "role_name", nullable = false)
+    @Column(name = "ten_vai_tro", nullable = false)
     private String roleName;        // Tên vai trò (e.g. "ROLE_NHAN_SU")
 
-    @Column(name = "function_code", nullable = false)
+    @Column(name = "ma_chuc_nang", nullable = false)
     private String functionCode;    // Mã chức năng (e.g. "HR_EMPLOYEE")
 
-    @Column(nullable = false)
+    @Column(name = "duoc_phep", nullable = false)
     private Boolean allowed = true; // Cho phép quyền
 
     public RolePermission(String roleName, String functionCode, Boolean allowed) {

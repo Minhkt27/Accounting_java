@@ -166,6 +166,7 @@ public class DataSeeder implements CommandLineRunner {
             e1.setPositionCoefficient(0.8);
             e1.setSeniorityAllowance(500000.0);
             e1.setDepartment("Kế toán");
+            e1.setJoinDate(LocalDate.of(2026, 1, 1));
             e1.setActive(true);
             employeeRepo.save(e1);
 
@@ -177,6 +178,7 @@ public class DataSeeder implements CommandLineRunner {
             e2.setPositionCoefficient(0.4);
             e2.setSeniorityAllowance(0.0);
             e2.setDepartment("Nhân sự");
+            e2.setJoinDate(LocalDate.of(2026, 1, 1));
             e2.setActive(true);
             employeeRepo.save(e2);
 
@@ -186,6 +188,7 @@ public class DataSeeder implements CommandLineRunner {
             e3.setEmail("cuonglv@company.com");
             e3.setHometown("Đà Nẵng");
             e3.setDepartment("Kinh doanh");
+            e3.setJoinDate(LocalDate.of(2026, 1, 1));
             e3.setActive(true);
             employeeRepo.save(e3);
         }
