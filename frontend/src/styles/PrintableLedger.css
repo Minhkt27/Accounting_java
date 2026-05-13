@@ -1,0 +1,147 @@
+@media screen {
+  .printable-only {
+    display: none;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: black;
+    background-color: white;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Styles for the report layout */
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.company-info {
+  width: 60%;
+}
+
+.company-name {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 11pt;
+}
+
+.company-address {
+  font-size: 10pt;
+}
+
+.report-form-id {
+  text-align: right;
+  font-size: 10pt;
+}
+
+.report-title-section {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.report-main-title {
+  font-size: 18pt;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.report-subtitle {
+  font-style: italic;
+  font-size: 11pt;
+}
+
+.report-account-info {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.report-currency {
+  text-align: right;
+  font-style: italic;
+  margin-bottom: 5px;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+}
+
+.report-table th, .report-table td {
+  border: 1px solid black;
+  padding: 5px;
+  font-size: 10pt;
+}
+
+.report-table th {
+  background-color: transparent !important;
+  color: black !important;
+  font-weight: bold;
+  text-align: center;
+}
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-bold { font-weight: bold; }
+.text-italic { font-style: italic; }
+
+.report-footer {
+  margin-top: 40px;
+}
+
+.footer-date {
+  text-align: right;
+  font-style: italic;
+  margin-bottom: 10px;
+}
+
+.signature-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+}
+
+.signature-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.signature-title {
+  font-weight: bold;
+}
+
+.signature-subtitle {
+  font-size: 9pt;
+  font-style: italic;
+}
+
+.signature-space {
+  height: 80px;
+}

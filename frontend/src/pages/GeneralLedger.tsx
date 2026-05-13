@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Book, Search, FileSpreadsheet } from "lucide-react"
+import { Book, Search, FileSpreadsheet, Printer } from "lucide-react"
 import { ExportService } from "../utils/ExportService"
+import PrintableLedger from "../components/PrintableLedger"
 
 import { Pagination } from "../components/ui/pagination"
 
@@ -81,6 +82,22 @@ export default function GeneralLedgerPage() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0)
   }
 
+  const getAccountName = (id: string) => {
+    const names: Record<string, string> = {
+      "334": "Phải trả NLĐ",
+      "338": "Phải trả BH, KPCĐ",
+      "642": "Chi phí QLDN",
+      "111": "Tiền mặt",
+      "112": "Tiền gửi NH",
+      "3335": "Thuế TNCN"
+    };
+    return names[id] || "Sổ cái tài khoản";
+  }
+
+  const handlePrint = () => {
+    window.print();
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center bg-white p-4 rounded-xl shadow-sm border gap-4">
@@ -117,6 +134,9 @@ export default function GeneralLedgerPage() {
                <Button size="default" variant="outline" onClick={handleExportExcel} className="h-8 gap-1.5 border-green-600 text-green-600 hover:bg-green-50 shadow-sm bg-white hover:text-green-700">
                    <FileSpreadsheet className="w-4 h-4" /> Excel
                </Button>
+               <Button size="default" variant="outline" onClick={handlePrint} className="h-8 gap-1.5 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-sm bg-white hover:text-blue-700">
+                   <Printer className="w-4 h-4" /> In Sổ Cái
+               </Button>
                <Button size="default" onClick={() => {setPage(0); fetchLedger()}} disabled={loading} className="h-8 gap-1.5 shadow-sm">
                    <Search className="w-4 h-4" /> Tìm kiếm
                </Button>
@@ -124,57 +144,69 @@ export default function GeneralLedgerPage() {
          </div>
        </div>
  
-         <div className="border rounded-xl bg-card shadow-lg overflow-hidden">
-           <table className="w-full text-sm text-left">
-             <thead className="bg-slate-800 text-white border-b">
-               <tr>
-                 <th className="px-4 py-3 font-bold" rowSpan={2}>Ngày</th>
-                 <th className="px-4 py-3 font-bold" colSpan={2}>Chứng từ</th>
-                 <th className="px-4 py-3 font-bold" rowSpan={2}>Diễn giải</th>
-                 <th className="px-4 py-3 font-bold text-center" rowSpan={2}>TK Đối ứng</th>
-                 <th className="px-4 py-3 font-bold text-right border-l" colSpan={2}>Số phát sinh</th>
-               </tr>
-               <tr className="bg-slate-700/50">
-                   <th className="px-4 py-1 text-[10px] font-bold">Số hiệu</th>
-                   <th className="px-4 py-1 text-[10px] font-bold text-center">Ngày ghi</th>
-                   <th className="px-4 py-1 text-[10px] font-bold text-right border-l">Nợ</th>
-                   <th className="px-4 py-1 text-[10px] font-bold text-right">Có</th>
-               </tr>
-             </thead>
-             <tbody className="divide-y">
-               {entries.map((e) => (
-                 <tr key={e.id} className="hover:bg-muted/50 transition-colors">
-                   <td className="px-4 py-4">{e.voucherDate}</td>
-                   <td className="px-4 py-4 font-bold text-primary">{e.voucherNumber}</td>
-                   <td className="px-4 py-4 text-center">{e.voucherDate}</td>
-                   <td className="px-4 py-4 italic">{e.description}</td>
-                   <td className="px-4 py-4 text-center font-bold text-muted-foreground">{e.oppositeAccount}</td>
-                   <td className="px-4 py-4 text-right tabular-nums bg-slate-50/30 border-l font-bold">{e.debit > 0 ? formatVND(e.debit) : ""}</td>
-                   <td className="px-4 py-4 text-right tabular-nums bg-slate-50/30 font-bold">{e.credit > 0 ? formatVND(e.credit) : ""}</td>
-                 </tr>
-               ))}
-               {entries.length === 0 && (
-                   <tr>
-                       <td colSpan={7} className="text-center py-10 italic text-muted-foreground opacity-50">Không có phát sinh cho tài khoản {accountId} trong kỳ</td>
-                   </tr>
-               )}
-             </tbody>
-             <tfoot className="bg-slate-50 font-black">
-                 <tr>
-                   <td colSpan={5} className="px-4 py-2 text-right">TỔNG PHÁT SINH TRONG KỲ:</td>
-                   <td className="px-4 py-2 text-right border-l">{formatVND(overallTotalDebit)}</td>
-                   <td className="px-4 py-2 text-right">{formatVND(overallTotalCredit)}</td>
-                 </tr>
-             </tfoot>
-           </table>
-           <Pagination 
-            currentPage={page}
-            totalPages={totalPages}
-            totalElements={totalElements}
-            pageSize={pageSize}
-            onPageChange={setPage}
-          />
-         </div>
-     </div>
-   )
- }
+          <div className="border rounded-xl bg-card shadow-lg overflow-hidden">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-800 text-white border-b">
+                <tr>
+                  <th className="px-4 py-3 font-bold" rowSpan={2}>Ngày</th>
+                  <th className="px-4 py-3 font-bold" colSpan={2}>Chứng từ</th>
+                  <th className="px-4 py-3 font-bold" rowSpan={2}>Diễn giải</th>
+                  <th className="px-4 py-3 font-bold text-center" rowSpan={2}>TK Đối ứng</th>
+                  <th className="px-4 py-3 font-bold text-right border-l" colSpan={2}>Số phát sinh</th>
+                </tr>
+                <tr className="bg-slate-700/50">
+                    <th className="px-4 py-1 text-[10px] font-bold">Số hiệu</th>
+                    <th className="px-4 py-1 text-[10px] font-bold text-center">Ngày ghi</th>
+                    <th className="px-4 py-1 text-[10px] font-bold text-right border-l">Nợ</th>
+                    <th className="px-4 py-1 text-[10px] font-bold text-right">Có</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {entries.map((e) => (
+                  <tr key={e.id} className="hover:bg-muted/50 transition-colors">
+                    <td className="px-4 py-4">{e.voucherDate}</td>
+                    <td className="px-4 py-4 font-bold text-primary">{e.voucherNumber}</td>
+                    <td className="px-4 py-4 text-center">{e.voucherDate}</td>
+                    <td className="px-4 py-4 italic">{e.description}</td>
+                    <td className="px-4 py-4 text-center font-bold text-muted-foreground">{e.oppositeAccount}</td>
+                    <td className="px-4 py-4 text-right tabular-nums bg-slate-50/30 border-l font-bold">{e.debit > 0 ? formatVND(e.debit) : ""}</td>
+                    <td className="px-4 py-4 text-right tabular-nums bg-slate-50/30 font-bold">{e.credit > 0 ? formatVND(e.credit) : ""}</td>
+                  </tr>
+                ))}
+                {entries.length === 0 && (
+                    <tr>
+                        <td colSpan={7} className="text-center py-10 italic text-muted-foreground opacity-50">Không có phát sinh cho tài khoản {accountId} trong kỳ</td>
+                    </tr>
+                )}
+              </tbody>
+              <tfoot className="bg-slate-50 font-black">
+                  <tr>
+                    <td colSpan={5} className="px-4 py-2 text-right">TỔNG PHÁT SINH TRONG KỲ:</td>
+                    <td className="px-4 py-2 text-right border-l">{formatVND(overallTotalDebit)}</td>
+                    <td className="px-4 py-2 text-right">{formatVND(overallTotalCredit)}</td>
+                  </tr>
+              </tfoot>
+            </table>
+            <Pagination 
+             currentPage={page}
+             totalPages={totalPages}
+             totalElements={totalElements}
+             pageSize={pageSize}
+             onPageChange={setPage}
+           />
+          </div>
+
+          <div className="printable-only">
+            <PrintableLedger 
+              entries={entries}
+              accountId={accountId}
+              accountName={getAccountName(accountId)}
+              month={month}
+              year={year}
+              totalDebit={overallTotalDebit}
+              totalCredit={overallTotalCredit}
+            />
+          </div>
+      </div>
+    )
+  }
