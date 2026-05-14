@@ -1,344 +1,82 @@
-import React, { useState, useEffect, useMemo } from "react"
-import axios from "axios"
-import { motion } from "framer-motion"
-import { 
-  Users, Wallet, ShieldAlert, BadgePercent, 
-  TrendingUp, ArrowUpRight, Calendar, Info
-} from "lucide-react"
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell
-} from "recharts"
-
-interface DashboardSummary {
-  month: number;
-  year: number;
-  employeeCount: number;
-  totalNetPay: number;
-  totalEmployerInsurance: number;
-  totalTax: number;
-  activeEmployeeCount: number;
-}
-
-interface CardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon?: React.ElementType;
-  color: string;
-  delay: number;
-}
-
-const Card = ({ title, value, subtitle, icon: Icon, color, delay }: CardProps) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.5 }}
-    className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] transition-all group relative overflow-hidden"
-  >
-    <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity bg-${color}-500`} />
-    <div className="flex items-start justify-between relative z-10">
-      <div className="space-y-4">
-        {Icon && (
-          <div className={`w-12 h-12 rounded-2xl bg-${color}-50 flex items-center justify-center text-${color}-600 group-hover:scale-110 transition-transform`}>
-             <Icon size={24} />
-          </div>
-        )}
-        <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{title}</p>
-          <h2 className="text-2xl font-black text-slate-900 mt-1 tracking-tight">{value}</h2>
-          {subtitle && (
-            <div className="flex items-center gap-1 mt-2">
-              <TrendingUp size={12} className="text-green-500" />
-              <p className="text-[10px] font-bold text-slate-500">{subtitle}</p>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-primary/10 transition-colors">
-        <ArrowUpRight size={16} className="text-slate-300 group-hover:text-primary transition-colors" />
-      </div>
-    </div>
-  </motion.div>
-)
+import React from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import logo from "../assets/logo.jpg";
 
 export default function DashboardPage() {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const m = new Date().getMonth();
-    return m === 0 ? 12 : m;
-  });
-  const [selectedYear, setSelectedYear] = useState(() => {
-    const d = new Date();
-    return d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
-  });
-
-  const auth = useMemo(() => ({ 
-    headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } 
-  }), [])
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        const sumRes = await axios.get<DashboardSummary>(`/api/accounting/summary?month=${selectedMonth}&year=${selectedYear}`, auth)
-        setSummary(sumRes.data)
-      } catch (err: unknown) { 
-        console.error(err) 
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchData()
-  }, [auth, selectedMonth, selectedYear])
-
-  const formatVND = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { 
-        style: 'currency', 
-        currency: 'VND',
-        maximumFractionDigits: 0 
-    }).format(val || 0).replace('₫', 'đ')
-  }
-
-  const chartData = useMemo(() => {
-    if (!summary) return []
-    return [
-      { name: 'Lương thực lĩnh', value: summary.totalNetPay, color: '#3b82f6' },
-      { name: 'Bảo hiểm (DN)', value: summary.totalEmployerInsurance, color: '#f59e0b' },
-      { name: 'Thuế TNCN', value: summary.totalTax, color: '#ef4444' },
-    ]
-  }, [summary])
-
-  const COLORS = ['#3b82f6', '#f59e0b', '#ef4444'];
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full space-y-4">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full"
-        />
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Đang tải dữ liệu...</p>
-      </div>
-    )
-  }
+  const mainButtons = [
+    { label: "Quản lý nhân viên", color: "bg-blue-600", to: "/employees" },
+    { label: "Bảng lương", color: "bg-emerald-700", to: "/payroll" },
+    { label: "Sổ sách", color: "bg-emerald-800", to: "/ledger" },
+    { label: "Báo cáo", color: "bg-amber-400", to: "/reports" },
+  ];
 
   return (
-    <div className="space-y-10 pb-20">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-slate-900 leading-tight">
-                Báo cáo <span className="text-primary">Tổng quan</span>
-            </h1>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                <Calendar size={14} className="text-primary/60" />
-                Kỳ dữ liệu: {summary?.month}/{summary?.year}
-            </p>
-        </div>
-        
-        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-2 px-3">
-                <span className="text-xs font-bold text-slate-500 uppercase">Tháng:</span>
-                <select 
-                    className="bg-transparent text-sm font-black text-slate-900 outline-none cursor-pointer"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                        <option key={m} value={m}>Tháng {m}</option>
-                    ))}
-                </select>
-            </div>
-            <div className="w-px h-6 bg-slate-100"></div>
-            <div className="flex items-center gap-2 px-3">
-                <span className="text-xs font-bold text-slate-500 uppercase">Năm:</span>
-                <select 
-                    className="bg-transparent text-sm font-black text-slate-900 outline-none cursor-pointer"
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                >
-                    {[...Array(5)].map((_, i) => {
-                        const y = new Date().getFullYear() - 2 + i;
-                        return <option key={y} value={y}>{y}</option>;
-                    })}
-                </select>
-            </div>
-        </div>
+    <div className="flex flex-col items-center justify-center min-h-[70vh] relative">
+      {/* Subtle Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-50 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-50 rounded-full blur-[120px]" />
       </div>
 
-      {/* Summary Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card 
-          title="Tổng nhân sự" 
-          value={summary?.activeEmployeeCount || '0'} 
-          color="blue"
-          delay={0.1}
-        />
-        <Card 
-          title="Tổng thực lĩnh" 
-          value={formatVND(summary?.totalNetPay || 0)} 
-          color="green"
-          delay={0.2}
-        />
-        <Card 
-          title="Bảo hiểm (DN)" 
-          value={formatVND(summary?.totalEmployerInsurance || 0)} 
-          color="orange"
-          delay={0.3}
-        />
-        <Card 
-          title="Thuế TNCN" 
-          value={formatVND(summary?.totalTax || 0)} 
-          color="red"
-          delay={0.4}
-        />
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Bar Chart Container */}
-        <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 }}
-            className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)]"
-        >
-            <div className="flex items-center justify-between mb-10">
-                <div>
-                    <h3 className="text-xl font-bold text-slate-900 leading-tight">Cơ cấu <span className="text-primary">Chi phí</span></h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 px-1">Phân bổ nguồn vốn theo các hạng mục</p>
-                </div>
-                <div className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-2xl text-slate-400 group cursor-pointer hover:bg-primary/10 transition-colors">
-                    <Info size={18} className="group-hover:text-primary transition-colors" />
-                </div>
-            </div>
-            <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis 
-                            dataKey="name" 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} 
-                            dy={10}
-                        />
-                        <YAxis hide />
-                        <Tooltip 
-                            cursor={{ fill: '#f8fafc' }} 
-                            contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', fontSize: '12px' }}
-                        />
-                        <Bar 
-                            dataKey="value" 
-                            radius={[12, 12, 0, 0]} 
-                            barSize={60}
-                        >
-                            {chartData.map((_entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.8} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
-        </motion.div>
-
-        {/* Pie Chart Container */}
-        <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] flex flex-col"
-        >
-            <h3 className="text-xl font-bold text-slate-900 leading-tight mb-2">Tỷ trọng <span className="text-primary">Chi</span></h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Phần trăm phân bổ</p>
-            
-            <div className="h-[250px] w-full my-auto">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={chartData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={70}
-                            outerRadius={100}
-                            paddingAngle={8}
-                            dataKey="value"
-                            stroke="none"
-                        >
-                            {chartData.map((_entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                        </Pie>
-                        <Tooltip 
-                            contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }}
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
-            </div>
-
-            <div className="space-y-3 mt-8">
-                {chartData.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100/50">
-                        <div className="flex items-center gap-3">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider font-sans">{item.name}</span>
-                        </div>
-                        <span className="text-[10px] font-black text-slate-900">{((item.value / chartData.reduce((acc, curr) => acc + curr.value, 0)) * 100).toFixed(1)}%</span>
-                    </div>
-                ))}
-            </div>
-        </motion.div>
-      </div>
-
-      {/* Details Table */}
       <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden"
+        className="max-w-5xl w-full text-center space-y-16 relative z-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
       >
-        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-            <div>
-                <h3 className="text-xl font-bold text-slate-900 leading-tight">Dữ liệu <span className="text-primary">Chi tiết</span></h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Báo cáo tổng hợp số liệu kỳ {summary?.month}/{summary?.year}</p>
-            </div>
-            <button className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-colors">
-                <BadgePercent size={20} />
-            </button>
-        </div>
-        <div className="overflow-x-auto">
-            <table className="w-full">
-                <thead>
-                    <tr className="bg-slate-50/50">
-                        <th className="px-8 py-5 text-left text-sm font-normal text-black border-b border-slate-100">Chỉ số thống kê</th>
-                        <th className="px-8 py-5 text-right text-sm font-normal text-black border-b border-slate-100">Giá trị</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                    {[
-                        { label: 'Tổng nhân sự', value: summary?.employeeCount },
-                        { label: 'Tổng lương thực lĩnh', value: formatVND(summary?.totalNetPay || 0) },
-                        { label: 'Bảo hiểm xã hội doanh nghiệp đóng', value: formatVND(summary?.totalEmployerInsurance || 0) },
-                        { label: 'Thuế TNCN', value: formatVND(summary?.totalTax || 0) },
-                    ].map((row, idx) => (
-                        <motion.tr 
-                            whileHover={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
-                            key={idx} 
-                            className="transition-colors"
-                        >
-                            <td className="px-8 py-6 text-sm font-normal text-black">{row.label}</td>
-                            <td className="px-8 py-6 text-right text-sm font-normal text-black">{row.value}</td>
-                        </motion.tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+        {/* Logo & Hero Section */}
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="space-y-6">
+           <div className="flex justify-center mb-8">
+             <div className="w-40 h-40 bg-white shadow-xl shadow-teal-500/10 rounded-[2.5rem] flex items-center justify-center overflow-hidden border border-slate-100 p-4">
+               <img src={logo} alt="PHÚC ANH Logo" className="w-full h-full object-contain" />
+             </div>
+           </div>
+           
+           <div className="space-y-2">
+              <span className="text-3xl font-black tracking-widest text-teal-600/60 uppercase">PHÚC ANH</span>
+              <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight">
+                HỆ THỐNG KẾ TOÁN TIỀN LƯƠNG
+              </h1>
+              <p className="text-lg font-bold text-slate-400 tracking-wide">
+                Công ty TNHH Phúc Anh
+              </p>
+           </div>
+        </motion.div>
+
+        {/* Action Buttons Grid */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto"
+        >
+          {mainButtons.map((btn, idx) => (
+            <Link 
+              key={idx} 
+              to={btn.to}
+              className={`group relative overflow-hidden h-14 ${btn.color} rounded-xl shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-black/10 transition-all active:scale-95 flex items-center justify-center`}
+            >
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="text-white font-bold text-sm tracking-wide relative z-10">
+                {btn.label}
+              </span>
+            </Link>
+          ))}
+        </motion.div>
       </motion.div>
 
-
+      {/* Footer Credits */}
+      <footer className="mt-20 w-full flex justify-end">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-right space-y-1"
+        >
+          <p className="text-sm font-bold text-slate-400">Nguyễn Thị Lan Anh</p>
+          <p className="text-xs font-semibold text-slate-300">GVHD: NCS. Trần Thị Hương</p>
+        </motion.div>
+      </footer>
     </div>
-  )
+  );
 }
