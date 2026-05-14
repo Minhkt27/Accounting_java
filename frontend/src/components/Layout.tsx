@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import {
   LogOut, Settings, Users, CalendarCheck,
-  Database, ChevronDown, Wallet, PieChart, Home, User
+  Database, ChevronRight, Wallet, PieChart, Home
 } from "lucide-react"
 import React, { useMemo, useState, useEffect } from "react"
 import axios from "axios"
@@ -44,12 +44,91 @@ interface MenuItem {
   children?: MenuItem[]
 }
 
+const SidebarItem = ({ item, isActive, isExpanded, onToggle, hasPermission }: { item: MenuItem, isActive: boolean, isExpanded: boolean, onToggle: () => void, hasPermission: (code?: string) => boolean }) => {
+  const location = useLocation();
+  const hasChildren = item.children && item.children.length > 0;
+
+  // Lọc các con theo quyền
+  const visibleChildren = item.children?.filter((c: MenuItem) => hasPermission(c.functionCode)) || [];
+
+  if (item.functionCode && !hasPermission(item.functionCode)) return null;
+  if (hasChildren && visibleChildren.length === 0) return null;
+
+  const content = (
+    <div className={`flex items-center justify-between w-full p-3 rounded-xl transition-all duration-300 group relative ${isActive && !hasChildren
+      ? "bg-slate-800/80 text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+      : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-100"
+      }`}>
+      {isActive && !hasChildren && (
+        <motion.div
+          layoutId="active-pill"
+          className="absolute left-0 w-1 h-6 bg-primary rounded-r-full"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
+      )}
+      <div className="flex items-center gap-3">
+        <div className={`transition-colors duration-300 ${isActive && !hasChildren ? "text-blue-400" : "group-hover:text-primary"}`}>
+          {item.icon}
+        </div>
+        <span className={`text-sm font-semibold tracking-wide transition-all ${isActive && !hasChildren ? "translate-x-1" : ""}`}>
+          {item.label}
+        </span>
+      </div>
+      {hasChildren && (
+        <motion.div
+          animate={{ rotate: isExpanded ? 90 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronRight className="w-4 h-4 opacity-50" />
+        </motion.div>
+      )}
+    </div>
+  );
+
+  if (hasChildren) {
+    return (
+      <div className="space-y-1">
+        <button onClick={onToggle} className="w-full text-left outline-none">
+          {content}
+        </button>
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden pl-10 space-y-1 border-l border-slate-800 ml-5"
+            >
+              {visibleChildren.map((child: MenuItem) => (
+                <Link
+                  key={child.to}
+                  to={child.to || "#"}
+                  className={`block p-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${location.pathname === child.to ? "text-blue-400" : "text-slate-500 hover:text-slate-300"
+                    }`}
+                >
+                  {child.label}
+                </Link>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  return (
+    <Link to={item.to || "#"} className="block outline-none">
+      {content}
+    </Link>
+  );
+};
+
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { username, roles } = useCurrentUser()
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
   const [allowedFunctions, setAllowedFunctions] = useState<string[]>([])
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const rolesKey = roles.join(",")
   useEffect(() => {
@@ -99,113 +178,128 @@ export default function Layout() {
     },
   ], [])
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
+  const routeNames: Record<string, string> = {
+    "": "Tổng quan hệ thống",
+    "employees": "Hồ sơ nhân sự",
+    "attendance": "Chấm công tháng",
+    "leaves": "Danh sách nghỉ phép",
+    "salary-changes": "Biến động lương",
+    "hr-tracking": "Biến động nhân sự",
+    "payroll": "Bảng tính lương tháng",
+    "accounting": "Nhật ký hạch toán",
+    "ledger": "Sổ cái tài khoản",
+    "payments": "Thanh toán & UNC",
+    "reports": "Báo cáo & Phân tích",
+    "admin": "Quản trị hệ thống",
+    "users": "Quản lý người dùng",
+    "config": "Cấu hình hệ thống",
+    "salary": "Cấu hình lương",
+    "accounts": "Danh mục tài khoản"
   };
 
+  const getPageTitle = () => {
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    if (pathParts.length === 0) return routeNames[""];
+    const lastPart = pathParts[pathParts.length - 1];
+    return routeNames[lastPart] || lastPart.toUpperCase();
+  };
+
+  const toggleExpand = (label: string) => {
+    setExpandedItems(prev =>
+      prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
+    )
+  }
+
+  const roleLabel = useMemo(() => {
+    if (roles.includes("ROLE_ADMIN")) return "Quản trị viên"
+    if (roles.includes("ROLE_KE_TOAN_TRUONG")) return "Kế toán Trưởng"
+    return "Nhân viên"
+  }, [roles])
+
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
-      {/* Top Navbar */}
-      <header className="border-b border-slate-200 px-8 py-3 flex items-center justify-between shadow-sm sticky top-0 bg-white z-50 no-print">
-        <div className="flex items-center gap-10">
-          <Link to="/" className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white shadow-md rounded-2xl flex items-center justify-center overflow-hidden border border-slate-100 p-2">
+    <div className="flex h-screen bg-background font-sans antialiased text-foreground print:bg-white print:block">
+      <aside className="w-80 bg-slate-950 flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] relative z-20 no-print border-r border-white/5">
+        <div className="p-8 pb-6">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-12 h-12 flex-shrink-0 bg-white flex items-center justify-center rounded-xl shadow-sm overflow-hidden border border-white/10">
               <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-black tracking-tighter text-teal-600 italic leading-none">PHÚC ANH</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Hệ thống kế toán tiền lương</span>
+            <div>
+              <h1 className="text-white font-bold text-xl leading-tight whitespace-nowrap">Công ty Phúc Anh</h1>
+              <p className="text-blue-400 text-sm font-bold mt-0.5 whitespace-nowrap tracking-wide">Hệ thống kế toán tiền lương</p>
             </div>
-          </Link>
-          
-          <nav className="hidden xl:flex items-center gap-6">
-            {menuItems.map((item, idx) => {
-               if (item.functionCode && !hasPermission(item.functionCode)) return null;
-               const visibleChildren = item.children?.filter(c => hasPermission(c.functionCode)) || [];
-               if (item.children && visibleChildren.length === 0) return null;
-
-               return (
-                <div 
-                  key={idx} 
-                  className="relative group"
-                  onMouseEnter={() => item.children && setActiveDropdown(item.label)}
-                  onMouseLeave={() => setActiveDropdown(null)}
-                >
-                  {item.to ? (
-                     <Link to={item.to} className={`flex items-center gap-1.5 cursor-pointer py-2 transition-all ${location.pathname === item.to ? "text-teal-600" : "text-slate-500 hover:text-slate-900"}`}>
-                      <span className={`${location.pathname === item.to ? "text-teal-600" : "text-slate-400 group-hover:text-teal-600"}`}>
-                        {item.icon}
-                      </span>
-                      <span className="text-[13px] font-bold tracking-wide whitespace-nowrap">
-                        {item.label}
-                      </span>
-                    </Link>
-                  ) : (
-                    <div className="flex items-center gap-1.5 cursor-pointer py-2 group">
-                      <span className="text-slate-400 group-hover:text-teal-600 transition-colors">
-                        {item.icon}
-                      </span>
-                      <span className="text-[13px] font-bold text-slate-500 group-hover:text-slate-900 transition-colors whitespace-nowrap">
-                        {item.label}
-                      </span>
-                      <ChevronDown size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-                    </div>
-                  )}
-
-                  <AnimatePresence>
-                    {item.children && activeDropdown === item.label && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute left-0 top-full pt-2 w-64"
-                      >
-                        <div className="bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden py-2 backdrop-blur-xl">
-                          {visibleChildren.map((child, cIdx) => (
-                            <Link 
-                              key={cIdx} 
-                              to={child.to || "#"}
-                              className={`block px-5 py-2.5 text-[12px] font-bold tracking-wide transition-all ${location.pathname === child.to ? "text-teal-600 bg-teal-50" : "text-slate-600 hover:bg-slate-50 hover:text-teal-600"}`}
-                            >
-                              {child.label}
-                            </Link>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-               );
-            })}
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="hidden md:flex flex-col items-end">
-            <span className="text-[11px] font-bold text-slate-900">{username}</span>
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Hệ thống tiền lương</span>
           </div>
-          
-          <div className="h-8 w-px bg-slate-200" />
-
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-xl transition-all border border-slate-200 hover:border-red-100"
-          >
-            <LogOut size={16} />
-            <span className="text-[11px] font-bold uppercase tracking-wider">Thoát</span>
-          </button>
         </div>
-      </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 relative print:block print:w-full">
-        <div className="flex-1 p-8 lg:p-12 overflow-auto custom-scrollbar print:p-0 print:overflow-visible">
+        <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+          {menuItems.map((item) => {
+            if (item.functionCode && !hasPermission(item.functionCode)) return null;
+            if (item.children && !item.children.some(c => hasPermission(c.functionCode))) return null;
+
+            const isActive = !!(item.to && location.pathname === item.to) || (item.children?.some(c => location.pathname === c.to) ?? false);
+            return (
+              <SidebarItem
+                key={item.label}
+                item={item}
+                isActive={isActive}
+                isExpanded={expandedItems.includes(item.label)}
+                onToggle={() => toggleExpand(item.label)}
+                hasPermission={hasPermission}
+              />
+            )
+          })}
+        </nav>
+
+        <div className="p-6 mt-auto">
+          <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem] backdrop-blur-sm shadow-xl">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary to-blue-400 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-primary/20">
+                {username.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-100 truncate">{username}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">{roleLabel}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                navigate("/login");
+              }}
+              className="flex w-full items-center justify-center gap-2 py-3 text-red-400 hover:text-white hover:bg-red-500/10 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border border-red-500/20 hover:border-red-500/40"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Đăng xuất
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <main className="flex-1 flex flex-col min-w-0 bg-background relative print:block print:w-full">
+        <header className="h-20 flex items-center justify-between px-10 border-b border-slate-200/60 sticky top-0 bg-background/80 backdrop-blur-xl z-10 no-print">
+          <div className="flex items-center gap-4">
+            <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{getPageTitle()}</span>
+          </div>
+          <div className="flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <CalendarCheck size={14} className="text-primary/60" />
+              {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-2xl transition-all relative border border-transparent hover:border-slate-200 group">
+                <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white z-10"></div>
+                <Users className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+              </button>
+              <div className="h-8 w-[1px] bg-slate-200 mx-2"></div>
+            </div>
+          </div>
+        </header>
+        <div className="flex-1 p-10 overflow-auto custom-scrollbar print:p-0 print:overflow-visible">
           <Outlet />
         </div>
       </main>
     </div>
+
   )
 }
