@@ -22,6 +22,17 @@ public class AccountingController {
     @Autowired private PayrollRepository payrollRepo;
     @Autowired private EmployeeRepository employeeRepo;
 
+    @GetMapping("/report/all")
+    @PreAuthorize("@perm.check('ACCOUNTING_VIEW')")
+    public ResponseEntity<Map<String, Object>> getAllReports(@RequestParam Integer month, @RequestParam Integer year) {
+        Map<String, Object> all = new LinkedHashMap<>();
+        all.put("summary", getSummary(month, year).getBody());
+        all.put("insurance", getInsuranceReport(month, year).getBody());
+        all.put("tax", getTaxReport(month, year).getBody());
+        all.put("union", getUnionFeeReport(month, year).getBody());
+        return ResponseEntity.ok(all);
+    }
+
     /**
      * UC21 - Danh sách chứng từ theo kỳ
      */

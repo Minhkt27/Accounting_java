@@ -20,6 +20,18 @@ public class SystemConfigController {
     @Autowired private EmployeeTaxConfigRepository taxConfigRepo;
     @Autowired private InsuranceConfigRepository insuranceConfigRepo;
 
+    @GetMapping("/all")
+    @PreAuthorize("@perm.check('CONFIG_INSURANCE') or @perm.check('PAYROLL_CALCULATE')")
+    public com.accounting.app.dto.ConfigResponse getAllConfigs() {
+        return new com.accounting.app.dto.ConfigResponse(
+            salaryRepo.findAll(),
+            insuranceConfigRepo.findAll(),
+            taxRepo.findAllByOrderByTierLevelAsc(),
+            deductionRepo.findAll(),
+            taxConfigRepo.findAll()
+        );
+    }
+
 
     // NEW: Unified Insurance Config
     @GetMapping("/insurance-config")
@@ -247,6 +259,7 @@ public class SystemConfigController {
         
         for (EmployeeTaxConfig rule : rules) {
             rule.setStatus(status);
+            rule.setId(null); // Reset ID to null to allow database IDENTITY generation
         }
 
         if ("APPROVED".equals(status)) {

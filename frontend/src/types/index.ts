@@ -29,7 +29,7 @@ export interface InsuranceConfig {
     status?: "APPROVED" | "PENDING";
 }
 
-export type EmployeeType = "FULL_TIME" | "OFFICIAL" | "PROBATION" | "INTERN" | "TRAINEE" | "OTHER";
+export type EmployeeType = "FULL_TIME" | "PROBATION" | "INTERN" | "OTHER";
 export type TaxMethod = "EXEMPT" | "FIXED_10" | "PROGRESSIVE";
 
 export interface EmployeeTaxConfig {
@@ -64,7 +64,7 @@ export interface Employee {
     fullName: string;
     contractSalary: number;
     dependents?: number;
-    type?: "OFFICIAL" | "PROBATION" | "FULL_TIME" | "TRAINEE" | "INTERN" | "OTHER";
+    type?: "FULL_TIME" | "PROBATION" | "INTERN" | "OTHER";
     department?: string;
     dob?: string;
     positionCoefficient?: number;

@@ -1,0 +1,150 @@
+@media screen {
+  .printable-only {
+    display: none;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: black;
+    background-color: white;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 11pt;
+    line-height: 1.3;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Report Styles */
+.report-container {
+  padding: 10px;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.company-info {
+  text-align: left;
+}
+
+.company-name {
+  font-weight: bold;
+  font-size: 11pt;
+}
+
+.company-address {
+  font-size: 9pt;
+}
+
+.report-id {
+  text-align: right;
+  font-weight: bold;
+  font-size: 10pt;
+}
+
+.report-title-section {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.report-title {
+  font-size: 16pt;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.report-period {
+  font-size: 11pt;
+  margin-top: 5px;
+}
+
+.report-unit {
+  text-align: right;
+  font-style: italic;
+  font-size: 10pt;
+  margin-bottom: 5px;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.report-table th, .report-table td {
+  border: 1px solid black;
+  padding: 4px;
+  font-size: 9pt;
+}
+
+.report-table th {
+  font-weight: bold;
+  text-align: center;
+  background-color: #f0f0f0 !important; /* Force background print if needed, though usually transparent is better */
+  -webkit-print-color-adjust: exact;
+}
+
+.report-table td.text-right {
+  text-align: right;
+}
+
+.report-table td.text-center {
+  text-align: center;
+}
+
+.report-footer {
+  margin-top: 30px;
+}
+
+.footer-date {
+  text-align: right;
+  font-style: italic;
+  margin-bottom: 10px;
+}
+
+.signature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+}
+
+.signature-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.signature-title {
+  font-weight: bold;
+}
+
+.signature-note {
+  font-size: 8pt;
+  font-style: italic;
+}
+
+.signature-space {
+  height: 60px;
+}

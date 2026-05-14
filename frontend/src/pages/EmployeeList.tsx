@@ -65,10 +65,7 @@ export default function EmployeeList() {
   }, [])
 
   useEffect(() => { 
-    const timer = setTimeout(() => {
-      fetchEmployees() 
-    }, 0)
-    return () => clearTimeout(timer)
+    fetchEmployees() 
   }, [fetchEmployees])
 
   const filteredEmployees = useMemo(() => {
@@ -539,10 +536,9 @@ export default function EmployeeList() {
                                   <div className="font-black text-slate-800 text-base">{employee.fullName}</div>
                                    <div className="flex items-center gap-2 mt-1">
                                       <span className="text-[10px] font-black bg-blue-50 text-blue-500 px-2 py-0.5 rounded uppercase tracking-widest">
-                                          {employee.employeeType === 'OFFICIAL' || employee.employeeType === 'FULL_TIME' ? 'Chính thức' : 
-                                           employee.employeeType === 'PROBATION' ? 'Thử việc' :
-                                           employee.employeeType === 'TRAINEE' ? 'Học việc' :
-                                           employee.employeeType === 'INTERN' ? 'Thực tập sinh' : 'Khác'}
+                                           {employee.employeeType === 'FULL_TIME' ? 'Chính thức' : 
+                                            employee.employeeType === 'PROBATION' ? 'Thử việc' :
+                                            employee.employeeType === 'INTERN' ? 'Thực tập sinh' : 'Khác'}
                                       </span>
                                   </div>
                               </td>

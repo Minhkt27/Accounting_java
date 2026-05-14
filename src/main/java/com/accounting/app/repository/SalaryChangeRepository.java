@@ -18,6 +18,11 @@ public interface SalaryChangeRepository extends JpaRepository<SalaryChange, Long
         @org.springframework.data.repository.query.Param("start") java.time.LocalDate start, 
         @org.springframework.data.repository.query.Param("end") java.time.LocalDate end);
 
+    @Query("SELECT s FROM SalaryChange s WHERE s.status = 'APPROVED' AND s.effectiveDate >= :start AND s.effectiveDate <= :end")
+    java.util.List<SalaryChange> findAllApprovedInMonth(
+        @org.springframework.data.repository.query.Param("start") java.time.LocalDate start, 
+        @org.springframework.data.repository.query.Param("end") java.time.LocalDate end);
+
     @Query("SELECT s FROM SalaryChange s ORDER BY s.createdAt DESC NULLS LAST, s.id DESC")
     Page<SalaryChange> findAllSorted(Pageable pageable);
 }

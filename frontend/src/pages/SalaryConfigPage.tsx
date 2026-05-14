@@ -67,15 +67,10 @@ export default function SalaryConfigPage() {
       const payload = JSON.parse(atob(token!.split(".")[1]))
       setUserRoles(payload.roles || [])
 
-      const [resParams, resInsurance, resTax, resDed, resTaxRules] = await Promise.all([
-        axios.get("/api/config/params", { headers }),
-        axios.get("/api/config/insurance-config", { headers }),
-        axios.get("/api/config/tax", { headers }),
-        axios.get("/api/config/deductions", { headers }),
-        axios.get("/api/config/tax-rules", { headers })
-      ])
+      const res = await axios.get("/api/config/all", { headers })
+      const { params: resParams, insurance: resInsurance, taxTiers: resTax, deductions: resDed, taxRules: resTaxRules } = res.data
 
-      const p = resParams.data.find((x: SalaryParameter) => x.status === 'PENDING') || resParams.data.find((x: SalaryParameter) => x.status === 'APPROVED')
+      const p = resParams.find((x: SalaryParameter) => x.status === 'PENDING') || resParams.find((x: SalaryParameter) => x.status === 'APPROVED')
       if (p) {
         setParams({
             ...p,
@@ -93,12 +88,12 @@ export default function SalaryConfigPage() {
         })
       }
       
-      const currentInsurance = resInsurance.data.find((x: InsuranceConfig) => x.status === 'PENDING') || resInsurance.data.find((x: InsuranceConfig) => x.status === 'APPROVED')
+      const currentInsurance = resInsurance.find((x: InsuranceConfig) => x.status === 'PENDING') || resInsurance.find((x: InsuranceConfig) => x.status === 'APPROVED')
       if (currentInsurance) {
         setInsuranceConfig(currentInsurance)
       }
       
-      const allTax = resTax.data
+      const allTax = resTax
       let finalTiers: TaxTier[] = []
       if (allTax.length === 0) {
           finalTiers = [...DEFAULT_5_TAX_TIERS]
@@ -114,9 +109,9 @@ export default function SalaryConfigPage() {
         upperBoundYearly: t.upperBoundYearly ?? (t.upperBound * 12)
       })))
       
-      setTaxRules(resTaxRules.data)
+      setTaxRules(resTaxRules)
       
-      const d = resDed.data.find((x: DeductionSetting) => x.status === 'PENDING') || resDed.data.find((x: DeductionSetting) => x.status === 'APPROVED')
+      const d = resDed.find((x: DeductionSetting) => x.status === 'PENDING') || resDed.find((x: DeductionSetting) => x.status === 'APPROVED')
       if (d) {
         setDeductions(d)
       } else {
@@ -922,7 +917,6 @@ export default function SalaryConfigPage() {
                                     <tbody className="divide-y divide-slate-50">
                                         {[
                                             { type: "PROBATION", label: "Thử việc" },
-                                            { type: "TRAINEE", label: "Học việc" },
                                             { type: "OTHER", label: "Khác" },
                                             { type: "INTERN", label: "Thực tập sinh" },
                                             { type: "FULL_TIME", label: "Chính thức" }

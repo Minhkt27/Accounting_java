@@ -3,7 +3,7 @@ import axios from "axios"
 import { 
   Shield, FileText, Building2, 
   Download, Calendar, TrendingUp, Users, Wallet, 
-  ShieldAlert, Info, Search
+  ShieldAlert, Info, Search, Printer
 } from "lucide-react"
 import { 
   Tooltip, ResponsiveContainer, 
@@ -11,6 +11,10 @@ import {
 } from "recharts"
 import { motion, AnimatePresence } from "framer-motion"
 import { ExportService } from "../utils/ExportService"
+import PrintableInsuranceReport from "../components/PrintableInsuranceReport"
+import PrintableTaxReport from "../components/PrintableTaxReport"
+import PrintableSummaryReport from "../components/PrintableSummaryReport"
+import PrintableUnionReport from "../components/PrintableUnionReport"
 
 interface SummaryData {
   month: number
@@ -96,45 +100,69 @@ export default function ReportsPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [sumRes, insRes, taxRes, unionRes] = await Promise.all([
-        axios.get(`/api/accounting/summary?month=${month}&year=${year}`, { headers }),
-        axios.get(`/api/accounting/report/insurance?month=${month}&year=${year}`, { headers }),
-        axios.get(`/api/accounting/report/tax?month=${month}&year=${year}`, { headers }),
-        axios.get(`/api/accounting/report/union-fee?month=${month}&year=${year}`, { headers }),
-      ])
-      setData(sumRes.data)
-      setInsuranceData(insRes.data)
-      setTaxData(taxRes.data)
-      setUnionData(unionRes.data)
+      const res = await axios.get(`/api/accounting/report/all?month=${month}&year=${year}`, { headers })
+      const { summary, insurance, tax, union } = res.data
+      setData(summary)
+      setInsuranceData(insurance)
+      setTaxData(tax)
+      setUnionData(union)
     } catch (err: unknown) { console.error(err) }
   }, [month, year, headers])
 
   useEffect(() => { 
-    const timer = setTimeout(() => {
-      fetchAll() 
-    }, 0)
-    return () => clearTimeout(timer)
+    fetchAll() 
   }, [fetchAll])
 
   const handleExportExcel = useCallback(() => {
+    if (!data && !insuranceData && !taxData && !unionData) return;
+
     if (activeTab === 'summary' && data) {
-      ExportService.exportToExcel(data.details, `Bao_cao_tong_hop_${month}_${year}`, 'Tổng hợp', {
-        employeeId: "Mã NV", fullName: "Họ tên", grossIncome: "Thu nhập Gross", totalInsurance: "BH Nhân viên", taxAmount: "Thuế TNCN", netPay: "Thực lĩnh"
+      const exportData = data.details.map((d, i) => ({ stt: i + 1, ...d }));
+      ExportService.exportToExcel(exportData, `Bao_cao_tong_hop_${month}_${year}`, 'Tổng hợp', {
+        stt: "STT", employeeId: "Mã NV", fullName: "Họ tên", grossIncome: "Thu nhập Gross", totalInsurance: "BH Nhân viên", taxAmount: "Thuế TNCN", netPay: "Thực lĩnh"
       });
     } else if (activeTab === 'insurance' && insuranceData) {
-      ExportService.exportToExcel(insuranceData.details, `Bao_cao_bao_hiem_${month}_${year}`, 'Bảo hiểm', {
-        employeeId: "Mã NV", fullName: "Họ tên", contractSalary: "Lương HĐ", bhxhEE: "BHXH (8%)", bhytEE: "BHYT (1.5%)", bhtnEE: "BHTN (1%)", totalEE: "Tổng NLĐ", bhxhER: "BHXH DN", bhytER: "BHYT DN", bhtnER: "BHTN DN", kpcd: "KPCĐ DN", totalER: "Tổng DN"
+      const exportData = insuranceData.details.map((d, i) => ({ 
+        stt: i + 1, 
+        bhxhRate: "8.00%", 
+        bhytRate: "1.50%", 
+        bhtnRate: "1.00%", 
+        ...d 
+      }));
+      ExportService.exportToExcel(exportData, `Bao_cao_bao_hiem_${month}_${year}`, 'Bảo hiểm', {
+        stt: "STT",
+        employeeId: "Mã NV", 
+        fullName: "Tên NV", 
+        contractSalary: "Thu nhập chịu",
+        bhxhRate: "Tỉ lệ BHXH",
+        bhytRate: "Tỉ lệ BHYT",
+        bhtnRate: "Tỉ lệ BHTN",
+        bhxhEE: "Mức BHXH", 
+        bhytEE: "Mức BHYT", 
+        bhtnEE: "Mức BHTN", 
+        totalEE: "Tổng chi trả (NLĐ)", 
+        bhxhER: "BHXH Doanh nghiệp", 
+        bhytER: "BHYT Doanh nghiệp", 
+        bhtnER: "BHTN Doanh nghiệp", 
+        kpcd: "Kinh phí CĐ", 
+        totalER: "Tổng Doanh nghiệp"
       });
     } else if (activeTab === 'tax' && taxData) {
-      ExportService.exportToExcel(taxData.details, `Bao_cao_thue_TNCN_${month}_${year}`, 'Thuế TNCN', {
-        employeeId: "Mã NV", fullName: "Họ tên", dependentCount: "Người PT", grossIncome: "Tổng thu nhập", totalInsurance: "Các khoản giảm trừ", taxableIncome: "TN Tính thuế", taxAmount: "Thuế TNCN", netPay: "Thực lĩnh"
+      const exportData = taxData.details.map((d, i) => ({ stt: i + 1, ...d }));
+      ExportService.exportToExcel(exportData, `Bao_cao_thue_TNCN_${month}_${year}`, 'Thuế TNCN', {
+        stt: "STT", employeeId: "Mã NV", fullName: "Họ tên", dependentCount: "Người PT", grossIncome: "Tổng thu nhập", totalInsurance: "Các khoản giảm trừ", taxableIncome: "TN Tính thuế", taxAmount: "Thuế TNCN", netPay: "Thực lĩnh"
       });
     } else if (activeTab === 'union' && unionData) {
-      ExportService.exportToExcel(unionData.details, `Bao_cao_cong_doan_${month}_${year}`, 'Công đoàn', {
-        employeeId: "Mã NV", fullName: "Họ tên", contractSalary: "Lương HĐ", kpcd: "Kinh phí CĐ"
+      const exportData = unionData.details.map((d, i) => ({ stt: i + 1, ...d }));
+      ExportService.exportToExcel(exportData, `Bao_cao_cong_doan_${month}_${year}`, 'Công đoàn', {
+        stt: "STT", employeeId: "Mã NV", fullName: "Họ tên", contractSalary: "Lương HĐ", kpcd: "Kinh phí CĐ"
       });
     }
   }, [activeTab, data, insuranceData, month, taxData, unionData, year])
+
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
 
   const formatVND = (val: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(val || 0).replace('₫', 'đ')
@@ -180,6 +208,14 @@ export default function ReportsPage() {
       ]
   }, [stats])
 
+  const hasData = useMemo(() => {
+    if (activeTab === 'summary') return false; // Không cần in/xuất excel cho tổng hợp chung
+    if (activeTab === 'insurance') return (insuranceData?.details?.length || 0) > 0;
+    if (activeTab === 'tax') return (taxData?.details?.length || 0) > 0;
+    if (activeTab === 'union') return (unionData?.details?.length || 0) > 0;
+    return false;
+  }, [activeTab, insuranceData, taxData, unionData]);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       {/* Header Area */}
@@ -212,12 +248,22 @@ export default function ReportsPage() {
                     placeholder="YYYY"
                 />
             </div>
-            <button 
-                onClick={handleExportExcel}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#111827] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg active:scale-95"
-            >
-                <Download size={16} /> Xuất Excel
-            </button>
+            {hasData && (
+                <>
+                    <button 
+                        onClick={handleExportExcel}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-[#111827] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg active:scale-95"
+                    >
+                        <Download size={16} /> Xuất Excel
+                    </button>
+                    <button 
+                        onClick={handlePrint}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95"
+                    >
+                        <Printer size={16} /> In Báo Cáo
+                    </button>
+                </>
+            )}
         </div>
       </div>
 
@@ -505,6 +551,31 @@ export default function ReportsPage() {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* Hidden printable area */}
+      <div className="printable-only">
+        {activeTab === 'insurance' && insuranceData && (
+            <PrintableInsuranceReport 
+                data={insuranceData.details}
+                month={month}
+                year={year}
+            />
+        )}
+        {activeTab === 'tax' && taxData && (
+            <PrintableTaxReport 
+                data={taxData.details}
+                month={month}
+                year={year}
+            />
+        )}
+        {activeTab === 'union' && unionData && (
+            <PrintableUnionReport 
+                data={unionData.details}
+                month={month}
+                year={year}
+            />
+        )}
+      </div>
     </div>
   )
 }
