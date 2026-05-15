@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "bien_dong_luong") // Bảng Biến động lương
@@ -24,11 +25,11 @@ public class SalaryChange extends BaseEntity {
     @Column(name = "loai_bien_dong")
     private String changeType; // Loại thay đổi
 
-    @Column(name = "gia_tri_cu")
-    private Double oldValue;        // Giá trị cũ (lương cũ, hoặc 0 nếu thưởng/phạt)
+    @Column(name = "gia_tri_cu", precision = 19, scale = 2)
+    private BigDecimal oldValue;        // Giá trị cũ (lương cũ, hoặc 0 nếu thưởng/phạt)
 
-    @Column(name = "gia_tri_moi")
-    private Double newValue;        // Giá trị mới (lương mới, hoặc số tiền thưởng/phạt)
+    @Column(name = "gia_tri_moi", precision = 19, scale = 2)
+    private BigDecimal newValue;        // Giá trị mới (lương mới, hoặc số tiền thưởng/phạt)
 
     @Column(name = "ly_do")
     private String reason;          // Lý do biến động
@@ -51,8 +52,8 @@ public class SalaryChange extends BaseEntity {
     @Column(name = "ly_do_tu_choi")
     private String rejectionReason; // Lý do từ chối (nếu REJECTED)
 
-    @Column(name = "phu_cap_tham_nien_moi")
-    private Double newSeniorityAllowance; // Phụ cấp thâm niên mới
+    @Column(name = "phu_cap_tham_nien_moi", precision = 19, scale = 2)
+    private BigDecimal newSeniorityAllowance; // Phụ cấp thâm niên mới
 
     @PrePersist
     protected void onCreate() {

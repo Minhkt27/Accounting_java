@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -88,8 +89,8 @@ public class SalaryChangeController {
             SalaryChange change = new SalaryChange();
             change.setEmployee(emp);
             change.setChangeType((String) body.get("changeType"));
-            change.setOldValue(toDouble(body.get("oldValue")));
-            change.setNewValue(toDouble(body.get("newValue")));
+            change.setOldValue(toBigDecimal(body.get("oldValue")));
+            change.setNewValue(toBigDecimal(body.get("newValue")));
             change.setReason((String) body.get("reason"));
             change.setEffectiveDate(java.time.LocalDate.parse((String) body.get("effectiveDate")));
             change.setStatus("PENDING");
@@ -137,8 +138,8 @@ public class SalaryChangeController {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động #" + id));
 
             change.setChangeType((String) body.get("changeType"));
-            change.setOldValue(toDouble(body.get("oldValue")));
-            change.setNewValue(toDouble(body.get("newValue")));
+            change.setOldValue(toBigDecimal(body.get("oldValue")));
+            change.setNewValue(toBigDecimal(body.get("newValue")));
             change.setReason((String) body.get("reason"));
             change.setEffectiveDate(java.time.LocalDate.parse((String) body.get("effectiveDate")));
 
@@ -229,11 +230,15 @@ public class SalaryChangeController {
         }
     }
 
-    private Double toDouble(Object val) {
+    private BigDecimal toBigDecimal(Object val) {
         if (val == null)
-            return 0.0;
+            return BigDecimal.ZERO;
         if (val instanceof Number)
-            return ((Number) val).doubleValue();
-        return Double.parseDouble(val.toString());
+            return new BigDecimal(val.toString());
+        try {
+            return new BigDecimal(val.toString());
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
     }
 }

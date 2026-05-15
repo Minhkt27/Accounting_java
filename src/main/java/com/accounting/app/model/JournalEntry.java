@@ -3,6 +3,7 @@ package com.accounting.app.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
 import lombok.EqualsAndHashCode;
 
@@ -28,13 +29,13 @@ public class JournalEntry extends BaseEntity {
     @JoinColumn(name = "ma_tai_khoan_co")
     private AccountCategory creditAccount; // Tài khoản có
 
-    @Column(name = "so_tien")
-    private Double amount; // Số tiền
+    @Column(name = "so_tien", precision = 19, scale = 2)
+    private BigDecimal amount; // Số tiền
 
     @Column(name = "dien_giai")
     private String description; // Diễn giải/Mô tả
 
-    public JournalEntry(Voucher voucher, AccountCategory debit, AccountCategory credit, Double amount, String description) {
+    public JournalEntry(Voucher voucher, AccountCategory debit, AccountCategory credit, BigDecimal amount, String description) {
         this.voucher = voucher;
         this.debitAccount = debit;
         this.creditAccount = credit;

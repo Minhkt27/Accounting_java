@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.accounting.app.model.*;
 import com.accounting.app.repository.*;
+import java.math.BigDecimal;
 import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -155,10 +156,10 @@ public class SystemConfigController {
 
             // Tự động tính toán giá trị năm nếu thiếu
             if (tier.getLowerBound() != null && tier.getLowerBoundYearly() == null) {
-                tier.setLowerBoundYearly(tier.getLowerBound() * 12);
+                tier.setLowerBoundYearly(tier.getLowerBound().multiply(new BigDecimal("12")));
             }
             if (tier.getUpperBound() != null && tier.getUpperBoundYearly() == null) {
-                tier.setUpperBoundYearly(tier.getUpperBound() * 12);
+                tier.setUpperBoundYearly(tier.getUpperBound().multiply(new BigDecimal("12")));
             }
         }
         

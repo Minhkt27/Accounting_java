@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -131,25 +132,25 @@ public class AccountingController {
         summary.put("employeeCount", payrollRepo.countByMonthAndYear(month, year));
         summary.put("activeEmployeeCount", employeeRepo.countActive());
         summary.put("totalGrossIncome",
-                payrolls.stream().mapToDouble(p -> p.getGrossIncome() != null ? p.getGrossIncome() : 0).sum());
+                payrolls.stream().map(p -> p.getGrossIncome() != null ? p.getGrossIncome() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         summary.put("totalBaseSalary",
-                payrolls.stream().mapToDouble(p -> p.getBaseSalaryPay() != null ? p.getBaseSalaryPay() : 0).sum());
+                payrolls.stream().map(p -> p.getBaseSalaryPay() != null ? p.getBaseSalaryPay() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         summary.put("totalMealAllowance",
-                payrolls.stream().mapToDouble(p -> p.getMealAllowance() != null ? p.getMealAllowance() : 0).sum());
-        summary.put("totalOtPay", payrolls.stream().mapToDouble(p -> p.getOtPay() != null ? p.getOtPay() : 0).sum());
+                payrolls.stream().map(p -> p.getMealAllowance() != null ? p.getMealAllowance() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+        summary.put("totalOtPay", payrolls.stream().map(p -> p.getOtPay() != null ? p.getOtPay() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         summary.put("totalBHXH",
-                payrolls.stream().mapToDouble(p -> p.getBhxhNhanVien() != null ? p.getBhxhNhanVien() : 0).sum());
+                payrolls.stream().map(p -> p.getBhxhNhanVien() != null ? p.getBhxhNhanVien() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         summary.put("totalBHYT",
-                payrolls.stream().mapToDouble(p -> p.getBhytNhanVien() != null ? p.getBhytNhanVien() : 0).sum());
+                payrolls.stream().map(p -> p.getBhytNhanVien() != null ? p.getBhytNhanVien() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         summary.put("totalBHTN",
-                payrolls.stream().mapToDouble(p -> p.getBhtnNhanVien() != null ? p.getBhtnNhanVien() : 0).sum());
+                payrolls.stream().map(p -> p.getBhtnNhanVien() != null ? p.getBhtnNhanVien() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         summary.put("totalInsurance",
-                payrolls.stream().mapToDouble(p -> p.getTotalInsurance() != null ? p.getTotalInsurance() : 0).sum());
+                payrolls.stream().map(p -> p.getTotalInsurance() != null ? p.getTotalInsurance() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         summary.put("totalEmployerInsurance", payrolls.stream()
-                .mapToDouble(p -> p.getTotalEmployerInsurance() != null ? p.getTotalEmployerInsurance() : 0).sum());
+                .map(p -> p.getTotalEmployerInsurance() != null ? p.getTotalEmployerInsurance() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         summary.put("totalTax",
-                payrolls.stream().mapToDouble(p -> p.getTaxAmount() != null ? p.getTaxAmount() : 0).sum());
-        summary.put("totalNetPay", payrolls.stream().mapToDouble(p -> p.getNetPay() != null ? p.getNetPay() : 0).sum());
+                payrolls.stream().map(p -> p.getTaxAmount() != null ? p.getTaxAmount() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+        summary.put("totalNetPay", payrolls.stream().map(p -> p.getNetPay() != null ? p.getNetPay() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
 
         // Chi tiết từng nhân viên cho bảng báo cáo
         List<Map<String, Object>> details = payrolls.stream().map(p -> {
@@ -191,7 +192,7 @@ public class AccountingController {
             List<Payroll> payrolls = payrollRepo.findByMonthAndYearSortedList(m, y).stream()
                 .filter(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID)
                 .collect(Collectors.toList());
-            double totalNet = payrolls.stream().mapToDouble(p -> p.getNetPay() != null ? p.getNetPay() : 0).sum();
+            BigDecimal totalNet = payrolls.stream().map(p -> p.getNetPay() != null ? p.getNetPay() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
 
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("name", "Tháng " + m + "/" + (y % 100));
@@ -218,7 +219,7 @@ public class AccountingController {
          if (vouchers.isEmpty()) {
              return ResponseEntity.ok(new com.accounting.app.dto.LedgerResponse(
                  new com.accounting.app.dto.PageResponse<>(new ArrayList<>(), 0, size, 0, 0, true),
-                 0.0, 0.0
+                 BigDecimal.ZERO, BigDecimal.ZERO
              ));
          }
 
@@ -236,8 +237,8 @@ public class AccountingController {
                      map.put("oppositeAccount",
                              e.getDebitAccount().getId().equals(accountId) ? e.getCreditAccount().getId()
                                      : e.getDebitAccount().getId());
-                     map.put("debit", e.getDebitAccount().getId().equals(accountId) ? e.getAmount() : 0.0);
-                     map.put("credit", e.getCreditAccount().getId().equals(accountId) ? e.getAmount() : 0.0);
+                     map.put("debit", e.getDebitAccount().getId().equals(accountId) ? e.getAmount() : BigDecimal.ZERO);
+                     map.put("credit", e.getCreditAccount().getId().equals(accountId) ? e.getAmount() : BigDecimal.ZERO);
                      return map;
                  }).collect(Collectors.toList());
  
@@ -252,12 +253,12 @@ public class AccountingController {
 
          // Tính tổng cho cả kỳ (không phân trang)
          List<JournalEntry> allEntries = journalRepo.findByVoucherInAndAccountList(vouchers, accountId);
-         double totalDebit = allEntries.stream()
+         BigDecimal totalDebit = allEntries.stream()
             .filter(e -> e.getDebitAccount().getId().equals(accountId))
-            .mapToDouble(JournalEntry::getAmount).sum();
-         double totalCredit = allEntries.stream()
+            .map(JournalEntry::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+         BigDecimal totalCredit = allEntries.stream()
             .filter(e -> e.getCreditAccount().getId().equals(accountId))
-            .mapToDouble(JournalEntry::getAmount).sum();
+            .map(JournalEntry::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
 
          return ResponseEntity.ok(new com.accounting.app.dto.LedgerResponse(pRes, totalDebit, totalCredit));
     }
@@ -280,25 +281,25 @@ public class AccountingController {
 
         // Tổng hợp phần NLĐ đóng
         report.put("totalBhxhEE",
-                payrolls.stream().mapToDouble(p -> p.getBhxhNhanVien() != null ? p.getBhxhNhanVien() : 0).sum());
+                payrolls.stream().map(p -> p.getBhxhNhanVien() != null ? p.getBhxhNhanVien() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         report.put("totalBhytEE",
-                payrolls.stream().mapToDouble(p -> p.getBhytNhanVien() != null ? p.getBhytNhanVien() : 0).sum());
+                payrolls.stream().map(p -> p.getBhytNhanVien() != null ? p.getBhytNhanVien() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         report.put("totalBhtnEE",
-                payrolls.stream().mapToDouble(p -> p.getBhtnNhanVien() != null ? p.getBhtnNhanVien() : 0).sum());
+                payrolls.stream().map(p -> p.getBhtnNhanVien() != null ? p.getBhtnNhanVien() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         report.put("totalEE",
-                payrolls.stream().mapToDouble(p -> p.getTotalInsurance() != null ? p.getTotalInsurance() : 0).sum());
+                payrolls.stream().map(p -> p.getTotalInsurance() != null ? p.getTotalInsurance() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
 
         // Tổng hợp phần DN đóng
         report.put("totalBhxhER",
-                payrolls.stream().mapToDouble(p -> p.getBhxhCongTy() != null ? p.getBhxhCongTy() : 0).sum());
+                payrolls.stream().map(p -> p.getBhxhCongTy() != null ? p.getBhxhCongTy() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         report.put("totalBhytER",
-                payrolls.stream().mapToDouble(p -> p.getBhytCongTy() != null ? p.getBhytCongTy() : 0).sum());
+                payrolls.stream().map(p -> p.getBhytCongTy() != null ? p.getBhytCongTy() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         report.put("totalBhtnER",
-                payrolls.stream().mapToDouble(p -> p.getBhtnCongTy() != null ? p.getBhtnCongTy() : 0).sum());
+                payrolls.stream().map(p -> p.getBhtnCongTy() != null ? p.getBhtnCongTy() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         report.put("totalKpcd",
-                payrolls.stream().mapToDouble(p -> p.getKpcdCongTy() != null ? p.getKpcdCongTy() : 0).sum());
+                payrolls.stream().map(p -> p.getKpcdCongTy() != null ? p.getKpcdCongTy() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         report.put("totalER", payrolls.stream()
-                .mapToDouble(p -> p.getTotalEmployerInsurance() != null ? p.getTotalEmployerInsurance() : 0).sum());
+                .map(p -> p.getTotalEmployerInsurance() != null ? p.getTotalEmployerInsurance() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
 
         // Chi tiết từng nhân viên
         List<Map<String, Object>> details = payrolls.stream().map(p -> {
@@ -338,9 +339,9 @@ public class AccountingController {
         report.put("year", year);
         report.put("employeeCount", payrolls.size());
         report.put("totalTaxableIncome",
-                payrolls.stream().mapToDouble(p -> p.getTaxableIncome() != null ? p.getTaxableIncome() : 0).sum());
+                payrolls.stream().map(p -> p.getTaxableIncome() != null ? p.getTaxableIncome() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
         report.put("totalTaxAmount",
-                payrolls.stream().mapToDouble(p -> p.getTaxAmount() != null ? p.getTaxAmount() : 0).sum());
+                payrolls.stream().map(p -> p.getTaxAmount() != null ? p.getTaxAmount() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
 
         List<Map<String, Object>> details = payrolls.stream().map(p -> {
             Map<String, Object> d = new LinkedHashMap<>();
@@ -370,16 +371,16 @@ public class AccountingController {
                 .filter(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID)
                 .collect(Collectors.toList());
 
-        double totalContractSalary = payrolls.stream()
-                .mapToDouble(p -> p.getContractSalary() != null ? p.getContractSalary() : 0).sum();
-        double totalKpcd = payrolls.stream().mapToDouble(p -> p.getKpcdCongTy() != null ? p.getKpcdCongTy() : 0).sum();
+        BigDecimal totalContractSalary = payrolls.stream()
+                .map(p -> p.getContractSalary() != null ? p.getContractSalary() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalKpcd = payrolls.stream().map(p -> p.getKpcdCongTy() != null ? p.getKpcdCongTy() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("month", month);
         report.put("year", year);
         report.put("employeeCount", payrolls.size());
         report.put("totalContractSalary", totalContractSalary);
-        report.put("unionFeeRate", 2.0);
+        report.put("unionFeeRate", new BigDecimal("2.0"));
         report.put("totalUnionFee", totalKpcd);
 
         List<Map<String, Object>> details = payrolls.stream().map(p -> {

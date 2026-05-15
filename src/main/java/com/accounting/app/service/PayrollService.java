@@ -6,9 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,10 +43,10 @@ public class PayrollService {
         boolean allDraft = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.DRAFT);
         if (!allDraft) throw new RuntimeException("Chỉ được phê duyệt bảng lương đang ở trạng thái DRAFT");
 
-        Double totalGross = payrolls.stream().mapToDouble(Payroll::getGrossIncome).sum();
-        Double totalInsuranceEE = payrolls.stream().mapToDouble(Payroll::getTotalInsurance).sum();
-        Double totalInsuranceER = payrolls.stream().mapToDouble(Payroll::getTotalEmployerInsurance).sum();
-        Double totalTax = payrolls.stream().mapToDouble(Payroll::getTaxAmount).sum();
+        BigDecimal totalGross = payrolls.stream().map(Payroll::getGrossIncome).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalInsuranceEE = payrolls.stream().map(Payroll::getTotalInsurance).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalInsuranceER = payrolls.stream().map(Payroll::getTotalEmployerInsurance).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalTax = payrolls.stream().map(Payroll::getTaxAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Lấy tài khoản
         AccountCategory acc642 = accountRepo.findById("642").orElseThrow(() -> new RuntimeException("Thiếu tài khoản 642"));
@@ -67,17 +71,17 @@ public class PayrollService {
         //   - Nợ 334 / Có 338  (BH phần NLĐ đóng 10.5%)
         //   - Nợ 334 / Có 3335 (Thuế TNCN)
         // ═══════════════════════════════════════════════════════════
-        Double totalDeductions = totalInsuranceEE + totalTax;
-        if (totalDeductions > 0) {
+        BigDecimal totalDeductions = totalInsuranceEE.add(totalTax);
+        if (totalDeductions.compareTo(BigDecimal.ZERO) > 0) {
             String voucherNo2 = String.format("PK-KHAUTRU-%02d-%d", month, year % 100);
             Voucher v2 = new Voucher(voucherNo2, "PHIEU_KE_TOAN", LocalDate.now(), totalDeductions, "Trích các khoản khấu trừ lương NLĐ tháng " + month + "/" + year);
             v2.setTargetMonth(month);
             v2.setTargetYear(year);
             v2 = voucherRepo.save(v2);
 
-            if (totalInsuranceEE > 0)
+            if (totalInsuranceEE.compareTo(BigDecimal.ZERO) > 0)
                 journalRepo.save(new JournalEntry(v2, acc334, acc338, totalInsuranceEE, "Trích BHXH, BHYT, BHTN phần NLĐ (10.5%) tháng " + month));
-            if (totalTax > 0)
+            if (totalTax.compareTo(BigDecimal.ZERO) > 0)
                 journalRepo.save(new JournalEntry(v2, acc334, acc3335, totalTax, "Trích thuế TNCN tháng " + month));
         }
 
@@ -85,7 +89,7 @@ public class PayrollService {
         // CHỨNG TỪ 3: GHI NHẬN CHI PHÍ BH & KPCĐ PHẦN DN ĐÓNG
         //   - Nợ 642 / Có 338 (BH phần DN đóng 23.5%)
         // ═══════════════════════════════════════════════════════════
-        if (totalInsuranceER > 0) {
+        if (totalInsuranceER.compareTo(BigDecimal.ZERO) > 0) {
             String voucherNo3 = String.format("PK-BHDN-%02d-%d", month, year % 100);
             Voucher v3 = new Voucher(voucherNo3, "PHIEU_KE_TOAN", LocalDate.now(), totalInsuranceER, "Trích chi phí BHXH, BHYT, BHTN, KPCĐ phần DN tháng " + month + "/" + year);
             v3.setTargetMonth(month);
@@ -130,7 +134,7 @@ public class PayrollService {
         boolean allApproved = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID);
         if (!allApproved) throw new RuntimeException("Chỉ được thanh toán sau khi bảng lương đã được Phê duyệt (APPROVED)");
 
-        Double totalNet = payrolls.stream().mapToDouble(Payroll::getNetPay).sum();
+        BigDecimal totalNet = payrolls.stream().map(Payroll::getNetPay).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Tạo Voucher Thanh toán lương (PC/UNC)
         String prefix = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PC" : "UNC";
@@ -163,11 +167,11 @@ public class PayrollService {
         if (!valid) throw new RuntimeException("Bảng lương phải ở trạng thái Đã duyệt hoặc Đã thanh toán lương");
 
         // Tổng BH Nhân viên + BH Công ty
-        Double totalInsuranceEE = payrolls.stream().mapToDouble(Payroll::getTotalInsurance).sum();
-        Double totalInsuranceER = payrolls.stream().mapToDouble(Payroll::getTotalEmployerInsurance).sum();
-        Double totalInsurance = totalInsuranceEE + totalInsuranceER;
+        BigDecimal totalInsuranceEE = payrolls.stream().map(Payroll::getTotalInsurance).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalInsuranceER = payrolls.stream().map(Payroll::getTotalEmployerInsurance).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalInsurance = totalInsuranceEE.add(totalInsuranceER);
 
-        if (totalInsurance <= 0) throw new RuntimeException("Không có khoản bảo hiểm cần thanh toán");
+        if (totalInsurance.compareTo(BigDecimal.ZERO) <= 0) throw new RuntimeException("Không có khoản bảo hiểm cần thanh toán");
 
         String prefix = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PC" : "UNC";
         String type = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PHIEU_CHI" : "UNC";
@@ -194,9 +198,9 @@ public class PayrollService {
         boolean valid = payrolls.stream().allMatch(p -> p.getStatus() == PayrollStatus.APPROVED || p.getStatus() == PayrollStatus.PAID);
         if (!valid) throw new RuntimeException("Bảng lương phải ở trạng thái Đã duyệt hoặc Đã thanh toán lương");
 
-        Double totalTax = payrolls.stream().mapToDouble(Payroll::getTaxAmount).sum();
+        BigDecimal totalTax = payrolls.stream().map(Payroll::getTaxAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        if (totalTax <= 0) throw new RuntimeException("Không có khoản thuế TNCN cần nộp");
+        if (totalTax.compareTo(BigDecimal.ZERO) <= 0) throw new RuntimeException("Không có khoản thuế TNCN cần nộp");
 
         String prefix = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PC" : "UNC";
         String type = "PAYMENT".equalsIgnoreCase(paymentMethod) ? "PHIEU_CHI" : "UNC";
@@ -265,16 +269,16 @@ public class PayrollService {
 
         DeductionSetting approvedDeductions = deductionRepo.findAll().stream()
             .filter(d -> "APPROVED".equals(d.getStatus()))
-            .findFirst().orElse(new DeductionSetting(null, 11000000.0, 4400000.0, "APPROVED"));
+            .findFirst().orElse(new DeductionSetting(null, new BigDecimal("11000000"), new BigDecimal("4400000"), "APPROVED"));
 
         InsuranceConfig approvedInsurance = insuranceConfigRepo.findAll().stream()
             .filter(c -> "APPROVED".equals(c.getStatus()))
             .findFirst().orElse(new InsuranceConfig());
 
         // Xác định số công chuẩn thực tế
-        Double standardDays = params.getStandardWorkDays();
+        BigDecimal standardDays = params.getStandardWorkDays();
         if ("MONTHLY".equalsIgnoreCase(params.getStandardWorkDayMode())) {
-            standardDays = (double) calculateBusinessDays(month, year);
+            standardDays = new BigDecimal(calculateBusinessDays(month, year));
         }
         
         java.util.List<Payroll> toSave = new java.util.ArrayList<>();
@@ -289,16 +293,16 @@ public class PayrollService {
             }
 
             Attendance attendance = attendanceMap.get(emp.getId());
-            Double realDays;
-            Double paidLeaveDays;
+            BigDecimal realDays;
+            BigDecimal paidLeaveDays;
             if (attendance != null) {
-                realDays = attendance.getRealWorkDays() != null ? attendance.getRealWorkDays() : 0.0;
-                paidLeaveDays = attendance.getPaidLeaveDays() != null ? attendance.getPaidLeaveDays() : 0.0;
+                realDays = attendance.getRealWorkDays() != null ? new BigDecimal(attendance.getRealWorkDays().toString()) : BigDecimal.ZERO;
+                paidLeaveDays = attendance.getPaidLeaveDays() != null ? new BigDecimal(attendance.getPaidLeaveDays().toString()) : BigDecimal.ZERO;
             } else {
                 com.accounting.app.dto.AttendanceSuggestion suggestion = attendanceService.getAttendanceSuggestion(emp.getId(), month, year, standardDays);
                 realDays = suggestion.getPhysicalDays();
                 paidLeaveDays = suggestion.getPaidLeaveDays();
-                attendance = new Attendance(emp, month, year, realDays, paidLeaveDays, 0.0, 0.0, 0.0);
+                attendance = new Attendance(emp, month, year, realDays.doubleValue(), paidLeaveDays.doubleValue(), 0.0, 0.0, 0.0);
                 attendance = attendanceRepository.save(attendance);
                 attendanceMap.put(emp.getId(), attendance);
             }
@@ -313,73 +317,117 @@ public class PayrollService {
             payroll.setStandardWorkDays(standardDays);
 
             // Tính lương thời gian
-            Double totalPaidDays = realDays + (paidLeaveDays != null ? paidLeaveDays : 0.0);
-            Double contractSal = emp.getContractSalary() != null ? emp.getContractSalary() : 0.0;
-            Double baseSalary = (double) Math.round((contractSal / standardDays) * totalPaidDays);
-            if (emp.getEmployeeType() == EmployeeType.PROBATION) baseSalary = (double) Math.round(baseSalary * 0.85);
+            BigDecimal totalPaidDays = realDays.add(paidLeaveDays != null ? paidLeaveDays : BigDecimal.ZERO);
+            BigDecimal contractSal = emp.getContractSalary() != null ? emp.getContractSalary() : BigDecimal.ZERO;
+            
+            // Lương chính = (Lương HĐ / Standard) * totalPaidDays
+            BigDecimal baseSalary = BigDecimal.ZERO;
+            if (standardDays.compareTo(BigDecimal.ZERO) > 0) {
+                baseSalary = contractSal.divide(standardDays, 10, RoundingMode.HALF_UP).multiply(totalPaidDays).setScale(0, RoundingMode.HALF_UP);
+            }
+            
+            if (emp.getEmployeeType() == EmployeeType.PROBATION) {
+                baseSalary = baseSalary.multiply(new BigDecimal("0.85")).setScale(0, RoundingMode.HALF_UP);
+            }
             payroll.setBaseSalaryPay(baseSalary);
 
             // Phụ cấp
-            Double mealAllowance = (double) Math.round((params.getMealAllowance() != null ? params.getMealAllowance() : 0.0) * realDays);
+            BigDecimal mealAllowance = (params.getMealAllowance() != null ? params.getMealAllowance() : BigDecimal.ZERO)
+                .multiply(realDays).setScale(0, RoundingMode.HALF_UP);
             payroll.setMealAllowance(mealAllowance);
-            payroll.setPositionAllowance(0.0);
-            payroll.setSeniorityAllowance(emp.getSeniorityAllowance() != null ? emp.getSeniorityAllowance() : 0.0);
-            if (payroll.getOtherAllowances() == null) payroll.setOtherAllowances(0.0);
+            payroll.setPositionAllowance(BigDecimal.ZERO);
+            payroll.setSeniorityAllowance(emp.getSeniorityAllowance() != null ? emp.getSeniorityAllowance() : BigDecimal.ZERO);
+            if (payroll.getOtherAllowances() == null) payroll.setOtherAllowances(BigDecimal.ZERO);
             
             // Salary Changes (Rewards/Disciplines)
             List<SalaryChange> changes = changesMap.getOrDefault(emp.getId(), List.of());
-            payroll.setBonus(changes.stream().filter(c -> "REWARD".equals(c.getChangeType())).mapToDouble(c -> c.getNewValue() != null ? c.getNewValue() : 0.0).sum());
-            payroll.setPenalty(changes.stream().filter(c -> "DISCIPLINE".equals(c.getChangeType())).mapToDouble(c -> c.getNewValue() != null ? c.getNewValue() : 0.0).sum());
-            if (payroll.getCharityDeduction() == null) payroll.setCharityDeduction(0.0);
+            payroll.setBonus(changes.stream().filter(c -> "REWARD".equals(c.getChangeType())).map(c -> c.getNewValue() != null ? c.getNewValue() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+            payroll.setPenalty(changes.stream().filter(c -> "DISCIPLINE".equals(c.getChangeType())).map(c -> c.getNewValue() != null ? c.getNewValue() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+            if (payroll.getCharityDeduction() == null) payroll.setCharityDeduction(BigDecimal.ZERO);
 
             // OT calculation
-            Double hourlyRate = contractSal / (standardDays * 8);
-            double otNormHours = attendance.getOtNormalHours() != null ? attendance.getOtNormalHours() : 0.0;
-            double otWeekHours = attendance.getOtWeekendHours() != null ? attendance.getOtWeekendHours() : 0.0;
-            double otHoliHours = attendance.getOtHolidayHours() != null ? attendance.getOtHolidayHours() : 0.0;
+            BigDecimal hourlyRate = BigDecimal.ZERO;
+            if (standardDays.compareTo(BigDecimal.ZERO) > 0) {
+                hourlyRate = contractSal.divide(standardDays.multiply(new BigDecimal("8")), 10, RoundingMode.HALF_UP);
+            }
+            
+            BigDecimal otNormHours = attendance.getOtNormalHours() != null ? new BigDecimal(attendance.getOtNormalHours().toString()) : BigDecimal.ZERO;
+            BigDecimal otWeekHours = attendance.getOtWeekendHours() != null ? new BigDecimal(attendance.getOtWeekendHours().toString()) : BigDecimal.ZERO;
+            BigDecimal otHoliHours = attendance.getOtHolidayHours() != null ? new BigDecimal(attendance.getOtHolidayHours().toString()) : BigDecimal.ZERO;
 
-            Double otNormal = (double) Math.round(hourlyRate * 1.5 * otNormHours);
-            Double otWeekend = (double) Math.round(hourlyRate * 2.0 * otWeekHours);
-            Double otHoliday = (double) Math.round(hourlyRate * 3.0 * otHoliHours);
+            BigDecimal otNormal = hourlyRate.multiply(new BigDecimal("1.5")).multiply(otNormHours).setScale(0, RoundingMode.HALF_UP);
+            BigDecimal otWeekend = hourlyRate.multiply(new BigDecimal("2.0")).multiply(otWeekHours).setScale(0, RoundingMode.HALF_UP);
+            BigDecimal otHoliday = hourlyRate.multiply(new BigDecimal("3.0")).multiply(otHoliHours).setScale(0, RoundingMode.HALF_UP);
             
             payroll.setOtNormalPay(otNormal);
             payroll.setOtWeekendPay(otWeekend);
             payroll.setOtHolidayPay(otHoliday);
-            payroll.setOtPay(otNormal + otWeekend + otHoliday);
+            payroll.setOtPay(otNormal.add(otWeekend).add(otHoliday));
             payroll.setOtNormalHours(otNormHours);
             payroll.setOtWeekendHours(otWeekHours);
             payroll.setOtHolidayHours(otHoliHours);
-            payroll.setOtPremiumPay((double) Math.round(hourlyRate * (0.5 * otNormHours + 1.0 * otWeekHours + 2.0 * otHoliHours)));
+            
+            // Phần chênh lệch OT miễn thuế: (0.5 * otNorm + 1.0 * otWeek + 2.0 * otHoli) * hourlyRate
+            BigDecimal otPremium = hourlyRate.multiply(
+                new BigDecimal("0.5").multiply(otNormHours)
+                .add(new BigDecimal("1.0").multiply(otWeekHours))
+                .add(new BigDecimal("2.0").multiply(otHoliHours))
+            ).setScale(0, RoundingMode.HALF_UP);
+            payroll.setOtPremiumPay(otPremium);
 
-            Double grossIncome = Math.max(0.0, baseSalary + mealAllowance + payroll.getSeniorityAllowance() + payroll.getOtherAllowances() + payroll.getBonus() + payroll.getOtPay() - payroll.getPenalty());
+            BigDecimal grossIncome = baseSalary.add(mealAllowance)
+                .add(payroll.getSeniorityAllowance())
+                .add(payroll.getOtherAllowances())
+                .add(payroll.getBonus())
+                .add(payroll.getOtPay())
+                .subtract(payroll.getPenalty());
+            
+            if (grossIncome.compareTo(BigDecimal.ZERO) < 0) grossIncome = BigDecimal.ZERO;
             payroll.setGrossIncome(grossIncome);
 
             // Bảo hiểm
-            Double bhxhEE = 0.0, bhytEE = 0.0, bhtnEE = 0.0;
-            Double bhxhER = 0.0, bhytER = 0.0, bhtnER = 0.0, kpcdER = 0.0;
+            BigDecimal bhxhEE = BigDecimal.ZERO, bhytEE = BigDecimal.ZERO, bhtnEE = BigDecimal.ZERO;
+            BigDecimal bhxhER = BigDecimal.ZERO, bhytER = BigDecimal.ZERO, bhtnER = BigDecimal.ZERO, kpcdER = BigDecimal.ZERO;
 
             if (emp.getEmployeeType() == EmployeeType.FULL_TIME) {
-                Double insuranceSalary = Math.min(contractSal, params.getInsuranceCeiling() != null ? params.getInsuranceCeiling() : 36000000.0);
-                bhxhEE = (double) Math.round(insuranceSalary * (approvedInsurance.getBhxhEmployee() != null ? approvedInsurance.getBhxhEmployee() : 8.0) / 100.0);
-                bhytEE = (double) Math.round(insuranceSalary * (approvedInsurance.getBhytEmployee() != null ? approvedInsurance.getBhytEmployee() : 1.5) / 100.0);
-                bhtnEE = (double) Math.round(insuranceSalary * (approvedInsurance.getBhtnEmployee() != null ? approvedInsurance.getBhtnEmployee() : 1.0) / 100.0);
-                bhxhER = (double) Math.round(insuranceSalary * (approvedInsurance.getBhxhEmployer() != null ? approvedInsurance.getBhxhEmployer() : 17.5) / 100.0);
-                bhytER = (double) Math.round(insuranceSalary * (approvedInsurance.getBhytEmployer() != null ? approvedInsurance.getBhytEmployer() : 3.0) / 100.0);
-                bhtnER = (double) Math.round(insuranceSalary * (approvedInsurance.getBhtnEmployer() != null ? approvedInsurance.getBhtnEmployer() : 1.0) / 100.0);
-                kpcdER = (double) Math.round(insuranceSalary * (approvedInsurance.getKpcdEmployer() != null ? approvedInsurance.getKpcdEmployer() : 2.0) / 100.0);
+                BigDecimal ceiling = params.getInsuranceCeiling() != null ? params.getInsuranceCeiling() : new BigDecimal("36000000");
+                BigDecimal insuranceSalary = contractSal.compareTo(ceiling) < 0 ? contractSal : ceiling;
+                
+                BigDecimal bhxhEE_rate = approvedInsurance.getBhxhEmployee() != null ? approvedInsurance.getBhxhEmployee() : new BigDecimal("8.0");
+                BigDecimal bhytEE_rate = approvedInsurance.getBhytEmployee() != null ? approvedInsurance.getBhytEmployee() : new BigDecimal("1.5");
+                BigDecimal bhtnEE_rate = approvedInsurance.getBhtnEmployee() != null ? approvedInsurance.getBhtnEmployee() : new BigDecimal("1.0");
+                
+                BigDecimal bhxhER_rate = approvedInsurance.getBhxhEmployer() != null ? approvedInsurance.getBhxhEmployer() : new BigDecimal("17.5");
+                BigDecimal bhytER_rate = approvedInsurance.getBhytEmployer() != null ? approvedInsurance.getBhytEmployer() : new BigDecimal("3.0");
+                BigDecimal bhtnER_rate = approvedInsurance.getBhtnEmployer() != null ? approvedInsurance.getBhtnEmployer() : new BigDecimal("1.0");
+                BigDecimal kpcdER_rate = approvedInsurance.getKpcdEmployer() != null ? approvedInsurance.getKpcdEmployer() : new BigDecimal("2.0");
+
+                bhxhEE = insuranceSalary.multiply(bhxhEE_rate).divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
+                bhytEE = insuranceSalary.multiply(bhytEE_rate).divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
+                bhtnEE = insuranceSalary.multiply(bhtnEE_rate).divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
+                
+                bhxhER = insuranceSalary.multiply(bhxhER_rate).divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
+                bhytER = insuranceSalary.multiply(bhytER_rate).divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
+                bhtnER = insuranceSalary.multiply(bhtnER_rate).divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
+                kpcdER = insuranceSalary.multiply(kpcdER_rate).divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
             }
             
             payroll.setBhxhNhanVien(bhxhEE); payroll.setBhytNhanVien(bhytEE); payroll.setBhtnNhanVien(bhtnEE);
-            payroll.setTotalInsurance(bhxhEE + bhytEE + bhtnEE);
+            payroll.setTotalInsurance(bhxhEE.add(bhytEE).add(bhtnEE));
             payroll.setBhxhCongTy(bhxhER); payroll.setBhytCongTy(bhytER); payroll.setBhtnCongTy(bhtnER); payroll.setKpcdCongTy(kpcdER);
-            payroll.setTotalEmployerInsurance(bhxhER + bhytER + bhtnER + kpcdER);
+            payroll.setTotalEmployerInsurance(bhxhER.add(bhytER).add(bhtnER).add(kpcdER));
 
             // Thuế TNCN
-            Double otPremium = payroll.getOtPremiumPay() != null ? payroll.getOtPremiumPay() : 0.0;
-            Double taxableIncomeBase = grossIncome - mealAllowance - otPremium;
-            Double dSelf = approvedDeductions.getPersonalDeduction() != null ? approvedDeductions.getPersonalDeduction() : 11000000.0; 
-            Double dDep = (emp.getDependentCount() != null ? emp.getDependentCount() : 0) * (approvedDeductions.getDependentDeduction() != null ? approvedDeductions.getDependentDeduction() : 4400000.0);
-            Double taxableIncome = Math.max(0.0, taxableIncomeBase - dSelf - dDep - payroll.getTotalInsurance() - (payroll.getCharityDeduction() != null ? payroll.getCharityDeduction() : 0.0));
+            BigDecimal otPremiumVal = payroll.getOtPremiumPay() != null ? payroll.getOtPremiumPay() : BigDecimal.ZERO;
+            BigDecimal taxableIncomeBase = grossIncome.subtract(mealAllowance).subtract(otPremiumVal);
+            BigDecimal dSelf = approvedDeductions.getPersonalDeduction() != null ? approvedDeductions.getPersonalDeduction() : new BigDecimal("11000000"); 
+            BigDecimal dDep = new BigDecimal(emp.getDependentCount() != null ? emp.getDependentCount() : 0)
+                .multiply(approvedDeductions.getDependentDeduction() != null ? approvedDeductions.getDependentDeduction() : new BigDecimal("4400000"));
+            
+            BigDecimal taxableIncome = taxableIncomeBase.subtract(dSelf).subtract(dDep).subtract(payroll.getTotalInsurance())
+                .subtract(payroll.getCharityDeduction() != null ? payroll.getCharityDeduction() : BigDecimal.ZERO);
+            
+            if (taxableIncome.compareTo(BigDecimal.ZERO) < 0) taxableIncome = BigDecimal.ZERO;
             
             payroll.setTaxableIncomeBase(taxableIncomeBase);
             payroll.setPersonalDeduction(dSelf);
@@ -387,13 +435,16 @@ public class PayrollService {
             payroll.setDependentCount(emp.getDependentCount() != null ? emp.getDependentCount() : 0);
             
             EmployeeTaxConfig taxConfig = taxConfigMap.getOrDefault(emp.getEmployeeType(), new EmployeeTaxConfig(null, emp.getEmployeeType(), TaxMethod.PROGRESSIVE, "APPROVED"));
-            Double taxAmount = 0.0;
-            if (taxConfig.getTaxMethod() == TaxMethod.PROGRESSIVE) taxAmount = calculatePITOptimized(taxableIncome, approvedTaxTiers);
-            else if (taxConfig.getTaxMethod() == TaxMethod.FIXED_10 && grossIncome >= 2000000) taxAmount = (double) Math.round(grossIncome * 0.1);
+            BigDecimal taxAmount = BigDecimal.ZERO;
+            if (taxConfig.getTaxMethod() == TaxMethod.PROGRESSIVE) {
+                taxAmount = calculatePITOptimized(taxableIncome, approvedTaxTiers);
+            } else if (taxConfig.getTaxMethod() == TaxMethod.FIXED_10 && grossIncome.compareTo(new BigDecimal("2000000")) >= 0) {
+                taxAmount = grossIncome.multiply(new BigDecimal("0.1")).setScale(0, RoundingMode.HALF_UP);
+            }
             
             payroll.setTaxableIncome(taxableIncome);
             payroll.setTaxAmount(taxAmount);
-            payroll.setNetPay(grossIncome - payroll.getTotalInsurance() - taxAmount);
+            payroll.setNetPay(grossIncome.subtract(payroll.getTotalInsurance()).subtract(taxAmount));
             payroll.setStatus(PayrollStatus.DRAFT);
             toSave.add(payroll);
         }
@@ -401,71 +452,43 @@ public class PayrollService {
         System.out.println("Payroll Calculation completed successfully for " + toSave.size() + " records.");
     }
 
-    private Double calculatePITOptimized(Double income, List<TaxTier> tiers) {
-        if (income <= 0) return 0.0;
+    private BigDecimal calculatePITOptimized(BigDecimal income, List<TaxTier> tiers) {
+        if (income.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
         if (tiers.isEmpty()) {
-            if (income <= 10000000) return (double) Math.round(income * 0.05);
-            if (income <= 30000000) return (double) Math.round(income * 0.10 - 500000);
-            if (income <= 60000000) return (double) Math.round(income * 0.20 - 3500000);
-            if (income <= 100000000) return (double) Math.round(income * 0.30 - 9500000);
-            return (double) Math.round(income * 0.35 - 14500000);
+            if (income.compareTo(new BigDecimal("10000000")) <= 0) return income.multiply(new BigDecimal("0.05")).setScale(0, RoundingMode.HALF_UP);
+            if (income.compareTo(new BigDecimal("30000000")) <= 0) return income.multiply(new BigDecimal("0.10")).subtract(new BigDecimal("500000")).setScale(0, RoundingMode.HALF_UP);
+            if (income.compareTo(new BigDecimal("60000000")) <= 0) return income.multiply(new BigDecimal("0.20")).subtract(new BigDecimal("3500000")).setScale(0, RoundingMode.HALF_UP);
+            if (income.compareTo(new BigDecimal("100000000")) <= 0) return income.multiply(new BigDecimal("0.30")).subtract(new BigDecimal("9500000")).setScale(0, RoundingMode.HALF_UP);
+            return income.multiply(new BigDecimal("0.35")).subtract(new BigDecimal("14500000")).setScale(0, RoundingMode.HALF_UP);
         }
         
-        Double tax = 0.0;
-        Double remainingIncome = income;
+        BigDecimal tax = BigDecimal.ZERO;
+        BigDecimal remainingIncome = income;
         for (TaxTier tier : tiers) {
-            Double lBound = tier.getLowerBound() != null ? tier.getLowerBound() : 0.0;
-            Double uBound = (tier.getUpperBound() == null || tier.getUpperBound() <= 0) ? 999999999.0 : tier.getUpperBound();
-            Double tierSpan = uBound - lBound;
-            if (remainingIncome > tierSpan && tierSpan > 0) {
-                tax += tierSpan * (tier.getTaxRate() / 100.0);
-                remainingIncome -= tierSpan;
+            BigDecimal lBound = tier.getLowerBound() != null ? tier.getLowerBound() : BigDecimal.ZERO;
+            BigDecimal uBound = (tier.getUpperBound() == null || tier.getUpperBound().compareTo(BigDecimal.ZERO) <= 0) ? new BigDecimal("999999999999") : tier.getUpperBound();
+            BigDecimal tierSpan = uBound.subtract(lBound);
+            BigDecimal taxRate = tier.getTaxRate().divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP);
+
+            if (remainingIncome.compareTo(tierSpan) > 0 && tierSpan.compareTo(BigDecimal.ZERO) > 0) {
+                tax = tax.add(tierSpan.multiply(taxRate));
+                remainingIncome = remainingIncome.subtract(tierSpan);
             } else {
-                tax += remainingIncome * (tier.getTaxRate() / 100.0);
+                tax = tax.add(remainingIncome.multiply(taxRate));
                 break;
             }
         }
-        return (double) Math.round(tax);
+        return tax.setScale(0, RoundingMode.HALF_UP);
     }
 
-    private Double calculatePIT(Double income) {
-        if (income <= 0) return 0.0;
+    private BigDecimal calculatePIT(BigDecimal income) {
+        if (income.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
         List<TaxTier> tiers = taxTierRepository.findAll().stream()
             .filter(t -> "APPROVED".equals(t.getStatus()))
+            .sorted(Comparator.comparing(TaxTier::getTierLevel))
             .collect(Collectors.toList());
         
-        if (tiers.isEmpty()) {
-            // Mặc định 5 bậc thuế luỹ tiến từng phần theo quy định pháp luật
-            // Bậc 1: Đến 10 triệu/tháng -> 5%
-            if (income <= 10000000) return (double) Math.round(income * 0.05);
-            // Bậc 2: Trên 10 đến 30 triệu -> 10%
-            if (income <= 30000000) return (double) Math.round(income * 0.10 - 500000);
-            // Bậc 3: Trên 30 đến 60 triệu -> 20%
-            if (income <= 60000000) return (double) Math.round(income * 0.20 - 3500000);
-            // Bậc 4: Trên 60 đến 100 triệu -> 30%
-            if (income <= 100000000) return (double) Math.round(income * 0.30 - 9500000);
-            // Bậc 5: Trên 100 triệu -> 35%
-            return (double) Math.round(income * 0.35 - 14500000);
-        }
-        
-        tiers.sort(Comparator.comparing(TaxTier::getTierLevel));
-        Double tax = 0.0;
-        Double remainingIncome = income;
-        
-        for (TaxTier tier : tiers) {
-            Double lBound = tier.getLowerBound() != null ? tier.getLowerBound() : 0.0;
-            Double uBound = (tier.getUpperBound() == null || tier.getUpperBound() <= 0) ? 999999999.0 : tier.getUpperBound();
-            Double tierSpan = uBound - lBound;
-            
-            if (remainingIncome > tierSpan && tierSpan > 0) {
-                tax += tierSpan * (tier.getTaxRate() / 100.0);
-                remainingIncome -= tierSpan;
-            } else {
-                tax += remainingIncome * (tier.getTaxRate() / 100.0);
-                break;
-            }
-        }
-        return (double) Math.round(tax);
+        return calculatePITOptimized(income, tiers);
     }
 
     private int calculateBusinessDays(int month, int year) {
@@ -483,10 +506,10 @@ public class PayrollService {
 
     private SalaryParameter defaultParams() {
         SalaryParameter p = new SalaryParameter();
-        p.setStandardWorkDays(26.0);
+        p.setStandardWorkDays(new BigDecimal("26.0"));
         p.setStandardWorkDayMode("FIXED");
-        p.setMinimumWage(1800000.0);
-        p.setMealAllowance(25000.0);
+        p.setMinimumWage(new BigDecimal("1800000"));
+        p.setMealAllowance(new BigDecimal("25000"));
         return p;
     }
 }

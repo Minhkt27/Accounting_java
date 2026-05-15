@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "tham_so_luong") // Bảng Tham số lương
@@ -15,23 +16,23 @@ public class SalaryParameter extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "ngay_cong_chuan")
-    private Double standardWorkDays; // Ngày công chuẩn
+    @Column(name = "ngay_cong_chuan", precision = 19, scale = 2)
+    private BigDecimal standardWorkDays; // Ngày công chuẩn
 
     @Column(name = "che_do_ngay_cong_chuan")
     private String standardWorkDayMode = "FIXED"; // Chế độ ngày công chuẩn (FIXED or MONTHLY)
 
-    @Column(name = "luong_toi_thieu_vung")
-    private Double minimumWage; // Mức lương tối thiểu vùng
+    @Column(name = "luong_toi_thieu_vung", precision = 19, scale = 2)
+    private BigDecimal minimumWage; // Mức lương tối thiểu vùng
 
-    @Column(name = "luong_co_so")
-    private Double baseSalary; // Mức lương cơ sở
+    @Column(name = "luong_co_so", precision = 19, scale = 2)
+    private BigDecimal baseSalary; // Mức lương cơ sở
 
-    @Column(name = "muc_tran_bao_hiem")
-    private Double insuranceCeiling; // Mức trần đóng bảo hiểm
+    @Column(name = "muc_tran_bao_hiem", precision = 19, scale = 2)
+    private BigDecimal insuranceCeiling; // Mức trần đóng bảo hiểm
 
-    @Column(name = "phu_cap_an_trua")
-    private Double mealAllowance; // Phụ cấp ăn trưa
+    @Column(name = "phu_cap_an_trua", precision = 19, scale = 2)
+    private BigDecimal mealAllowance; // Phụ cấp ăn trưa
 
     @Column(name = "trang_thai")
     private String status = "APPROVED"; // Trạng thái (APPROVED, PENDING)

@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +98,7 @@ public class AttendanceController {
             @RequestParam String employeeId,
             @RequestParam Integer month,
             @RequestParam Integer year,
-            @RequestParam Double standardDays) {
+            @RequestParam BigDecimal standardDays) {
         AttendanceSuggestion suggestion = attendanceService.getAttendanceSuggestion(employeeId, month, year,
                 standardDays);
         return ResponseEntity.ok(suggestion);

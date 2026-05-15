@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import com.accounting.app.model.*;
 import com.accounting.app.repository.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
@@ -106,9 +107,9 @@ public class DataSeeder implements CommandLineRunner {
         // Seed UC 02: Insurance Config (Unified)
         if (insuranceConfigRepo.count() == 0) {
             InsuranceConfig config = new InsuranceConfig();
-            config.setBhxhEmployee(8.0); config.setBhytEmployee(1.5); config.setBhtnEmployee(1.0);
-            config.setBhxhEmployer(17.5); config.setBhytEmployer(3.0); config.setBhtnEmployer(1.0);
-            config.setKpcdEmployer(2.0);
+            config.setBhxhEmployee(new BigDecimal("8.0")); config.setBhytEmployee(new BigDecimal("1.5")); config.setBhtnEmployee(new BigDecimal("1.0"));
+            config.setBhxhEmployer(new BigDecimal("17.5")); config.setBhytEmployer(new BigDecimal("3.0")); config.setBhtnEmployer(new BigDecimal("1.0"));
+            config.setKpcdEmployer(new BigDecimal("2.0"));
             config.setEffectiveDate(LocalDate.now());
             config.setStatus("APPROVED");
             insuranceConfigRepo.save(config);
@@ -118,12 +119,12 @@ public class DataSeeder implements CommandLineRunner {
         // Seed UC 03: Salary Params
         if (salaryRepo.count() == 0) {
             SalaryParameter p = new SalaryParameter();
-            p.setStandardWorkDays(26.0);
+            p.setStandardWorkDays(new BigDecimal("26.0"));
             p.setStandardWorkDayMode("FIXED");
-            p.setMinimumWage(1800000.0);
-            p.setBaseSalary(1800000.0);
-            p.setInsuranceCeiling(36000000.0);
-            p.setMealAllowance(25000.0);
+            p.setMinimumWage(new BigDecimal("1800000"));
+            p.setBaseSalary(new BigDecimal("1800000"));
+            p.setInsuranceCeiling(new BigDecimal("36000000"));
+            p.setMealAllowance(new BigDecimal("25000"));
             p.setStatus("APPROVED");
             salaryRepo.save(p);
         }
@@ -131,19 +132,19 @@ public class DataSeeder implements CommandLineRunner {
         // Seed UC 04/05: Tax Tiers
         if (taxRepo.count() == 0) {
             taxRepo.saveAll((Iterable<TaxTier>) List.of(
-                createTier(0.0, 5000000.0, 5.0, 1),
-                createTier(5000000.0, 10000000.0, 10.0, 2),
-                createTier(10000000.0, 18000000.0, 15.0, 3),
-                createTier(18000000.0, 32000000.0, 20.0, 4),
-                createTier(32000000.0, 0.0, 25.0, 5)
+                createTier(new BigDecimal("0.0"), new BigDecimal("5000000"), new BigDecimal("5.0"), 1),
+                createTier(new BigDecimal("5000000"), new BigDecimal("10000000"), new BigDecimal("10.0"), 2),
+                createTier(new BigDecimal("10000000"), new BigDecimal("18000000"), new BigDecimal("15.0"), 3),
+                createTier(new BigDecimal("18000000"), new BigDecimal("32000000"), new BigDecimal("20.0"), 4),
+                createTier(new BigDecimal("32000000"), BigDecimal.ZERO, new BigDecimal("25.0"), 5)
             ));
         }
 
         // Seed UC 06: Deductions
         if (deductionRepo.count() == 0) {
             DeductionSetting d = new DeductionSetting();
-            d.setPersonalDeduction(11000000.0);
-            d.setDependentDeduction(4400000.0);
+            d.setPersonalDeduction(new BigDecimal("11000000"));
+            d.setDependentDeduction(new BigDecimal("4400000"));
             d.setStatus("APPROVED");
             deductionRepo.save(d);
         }
@@ -158,31 +159,31 @@ public class DataSeeder implements CommandLineRunner {
 
         // Seed Nhóm 2: Test Employees
         if (employeeRepo.count() == 0) {
-            Employee e1 = new Employee("NV001", "Nguyễn Văn Anh", 25000000.0, 1, EmployeeType.FULL_TIME);
+            Employee e1 = new Employee("NV001", "Nguyễn Văn Anh", new BigDecimal("25000000"), 1, EmployeeType.FULL_TIME);
             e1.setDob(LocalDate.of(1990, 5, 20));
             e1.setPhone("0912345678");
             e1.setEmail("anhnv@company.com");
             e1.setHometown("Hà Nội");
-            e1.setPositionCoefficient(0.8);
-            e1.setSeniorityAllowance(500000.0);
+            e1.setPositionCoefficient(new BigDecimal("0.8"));
+            e1.setSeniorityAllowance(new BigDecimal("500000"));
             e1.setDepartment("Kế toán");
             e1.setJoinDate(LocalDate.of(2026, 1, 1));
             e1.setActive(true);
             employeeRepo.save(e1);
 
-            Employee e2 = new Employee("NV002", "Trần Thị Bình", 12000000.0, 0, EmployeeType.PROBATION);
+            Employee e2 = new Employee("NV002", "Trần Thị Bình", new BigDecimal("12000000"), 0, EmployeeType.PROBATION);
             e2.setDob(LocalDate.of(1995, 10, 15));
             e2.setPhone("0987654321");
             e2.setEmail("binhtt@company.com");
             e2.setHometown("Hải Phòng");
-            e2.setPositionCoefficient(0.4);
-            e2.setSeniorityAllowance(0.0);
+            e2.setPositionCoefficient(new BigDecimal("0.4"));
+            e2.setSeniorityAllowance(BigDecimal.ZERO);
             e2.setDepartment("Nhân sự");
             e2.setJoinDate(LocalDate.of(2026, 1, 1));
             e2.setActive(true);
             employeeRepo.save(e2);
 
-            Employee e3 = new Employee("NV003", "Lê Văn Cường", 5000000.0, 0, EmployeeType.INTERN);
+            Employee e3 = new Employee("NV003", "Lê Văn Cường", new BigDecimal("5000000"), 0, EmployeeType.INTERN);
             e3.setDob(LocalDate.of(2002, 1, 1));
             e3.setPhone("0901234567");
             e3.setEmail("cuonglv@company.com");
@@ -195,11 +196,11 @@ public class DataSeeder implements CommandLineRunner {
         System.out.println(">>> Data Seeding Process Finished Successfully <<<");
     }
 
-    private TaxTier createTier(Double lower, Double upper, Double rate, Integer level) {
+    private TaxTier createTier(BigDecimal lower, BigDecimal upper, BigDecimal rate, Integer level) {
         TaxTier t = new TaxTier();
         t.setLowerBound(lower); t.setUpperBound(upper);
-        t.setLowerBoundYearly(lower * 12);
-        t.setUpperBoundYearly(upper * 12);
+        t.setLowerBoundYearly(lower.multiply(new BigDecimal("12")));
+        t.setUpperBoundYearly(upper.multiply(new BigDecimal("12")));
         t.setTaxRate(rate); t.setTierLevel(level);
         t.setStatus("APPROVED");
         return t;

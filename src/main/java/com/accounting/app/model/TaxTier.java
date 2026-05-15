@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "bac_thue") // Bảng Bậc thuế
@@ -15,20 +16,20 @@ public class TaxTier extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "can_duoi_thang")
-    private Double lowerBound; // Cận dưới (tháng)
+    @Column(name = "can_duoi_thang", precision = 19, scale = 2)
+    private BigDecimal lowerBound; // Cận dưới (tháng)
 
-    @Column(name = "can_tren_thang")
-    private Double upperBound; // Cận trên (tháng)
+    @Column(name = "can_tren_thang", precision = 19, scale = 2)
+    private BigDecimal upperBound; // Cận trên (tháng)
 
-    @Column(name = "can_duoi_nam")
-    private Double lowerBoundYearly; // Cận dưới (năm)
+    @Column(name = "can_duoi_nam", precision = 19, scale = 2)
+    private BigDecimal lowerBoundYearly; // Cận dưới (năm)
 
-    @Column(name = "can_tren_nam")
-    private Double upperBoundYearly; // Cận trên (năm)
+    @Column(name = "can_tren_nam", precision = 19, scale = 2)
+    private BigDecimal upperBoundYearly; // Cận trên (năm)
 
-    @Column(name = "thue_suat")
-    private Double taxRate; // Thuế suất
+    @Column(name = "thue_suat", precision = 19, scale = 2)
+    private BigDecimal taxRate; // Thuế suất
 
     @Column(name = "bac_thue")
     private Integer tierLevel; // Bậc thuế

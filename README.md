@@ -128,6 +128,28 @@ Upon payroll approval, the system automatically generates accounting vouchers (V
 >     ```
 >     Sau đó lặp lại từ **Bước 2**.
 
+### 🔄 Cập nhật từ phiên bản cũ (Double -> BigDecimal)
+
+Nếu bạn vừa `pull` code mới về, bạn có 2 lựa chọn để cập nhật hệ thống:
+
+#### Cách 1: Reset sạch sẽ (Nhanh nhất, Mất dữ liệu cũ)
+Phù hợp nếu bạn không quan trọng dữ liệu cũ và muốn hệ thống chạy chuẩn nhất:
+1.  `docker compose down -v` (Xóa sạch container và volume dữ liệu)
+2.  `docker compose up -d sqlserver-db`
+3.  Đợi 15s, sau đó tạo lại DB trống:
+    `docker exec accounting_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "AccountingApp@123" -C -Q "CREATE DATABASE accounting_db"`
+4.  `docker compose up --build -d`
+
+#### Cách 2: Nâng cấp giữ dữ liệu (Phức tạp hơn)
+Sử dụng nếu bạn muốn giữ lại các bản ghi cũ:
+1.  **Dừng Backend:** `docker compose stop backend`
+2.  **Xóa ràng buộc cũ:**
+    ```bash
+    docker cp drop_constraints.sql accounting_db:/tmp/
+    docker exec accounting_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "AccountingApp@123" -C -i /tmp/drop_constraints.sql
+    ```
+3.  **Khởi động lại:** `docker compose up --build -d backend`
+
 ### Database Connection Info
 
 | Thuộc tính | Giá trị |

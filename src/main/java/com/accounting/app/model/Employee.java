@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 import lombok.EqualsAndHashCode;
 
@@ -25,8 +26,8 @@ public class Employee extends BaseEntity {
 
     @NotNull(message = "Lương hợp đồng không được để trống")
     @Min(value = 0, message = "Lương không được nhỏ hơn 0")
-    @Column(name = "luong_hop_dong")
-    private Double contractSalary; // Lương hợp đồng
+    @Column(name = "luong_hop_dong", precision = 19, scale = 2)
+    private BigDecimal contractSalary; // Lương hợp đồng
 
     @Min(value = 0, message = "Số người phụ thuộc không được nhỏ hơn 0")
     @Column(name = "so_nguoi_phu_thuoc")
@@ -59,11 +60,11 @@ public class Employee extends BaseEntity {
     @Column(name = "duong_dan_hop_dong")
     private String contractFilePath; // Đường dẫn file hợp đồng
 
-    @Column(name = "he_so_chuc_vu")
-    private Double positionCoefficient = 0.0; // Hệ số chức vụ: 0.4 - 1.0 (nhân lương tối thiểu)
+    @Column(name = "he_so_chuc_vu", precision = 19, scale = 2)
+    private BigDecimal positionCoefficient = BigDecimal.ZERO; // Hệ số chức vụ: 0.4 - 1.0 (nhân lương tối thiểu)
 
-    @Column(name = "phu_cap_tham_nien")
-    private Double seniorityAllowance = 0.0; // Phụ cấp thâm niên (cố định theo năm)
+    @Column(name = "phu_cap_tham_nien", precision = 19, scale = 2)
+    private BigDecimal seniorityAllowance = BigDecimal.ZERO; // Phụ cấp thâm niên (cố định theo năm)
 
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Loại hình nhân sự không được để trống")
@@ -83,7 +84,7 @@ public class Employee extends BaseEntity {
     @Transient
     private boolean onLeave = false;
 
-    public Employee(String id, String fullName, Double contractSalary, Integer dependentCount, EmployeeType type) {
+    public Employee(String id, String fullName, BigDecimal contractSalary, Integer dependentCount, EmployeeType type) {
         this.id = id;
         this.fullName = fullName;
         this.contractSalary = contractSalary;

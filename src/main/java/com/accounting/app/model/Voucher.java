@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 import lombok.EqualsAndHashCode;
 
@@ -26,8 +27,8 @@ public class Voucher extends BaseEntity {
     @Column(name = "ngay_lap")
     private LocalDate voucherDate; // Ngày lập chứng từ
 
-    @Column(name = "tong_so_tien")
-    private Double totalAmount; // Tổng số tiền
+    @Column(name = "tong_so_tien", precision = 19, scale = 2)
+    private BigDecimal totalAmount; // Tổng số tiền
 
     @Column(name = "dien_giai")
     private String description; // Diễn giải/Mô tả
@@ -46,7 +47,7 @@ public class Voucher extends BaseEntity {
         super.onCreate();
     }
 
-    public Voucher(String voucherNumber, String type, LocalDate date, Double amount, String description) {
+    public Voucher(String voucherNumber, String type, LocalDate date, BigDecimal amount, String description) {
         this.voucherNumber = voucherNumber;
         this.type = type;
         this.voucherDate = date;

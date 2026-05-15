@@ -6,6 +6,8 @@ import com.accounting.app.repository.LeaveRecordRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +25,7 @@ public class AttendanceService {
      * Tính toán gợi ý chấm công hàng loạt cho danh sách nhân viên.
      */
     public Map<String, AttendanceSuggestion> getBulkSuggestions(List<String> employeeIds, Integer month, Integer year,
-            Double standardDays) {
+            BigDecimal standardDays) {
         // Tải toàn bộ đơn nghỉ liên quan 1 lần duy nhất để tối ưu hiệu năng
         List<LeaveRecord> allLeaves = leaveRecordRepository.findAll().stream()
                 .filter(l -> employeeIds.contains(l.getEmployee().getId()))
@@ -36,20 +38,20 @@ public class AttendanceService {
         Map<String, AttendanceSuggestion> results = new HashMap<>();
         for (String empId : employeeIds) {
             List<LeaveRecord> empLeaves = leavesByEmp.getOrDefault(empId, List.of());
-            double allOffDays = 0;
-            double paidLeaveDays = 0;
+            BigDecimal allOffDays = BigDecimal.ZERO;
+            BigDecimal paidLeaveDays = BigDecimal.ZERO;
             for (LeaveRecord leave : empLeaves) {
-                double days = calculateDaysInMonth(leave, month, year);
-                allOffDays += days;
+                BigDecimal days = calculateDaysInMonth(leave, month, year);
+                allOffDays = allOffDays.add(days);
                 if (leave.getLeaveType() == LeaveType.ANNUAL) {
-                    paidLeaveDays += days;
+                    paidLeaveDays = paidLeaveDays.add(days);
                 }
             }
 
-            double physicalDays = standardDays - allOffDays;
-            if (physicalDays < 0)
-                physicalDays = 0;
-            if (physicalDays > standardDays)
+            BigDecimal physicalDays = standardDays.subtract(allOffDays);
+            if (physicalDays.compareTo(BigDecimal.ZERO) < 0)
+                physicalDays = BigDecimal.ZERO;
+            if (physicalDays.compareTo(standardDays) > 0)
                 physicalDays = standardDays;
 
             results.put(empId, new AttendanceSuggestion(physicalDays, paidLeaveDays));
@@ -63,26 +65,26 @@ public class AttendanceService {
      * - paidLeaveDays: Số ngày nghỉ vẫn được hưởng lương (ANNUAL).
      */
     public AttendanceSuggestion getAttendanceSuggestion(String employeeId, Integer month, Integer year,
-            Double standardDays) {
+            BigDecimal standardDays) {
         List<LeaveRecord> leaves = leaveRecordRepository.findAll().stream()
                 .filter(l -> l.getEmployee().getId().equals(employeeId))
                 .filter(l -> isWithinMonth(l, month, year))
                 .toList();
 
-        double allOffDays = 0;
-        double paidLeaveDays = 0;
+        BigDecimal allOffDays = BigDecimal.ZERO;
+        BigDecimal paidLeaveDays = BigDecimal.ZERO;
         for (LeaveRecord leave : leaves) {
-            double days = calculateDaysInMonth(leave, month, year);
-            allOffDays += days;
+            BigDecimal days = calculateDaysInMonth(leave, month, year);
+            allOffDays = allOffDays.add(days);
             if (leave.getLeaveType() == LeaveType.ANNUAL) {
-                paidLeaveDays += days;
+                paidLeaveDays = paidLeaveDays.add(days);
             }
         }
 
-        double physicalDays = standardDays - allOffDays;
-        if (physicalDays < 0)
-            physicalDays = 0;
-        if (physicalDays > standardDays)
+        BigDecimal physicalDays = standardDays.subtract(allOffDays);
+        if (physicalDays.compareTo(BigDecimal.ZERO) < 0)
+            physicalDays = BigDecimal.ZERO;
+        if (physicalDays.compareTo(standardDays) > 0)
             physicalDays = standardDays;
 
         return new AttendanceSuggestion(physicalDays, paidLeaveDays);
@@ -95,7 +97,7 @@ public class AttendanceService {
         return !leave.getStartDate().isAfter(endOfMonth) && !leave.getEndDate().isBefore(startOfMonth);
     }
 
-    private double calculateDaysInMonth(LeaveRecord leave, int month, int year) {
+    private BigDecimal calculateDaysInMonth(LeaveRecord leave, int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
 
@@ -103,7 +105,7 @@ public class AttendanceService {
         LocalDate actualEnd = leave.getEndDate().isAfter(endOfMonth) ? endOfMonth : leave.getEndDate();
 
         // Đếm số ngày làm việc (T2-T6) trong khoảng này
-        double count = 0;
+        int count = 0;
         LocalDate current = actualStart;
         while (!current.isAfter(actualEnd)) {
             if (current.getDayOfWeek().getValue() >= 1 && current.getDayOfWeek().getValue() <= 5) {
@@ -111,6 +113,6 @@ public class AttendanceService {
             }
             current = current.plusDays(1);
         }
-        return count;
+        return new BigDecimal(count);
     }
 }
