@@ -201,7 +201,7 @@ export default function UserManagementPage() {
       {/* Header Area */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex flex-col gap-1">
-            <h1 className="text-4xl font-bold tracking-tighter text-slate-800 flex items-center gap-3 uppercase">
+            <h1 className="text-4xl font-bold tracking-wider text-slate-800 flex items-center gap-3">
                 <Shield className="w-10 h-10 text-primary" /> Quản trị hệ thống
             </h1>
             <p className="text-muted-foreground font-medium text-sm">Quản lý tài khoản người dùng và phân quyền chức năng</p>
@@ -222,7 +222,7 @@ export default function UserManagementPage() {
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                           <Settings size={16} />
                       </div>
-                      <h2 className="text-lg font-bold text-slate-900 uppercase tracking-tight italic">Ma trận <span className="text-primary italic">Phân quyền</span></h2>
+                      <h2 className="text-lg font-bold text-black tracking-tight">Phân quyền</h2>
                   </div>
                   <Button 
                     onClick={savePerms} 
@@ -235,47 +235,47 @@ export default function UserManagementPage() {
                   </Button>
               </div>
 
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
+              <div className="bg-white rounded-lg border border-gray-300 shadow-sm overflow-hidden flex flex-col">
                   <div className="overflow-x-auto">
-                      <table className="w-full text-left">
-                          <thead className="bg-primary text-primary-foreground">
-                              <tr className="border-b border-white/10">
-                                  <th className="px-4 py-4 text-[9px] font-bold uppercase text-white/70 tracking-widest pl-8">Chức năng hệ thống</th>
-                                  <th className="px-4 py-4 text-[9px] font-bold uppercase text-white/70 tracking-widest text-center">Admin</th>
+                      <table className="w-full text-sm text-left border-collapse">
+                          <thead>
+                              <tr className="bg-[#E6F4F1] border-b border-gray-300">
+                                  <th className="px-4 py-3 font-bold text-black border-r border-gray-300 pl-8">Chức năng hệ thống</th>
+                                  <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-center">Admin</th>
                                   {EDITABLE_ROLES.map(r => (
-                                      <th key={r} className="px-4 py-4 text-[9px] font-bold uppercase text-white/70 tracking-widest text-center">{ROLE_LABELS[r]}</th>
+                                      <th key={r} className="px-4 py-3 font-bold text-black border-r border-gray-300 text-center">{ROLE_LABELS[r]}</th>
                                   ))}
                               </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-50">
+                          <tbody className="divide-y divide-gray-200">
                               {FUNCTION_CODES.map(fn => (
-                                  <tr key={fn} className="group hover:bg-slate-50/50 transition-all">
-                                      <td className="px-4 py-3 pl-8">
+                                  <tr key={fn} className="hover:bg-[#FFF8E1] transition-colors group">
+                                      <td className="px-4 py-3 pl-8 border-r border-gray-200 font-medium text-gray-900">
                                           <div className="flex items-center gap-3">
-                                              <div className="w-1 h-1 rounded-full bg-primary/30 group-hover:bg-primary transition-all" />
-                                              <span className="font-bold text-slate-700 text-xs italic">{FUNCTION_LABELS[fn]}</span>
+                                              <div className="w-1.5 h-1.5 rounded-full bg-blue-600/40 group-hover:bg-blue-600 transition-all" />
+                                              <span>{FUNCTION_LABELS[fn]}</span>
                                           </div>
                                       </td>
-                                      <td className="px-4 py-3 text-center">
+                                      <td className="px-4 py-3 text-center border-r border-gray-200">
                                           <div className="flex justify-center">
-                                              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 border border-emerald-100">
-                                                  <CheckCircle2 size={14} />
+                                              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-200 font-bold">
+                                                  <CheckCircle2 size={16} />
                                               </div>
                                           </div>
                                       </td>
                                       {EDITABLE_ROLES.map(r => {
                                           const allowed = isAllowed(r, fn)
                                           return (
-                                              <td key={r} className="px-4 py-3 text-center">
+                                              <td key={r} className="px-4 py-3 text-center border-r border-gray-200">
                                                   <button
                                                       onClick={() => togglePerm(r, fn)}
                                                       className={`w-8 h-8 mx-auto rounded-lg flex items-center justify-center transition-all ${
                                                           allowed 
-                                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
-                                                            : 'bg-slate-50 text-slate-300 hover:bg-slate-100'
+                                                            ? 'bg-emerald-600 text-white shadow-sm' 
+                                                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                                                       }`}
                                                   >
-                                                      {allowed ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                                      {allowed ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
                                                   </button>
                                               </td>
                                           )
@@ -295,7 +295,7 @@ export default function UserManagementPage() {
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                           <Users size={20} />
                       </div>
-                      <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight italic">Danh sách <span className="text-primary italic">Tài khoản</span></h2>
+                      <h2 className="text-xl font-bold text-black tracking-tight">Danh sách tài khoản</h2>
                   </div>
                   <div className="relative">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -304,60 +304,60 @@ export default function UserManagementPage() {
                           placeholder="Tìm người dùng..."
                           value={searchTerm}
                           onChange={e => setSearchTerm(e.target.value)}
-                          className="pl-11 pr-6 h-12 bg-white border border-slate-100 rounded-2xl w-64 focus:ring-2 focus:ring-primary/20 text-xs font-bold transition-all shadow-sm"
+                          className="pl-11 pr-6 h-12 bg-white border border-slate-200 rounded-2xl w-64 focus:ring-2 focus:ring-primary/20 text-xs font-bold transition-all shadow-sm"
                       />
                   </div>
               </div>
 
-              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden">
+              <div className="bg-white rounded-lg border border-gray-300 shadow-sm overflow-hidden flex flex-col">
                   <div className="overflow-x-auto">
-                      <table className="w-full text-left">
-                          <thead className="bg-primary text-primary-foreground">
-                              <tr className="border-b border-white/10">
-                                  <th className="px-8 py-5 text-[10px] font-bold uppercase text-white/70 tracking-widest pl-10">Người dùng</th>
-                                  <th className="px-8 py-5 text-[10px] font-bold uppercase text-white/70 tracking-widest">Email liên hệ</th>
-                                  <th className="px-8 py-5 text-[10px] font-bold uppercase text-white/70 tracking-widest">PF / Quyền hạn</th>
-                                  <th className="px-8 py-5 text-center pr-10">Thao tác</th>
+                      <table className="w-full text-sm text-left border-collapse">
+                          <thead>
+                              <tr className="bg-[#E6F4F1] border-b border-gray-300">
+                                  <th className="px-6 py-3 font-bold text-black border-r border-gray-300 pl-8">Người dùng</th>
+                                  <th className="px-6 py-3 font-bold text-black border-r border-gray-300">Email liên hệ</th>
+                                  <th className="px-6 py-3 font-bold text-black border-r border-gray-300">Quyền hạn</th>
+                                  <th className="px-6 py-3 font-bold text-black text-center pr-8">Thao tác</th>
                               </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-50">
+                          <tbody className="divide-y divide-gray-200">
                               {users.filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase())).map(u => (
-                                  <tr key={u.id} className="group hover:bg-slate-50/50 transition-all">
-                                      <td className="px-8 py-6 pl-10">
+                                  <tr key={u.id} className="hover:bg-[#FFF8E1] transition-colors group">
+                                      <td className="px-6 py-4 pl-8 border-r border-gray-200">
                                           <div className="flex items-center gap-4">
-                                              <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
-                                                  <User size={20} />
+                                              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                  <User size={18} />
                                               </div>
                                               <div>
-                                                  <div className="font-bold text-slate-800 text-sm italic">{u.username}</div>
-                                                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: #{u.id}</div>
+                                                  <div className="font-bold text-gray-900 text-sm">{u.username}</div>
+                                                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">ID: #{u.id}</div>
                                               </div>
                                           </div>
                                       </td>
-                                      <td className="px-8 py-6">
-                                          <div className="flex items-center gap-2 text-slate-600 font-bold text-xs">
-                                              <Mail size={14} className="text-slate-300" />
+                                      <td className="px-6 py-4 border-r border-gray-200 font-medium text-gray-800">
+                                          <div className="flex items-center gap-2 text-xs">
+                                              <Mail size={14} className="text-gray-400" />
                                               {u.email}
                                           </div>
                                       </td>
-                                      <td className="px-8 py-6">
-                                          <div className="flex flex-wrap gap-2">
+                                      <td className="px-6 py-4 border-r border-gray-200">
+                                          <div className="flex flex-wrap gap-1.5">
                                               {u.roles.map(r => (
-                                                  <span key={r} className="px-3 py-1 rounded-full bg-slate-50 text-[9px] font-bold uppercase tracking-widest text-slate-500 border border-slate-200">
+                                                  <span key={r} className="px-2.5 py-1 rounded bg-gray-100 text-[10px] font-bold text-gray-700 border border-gray-200">
                                                       {ROLE_LABELS[r]}
                                                   </span>
                                               ))}
                                           </div>
                                       </td>
-                                      <td className="px-8 py-6 text-center pr-10">
-                                          <div className="flex items-center justify-center gap-2">
-                                              <button onClick={() => openEdit(u)} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-all" title="Chỉnh sửa">
+                                      <td className="px-6 py-4 text-center pr-8">
+                                          <div className="flex items-center justify-center gap-1.5">
+                                              <button onClick={() => openEdit(u)} className="p-2 rounded hover:bg-blue-100 text-blue-600 transition-all" title="Chỉnh sửa">
                                                   <Edit3 size={16} />
                                               </button>
-                                              <button onClick={() => { setResetUserId(u.id); setNewPassword("") }} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-amber-50 hover:text-amber-500 transition-all" title="Đổi mật khẩu">
+                                              <button onClick={() => { setResetUserId(u.id); setNewPassword("") }} className="p-2 rounded hover:bg-amber-100 text-amber-600 transition-all" title="Đổi mật khẩu">
                                                   <Key size={16} />
                                               </button>
-                                              <button onClick={() => handleDelete(u.id)} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all" title="Xóa tài khoản">
+                                              <button onClick={() => handleDelete(u.id)} className="p-2 rounded hover:bg-red-100 text-red-600 transition-all" title="Xóa tài khoản">
                                                   <Trash2 size={16} />
                                               </button>
                                           </div>
@@ -379,65 +379,65 @@ export default function UserManagementPage() {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-3xl w-full max-w-lg space-y-8"
+                    className="bg-white rounded-lg p-8 border border-gray-300 shadow-xl w-full max-w-lg space-y-6 font-sans"
                   >
-                        <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
-                            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                                <User size={24} />
+                        <div className="flex items-center gap-4 border-b border-gray-200 pb-4">
+                            <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+                                <User size={20} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-tighter italic leading-none">{editingUser ? "Cập nhật" : "Tạo mới"} <span className="text-primary italic">Người dùng</span></h3>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Vui lòng nhập đầy đủ thông tin</p>
+                                <h3 className="text-xl font-bold text-black tracking-tight leading-none">{editingUser ? "Cập nhật" : "Tạo mới"} người dùng</h3>
+                                <p className="text-[11px] font-medium text-gray-500 mt-1">Vui lòng nhập đầy đủ thông tin hệ thống</p>
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Tên đăng nhập <span className="text-red-500">*</span></label>
+                        <div className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider pl-1">Tên đăng nhập <span className="text-red-500">*</span></label>
                                 <Input 
                                     value={formUsername} 
                                     onChange={e => setFormUsername(e.target.value)} 
                                     disabled={!!editingUser}
-                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-bold text-slate-800"
+                                    className="h-11 rounded-lg bg-white border border-gray-300 focus:border-blue-500 text-sm font-medium text-gray-800"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Email liên hệ <span className="text-red-500">*</span></label>
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider pl-1">Email liên hệ <span className="text-red-500">*</span></label>
                                 <Input 
                                     value={formEmail} 
                                     onChange={e => setFormEmail(e.target.value)}
-                                    className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-bold text-slate-800"
+                                    className="h-11 rounded-lg bg-white border border-gray-300 focus:border-blue-500 text-sm font-medium text-gray-800"
                                 />
                             </div>
                             {!editingUser && (
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Mật khẩu ban đầu <span className="text-red-500">*</span></label>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider pl-1">Mật khẩu ban đầu <span className="text-red-500">*</span></label>
                                     <Input 
                                         type="password"
                                         value={formPassword} 
                                         onChange={e => setFormPassword(e.target.value)}
-                                        className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-bold text-slate-800"
+                                        className="h-11 rounded-lg bg-white border border-gray-300 focus:border-blue-500 text-sm font-medium text-gray-800"
                                     />
                                 </div>
                             )}
 
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Phân vai trò <span className="text-red-500">*</span></label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider pl-1">Phân vai trò <span className="text-red-500">*</span></label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                                     {roles.filter(r => r.name !== "ROLE_ADMIN").map(r => {
                                         const selected = formRoles.includes(r.name)
                                         return (
                                             <button 
                                                 key={r.name} 
                                                 onClick={() => toggleRole(r.name)}
-                                                className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
-                                                    selected ? 'bg-primary/5 border-primary text-primary' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
+                                                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                                                    selected ? 'bg-blue-50 border-blue-600 text-blue-600 font-bold' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
                                                 }`}
                                             >
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selected ? 'bg-primary border-primary' : 'border-slate-200'}`}>
-                                                    {selected && <CheckCircle2 size={12} className="text-white" />}
+                                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${selected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                                                    {selected && <CheckCircle2 size={12} className="text-white stroke-[3]" />}
                                                 </div>
-                                                <span className="text-[10px] font-bold uppercase tracking-widest">{r.displayName}</span>
+                                                <span className="text-xs font-semibold">{r.displayName}</span>
                                             </button>
                                         )
                                     })}
@@ -445,11 +445,11 @@ export default function UserManagementPage() {
                             </div>
                         </div>
 
-                        <div className="flex gap-4 pt-4 border-t border-slate-100 mt-4">
-                            <Button onClick={handleSave} className="flex-1 h-14 rounded-2xl bg-primary hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95">
-                                <Save size={18} className="mr-2" /> Lưu thông tin
+                        <div className="flex gap-3 pt-4 border-t border-gray-200 mt-6">
+                            <Button onClick={handleSave} className="flex-1 h-11 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm">
+                                <Save size={16} className="mr-2" /> Lưu thông tin
                             </Button>
-                            <Button variant="ghost" onClick={() => setShowForm(false)} className="px-8 h-14 rounded-2xl font-bold text-xs uppercase text-slate-400 hover:bg-slate-50">
+                            <Button variant="ghost" onClick={() => setShowForm(false)} className="px-6 h-11 rounded-lg font-bold text-xs uppercase text-gray-500 hover:bg-gray-100 border border-gray-300">
                                 Đóng
                             </Button>
                         </div>
@@ -466,38 +466,38 @@ export default function UserManagementPage() {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-3xl w-full max-w-sm space-y-8"
+                    className="bg-white rounded-lg p-8 border border-gray-300 shadow-xl w-full max-w-sm space-y-6 font-sans"
                   >
-                        <div className="flex flex-col items-center text-center gap-4">
-                            <div className="w-20 h-20 rounded-[2rem] bg-amber-100 flex items-center justify-center text-amber-500 mb-2">
-                                <Lock size={40} />
+                        <div className="flex flex-col items-center text-center gap-3 pb-2 border-b border-gray-200">
+                            <div className="w-14 h-14 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                                <Lock size={28} />
                             </div>
-                            <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-tighter italic leading-none">Đổi mật khẩu</h3>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thiết lập mật khẩu truy cập mới</p>
+                            <h3 className="text-xl font-bold text-black tracking-tight leading-none">Đổi mật khẩu</h3>
+                            <p className="text-[11px] font-medium text-gray-500">Thiết lập mật khẩu truy cập mới</p>
                         </div>
 
                         <div className="space-y-4">
                             <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <Input 
                                     type="password" 
                                     placeholder="Nhập mật khẩu mới..."
                                     value={newPassword} 
                                     onChange={e => setNewPassword(e.target.value)}
-                                    className="h-16 pl-12 rounded-2xl bg-slate-50 border-slate-200 focus:bg-white text-base font-bold text-slate-800"
+                                    className="h-11 pl-10 rounded-lg bg-white border border-gray-300 focus:border-blue-500 text-sm font-medium text-gray-800"
                                 />
                             </div>
-                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
-                                <Info className="text-blue-500 w-4 h-4 flex-shrink-0 mt-0.5" />
-                                <p className="text-[9px] text-blue-700 font-bold uppercase leading-relaxed text-left">Mật khẩu mới sẽ có hiệu lực ngay lập tức sau khi xác nhận.</p>
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2.5 text-xs text-blue-800">
+                                <Info className="text-blue-600 w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <span>Mật khẩu mới sẽ có hiệu lực ngay lập tức sau khi xác nhận.</span>
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-3 pt-4">
-                            <Button onClick={handleResetPassword} className="h-14 rounded-2xl bg-[#111827] hover:bg-black text-white font-bold text-xs uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95">
+                        <div className="flex flex-col gap-2.5 pt-2">
+                            <Button onClick={handleResetPassword} className="h-11 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm">
                                 Xác nhận đổi
                             </Button>
-                            <Button variant="ghost" onClick={() => setResetUserId(null)} className="h-14 rounded-2xl font-bold text-xs uppercase text-slate-400 hover:bg-slate-50">
+                            <Button variant="ghost" onClick={() => setResetUserId(null)} className="h-11 rounded-lg font-bold text-xs uppercase text-gray-500 hover:bg-gray-100 border border-gray-300">
                                 Hủy bỏ
                             </Button>
                         </div>
