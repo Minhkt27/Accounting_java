@@ -5,7 +5,6 @@ import {
   Search,
   ShieldAlert,
   BookOpen,
-  Pencil,
   Trash2,
   X,
   ChevronDown,
@@ -28,20 +27,6 @@ interface AccountCategory {
   hasChildren?: boolean;
 }
 
-function useCurrentUser() {
-  try {
-    const raw = localStorage.getItem("user");
-    if (!raw) return { username: "?", roles: [] as string[] };
-    const data = JSON.parse(raw);
-    return {
-      username: data.username || "?",
-      roles: (data.roles || []) as string[],
-    };
-  } catch {
-    return { username: "?", roles: [] as string[] };
-  }
-}
-
 export default function AccountCategoryPage() {
   const [accounts, setAccounts] = useState<AccountCategory[]>([]);
   const [id, setId] = useState("");
@@ -59,10 +44,6 @@ export default function AccountCategoryPage() {
 
   // Pagination state
   const [pageSize, setPageSize] = useState(50);
-
-  const { roles } = useCurrentUser();
-  const isApprover =
-    roles.includes("ROLE_ADMIN") || roles.includes("ROLE_KE_TOAN_TRUONG");
 
   const fetchAccounts = useCallback(async () => {
     try {

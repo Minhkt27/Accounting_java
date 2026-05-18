@@ -1,12 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { Input } from "../components/ui/input";
-import {
-  BookOpen,
-  Receipt,
-  ArrowRightLeft,
-  FileSpreadsheet,
-} from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { ExportService } from "../utils/ExportService";
 

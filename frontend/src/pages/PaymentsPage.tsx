@@ -2,15 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import {
-  CreditCard,
-  Banknote,
-  FileSpreadsheet,
-  DollarSign,
-  ShieldCheck,
-  Receipt,
-  CheckCircle2,
-} from "lucide-react";
+import { FileSpreadsheet, CheckCircle2 } from "lucide-react";
 import PaymentDialog from "../components/PaymentDialog";
 import { ExportService } from "../utils/ExportService";
 
