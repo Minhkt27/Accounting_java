@@ -18,13 +18,13 @@ public class EmployeeTaxConfig extends BaseEntity {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "loai_nhan_vien")
+    @Column(name = "loai_nhan_vien", length = 30)
     private EmployeeType employeeType; // Loại hình nhân viên
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "phuong_phap_tinh_thue")
+    @Column(name = "phuong_phap_tinh_thue", length = 30)
     private TaxMethod taxMethod = TaxMethod.PROGRESSIVE; // Phương pháp tính thuế
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", length = 30)
     private String status = "APPROVED"; // Trạng thái (APPROVED, PENDING)
 }

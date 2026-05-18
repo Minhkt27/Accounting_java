@@ -34,6 +34,6 @@ public class TaxTier extends BaseEntity {
     @Column(name = "bac_thue")
     private Integer tierLevel; // Bậc thuế
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", length = 30)
     private String status = "APPROVED"; // Trạng thái (APPROVED, PENDING)
 }

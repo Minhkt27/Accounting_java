@@ -46,6 +46,6 @@ public class InsuranceConfig extends BaseEntity {
     @Column(name = "ngay_hieu_luc")
     private LocalDate effectiveDate = LocalDate.now(); // Ngày hiệu lực
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", length = 30)
     private String status = "APPROVED"; // Trạng thái (APPROVED, PENDING)
 }

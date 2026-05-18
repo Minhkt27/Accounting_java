@@ -296,13 +296,13 @@ public class PayrollService {
             BigDecimal realDays;
             BigDecimal paidLeaveDays;
             if (attendance != null) {
-                realDays = attendance.getRealWorkDays() != null ? new BigDecimal(attendance.getRealWorkDays().toString()) : BigDecimal.ZERO;
-                paidLeaveDays = attendance.getPaidLeaveDays() != null ? new BigDecimal(attendance.getPaidLeaveDays().toString()) : BigDecimal.ZERO;
+                realDays = attendance.getRealWorkDays() != null ? attendance.getRealWorkDays() : BigDecimal.ZERO;
+                paidLeaveDays = attendance.getPaidLeaveDays() != null ? attendance.getPaidLeaveDays() : BigDecimal.ZERO;
             } else {
                 com.accounting.app.dto.AttendanceSuggestion suggestion = attendanceService.getAttendanceSuggestion(emp.getId(), month, year, standardDays);
                 realDays = suggestion.getPhysicalDays();
                 paidLeaveDays = suggestion.getPaidLeaveDays();
-                attendance = new Attendance(emp, month, year, realDays.doubleValue(), paidLeaveDays.doubleValue(), 0.0, 0.0, 0.0);
+                attendance = new Attendance(emp, month, year, realDays, paidLeaveDays, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
                 attendance = attendanceRepository.save(attendance);
                 attendanceMap.put(emp.getId(), attendance);
             }
@@ -351,9 +351,9 @@ public class PayrollService {
                 hourlyRate = contractSal.divide(standardDays.multiply(new BigDecimal("8")), 10, RoundingMode.HALF_UP);
             }
             
-            BigDecimal otNormHours = attendance.getOtNormalHours() != null ? new BigDecimal(attendance.getOtNormalHours().toString()) : BigDecimal.ZERO;
-            BigDecimal otWeekHours = attendance.getOtWeekendHours() != null ? new BigDecimal(attendance.getOtWeekendHours().toString()) : BigDecimal.ZERO;
-            BigDecimal otHoliHours = attendance.getOtHolidayHours() != null ? new BigDecimal(attendance.getOtHolidayHours().toString()) : BigDecimal.ZERO;
+            BigDecimal otNormHours = attendance.getOtNormalHours() != null ? attendance.getOtNormalHours() : BigDecimal.ZERO;
+            BigDecimal otWeekHours = attendance.getOtWeekendHours() != null ? attendance.getOtWeekendHours() : BigDecimal.ZERO;
+            BigDecimal otHoliHours = attendance.getOtHolidayHours() != null ? attendance.getOtHolidayHours() : BigDecimal.ZERO;
 
             BigDecimal otNormal = hourlyRate.multiply(new BigDecimal("1.5")).multiply(otNormHours).setScale(0, RoundingMode.HALF_UP);
             BigDecimal otWeekend = hourlyRate.multiply(new BigDecimal("2.0")).multiply(otWeekHours).setScale(0, RoundingMode.HALF_UP);

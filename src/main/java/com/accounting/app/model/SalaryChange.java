@@ -22,7 +22,7 @@ public class SalaryChange extends BaseEntity {
     @JoinColumn(name = "ma_nhan_vien")
     private Employee employee; // Nhân viên
 
-    @Column(name = "loai_bien_dong")
+    @Column(name = "loai_bien_dong", length = 100)
     private String changeType; // Loại thay đổi
 
     @Column(name = "gia_tri_cu", precision = 19, scale = 2)
@@ -31,25 +31,25 @@ public class SalaryChange extends BaseEntity {
     @Column(name = "gia_tri_moi", precision = 19, scale = 2)
     private BigDecimal newValue;        // Giá trị mới (lương mới, hoặc số tiền thưởng/phạt)
 
-    @Column(name = "ly_do")
+    @Column(name = "ly_do", length = 255)
     private String reason;          // Lý do biến động
 
     @Column(name = "ngay_hieu_luc")
     private LocalDate effectiveDate; // Ngày hiệu lực
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", length = 30)
     private String status = "PENDING"; // Trạng thái phê duyệt
 
-    @Column(name = "nguoi_tao")
+    @Column(name = "nguoi_tao", length = 100)
     private String createdBy;       // Người tạo đề xuất
 
-    @Column(name = "nguoi_duyet")
+    @Column(name = "nguoi_duyet", length = 50)
     private String approvedBy;      // Người phê duyệt / từ chối
 
     @Column(name = "ngay_duyet")
     private LocalDateTime approvedAt; // Thời gian phê duyệt
 
-    @Column(name = "ly_do_tu_choi")
+    @Column(name = "ly_do_tu_choi", length = 255)
     private String rejectionReason; // Lý do từ chối (nếu REJECTED)
 
     @Column(name = "phu_cap_tham_nien_moi", precision = 19, scale = 2)

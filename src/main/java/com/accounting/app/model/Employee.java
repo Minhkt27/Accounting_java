@@ -17,11 +17,11 @@ import lombok.EqualsAndHashCode;
 public class Employee extends BaseEntity {
     @Id
     @NotBlank(message = "Mã nhân viên không được để trống")
-    @Column(name = "ma_nhan_vien")
+    @Column(name = "ma_nhan_vien", length = 20)
     private String id; // Mã nhân viên
 
     @NotBlank(message = "Họ tên không được để trống")
-    @Column(name = "ho_ten")
+    @Column(name = "ho_ten", length = 100)
     private String fullName; // Họ và tên
 
     @NotNull(message = "Lương hợp đồng không được để trống")
@@ -39,22 +39,22 @@ public class Employee extends BaseEntity {
 
     @NotBlank(message = "Số điện thoại không được để trống")
     @Pattern(regexp = "^(0|\\+84)\\d{8,11}$", message = "Số điện thoại không đúng định dạng (8-11 số)")
-    @Column(name = "so_dien_thoai")
+    @Column(name = "so_dien_thoai", length = 15)
     private String phone; // Số điện thoại
 
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không đúng định dạng")
-    @Column(name = "email")
+    @Column(name = "email", length = 100)
     private String email; // Thư điện tử (Email)
 
     @NotBlank(message = "Quê quán không được để trống")
-    @Column(name = "que_quan")
+    @Column(name = "que_quan", length = 100)
     private String hometown; // Quê quán
 
-    @Column(name = "phong_ban")
+    @Column(name = "phong_ban", length = 50)
     private String department; // Phòng ban
 
-    @Column(name = "gioi_tinh")
+    @Column(name = "gioi_tinh", length = 20)
     private String gender; // Giới tính (Nam/Nữ)
 
     @Column(name = "duong_dan_hop_dong")
@@ -68,11 +68,11 @@ public class Employee extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Loại hình nhân sự không được để trống")
-    @Column(name = "loai_nhan_vien")
+    @Column(name = "loai_nhan_vien", length = 50)
     private EmployeeType employeeType; // Loại hình nhân viên
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", length = 30)
     private EmployeeStatus status = EmployeeStatus.WORKING;
 
     @Column(name = "ngay_vao_lam")

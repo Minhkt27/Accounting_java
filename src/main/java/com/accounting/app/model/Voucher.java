@@ -18,10 +18,10 @@ public class Voucher extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "so_chung_tu")
+    @Column(name = "so_chung_tu", length = 50)
     private String voucherNumber; // Số chứng từ (Ví dụ: PC001/03-24)
 
-    @Column(name = "loai_chung_tu")
+    @Column(name = "loai_chung_tu", length = 50)
     private String type;          // Loại chứng từ (PHIEU_CHI, UNC)
 
     @Column(name = "ngay_lap")
@@ -30,7 +30,7 @@ public class Voucher extends BaseEntity {
     @Column(name = "tong_so_tien", precision = 19, scale = 2)
     private BigDecimal totalAmount; // Tổng số tiền
 
-    @Column(name = "dien_giai")
+    @Column(name = "dien_giai", length = 255)
     private String description; // Diễn giải/Mô tả
 
     @Column(name = "thang_hach_toan")
@@ -39,7 +39,7 @@ public class Voucher extends BaseEntity {
     @Column(name = "nam_hach_toan")
     private Integer targetYear;  // Kỳ hạch toán (năm)
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", length = 30)
     private String status = "PENDING"; // Trạng thái
 
     @PrePersist

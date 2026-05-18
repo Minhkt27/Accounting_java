@@ -22,7 +22,7 @@ public class LeaveRecord extends BaseEntity {
     private Employee employee; // Nhân viên
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "loai_nghi_phep")
+    @Column(name = "loai_nghi_phep", length = 50)
     private LeaveType leaveType; // Loại nghỉ
 
     @Column(name = "ngay_bat_dau")

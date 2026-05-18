@@ -1,28 +1,28 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import Login from "./pages/Login"
-import Layout from "./components/Layout"
-import DashboardPage from "./pages/Dashboard"
-import AccountCategoryPage from "./pages/AccountCategory"
-import TaxConfigPage from "./pages/TaxConfig"
-import EmployeeList from "./pages/EmployeeList"
-import AttendancePage from "./pages/Attendance"
-import LeaveManagementPage from "./pages/LeaveManagement"
-import PayrollPage from "./pages/PayrollPage"
-import PaymentsPage from "./pages/PaymentsPage"
-import VoucherJournalPage from "./pages/VoucherJournalPage"
-import GeneralLedgerPage from "./pages/GeneralLedger"
-import HRTrackingPage from "./pages/HRTrackingPage"
-import ReportsPage from "./pages/ReportsPage"
-import UserManagementPage from "./pages/UserManagementPage"
-import SalaryConfigPage from "./pages/SalaryConfigPage"
-import SalaryChangePage from "./pages/SalaryChangePage"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Login from "./pages/Login";
+import Layout from "./components/Layout";
+import DashboardPage from "./pages/Dashboard";
+import AccountCategoryPage from "./pages/AccountCategory";
+import TaxConfigPage from "./pages/TaxConfig";
+import EmployeeList from "./pages/EmployeeList";
+import AttendancePage from "./pages/Attendance";
+import LeaveManagementPage from "./pages/LeaveManagement";
+import PayrollPage from "./pages/PayrollPage";
+import PaymentsPage from "./pages/PaymentsPage";
+import VoucherJournalPage from "./pages/VoucherJournalPage";
+import GeneralLedgerPage from "./pages/GeneralLedger";
+import HRTrackingPage from "./pages/HRTrackingPage";
+import ReportsPage from "./pages/ReportsPage";
+import UserManagementPage from "./pages/UserManagementPage";
+import SalaryConfigPage from "./pages/SalaryConfigPage";
+import SalaryChangePage from "./pages/SalaryChangePage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem("token")
+  const token = localStorage.getItem("token");
   if (!token) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 function App() {
@@ -30,12 +30,14 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        
-        <Route element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
+
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<DashboardPage />} />
           <Route path="config/accounts" element={<AccountCategoryPage />} />
           <Route path="config/salary" element={<SalaryConfigPage />} />
@@ -54,7 +56,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

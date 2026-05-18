@@ -32,10 +32,11 @@ public class JournalEntry extends BaseEntity {
     @Column(name = "so_tien", precision = 19, scale = 2)
     private BigDecimal amount; // Số tiền
 
-    @Column(name = "dien_giai")
+    @Column(name = "dien_giai", length = 255)
     private String description; // Diễn giải/Mô tả
 
-    public JournalEntry(Voucher voucher, AccountCategory debit, AccountCategory credit, BigDecimal amount, String description) {
+    public JournalEntry(Voucher voucher, AccountCategory debit, AccountCategory credit, BigDecimal amount,
+            String description) {
         this.voucher = voucher;
         this.debitAccount = debit;
         this.creditAccount = credit;

@@ -14,7 +14,8 @@
     visibility: hidden;
   }
 
-  .printable-area, .printable-area * {
+  .printable-area,
+  .printable-area * {
     visibility: visible;
   }
 
@@ -94,7 +95,8 @@
   margin-bottom: 20px;
 }
 
-.report-table th, .report-table td {
+.report-table th,
+.report-table td {
   border: 1px solid black;
   padding: 4px;
   font-size: 9pt;

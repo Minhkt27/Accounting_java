@@ -14,7 +14,8 @@
     visibility: hidden;
   }
 
-  .printable-area, .printable-area * {
+  .printable-area,
+  .printable-area * {
     visibility: visible;
   }
 
@@ -94,7 +95,8 @@
   margin-bottom: 30px;
 }
 
-.report-table th, .report-table td {
+.report-table th,
+.report-table td {
   border: 1px solid black;
   padding: 5px;
   font-size: 10pt;
@@ -107,10 +109,18 @@
   text-align: center;
 }
 
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.text-bold { font-weight: bold; }
-.text-italic { font-style: italic; }
+.text-center {
+  text-align: center;
+}
+.text-right {
+  text-align: right;
+}
+.text-bold {
+  font-weight: bold;
+}
+.text-italic {
+  font-style: italic;
+}
 
 .report-footer {
   margin-top: 40px;

@@ -1,15 +1,22 @@
-import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
+import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import {
-  LogOut, Settings, Users, CalendarCheck,
-  Database, ChevronRight, Wallet, PieChart, Home
-} from "lucide-react"
-import React, { useMemo, useState, useEffect } from "react"
-import axios from "axios"
-import { motion, AnimatePresence } from "framer-motion"
-import logo from "../assets/logo.jpg"
+  LogOut,
+  Settings,
+  Users,
+  CalendarCheck,
+  Database,
+  ChevronRight,
+  Wallet,
+  PieChart,
+  Home,
+} from "lucide-react";
+import React, { useMemo, useState, useEffect } from "react";
+import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import logo from "../assets/logo.jpg";
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
-  size?: number | string
+  size?: number | string;
 }
 
 function FunctionIcon(props: IconProps) {
@@ -18,7 +25,12 @@ function FunctionIcon(props: IconProps) {
       {...props}
       width={props.size || 24}
       height={props.size || 24}
-      viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={`${props.className} w-[1.1rem] h-[1.1rem]`}
     >
       <path d="M9 17c2 0 2.8-1 2.8-2.8V10c0-2 1-3.3 3.2-3" />
@@ -29,36 +41,57 @@ function FunctionIcon(props: IconProps) {
 
 function useCurrentUser() {
   try {
-    const raw = localStorage.getItem("user")
-    if (!raw) return { username: "?", roles: [] as string[] }
-    const data = JSON.parse(raw)
-    return { username: data.username || "?", roles: (data.roles || []) as string[] }
-  } catch { return { username: "?", roles: [] as string[] } }
+    const raw = localStorage.getItem("user");
+    if (!raw) return { username: "?", roles: [] as string[] };
+    const data = JSON.parse(raw);
+    return {
+      username: data.username || "?",
+      roles: (data.roles || []) as string[],
+    };
+  } catch {
+    return { username: "?", roles: [] as string[] };
+  }
 }
 
 interface MenuItem {
-  to?: string
-  label: string
-  icon?: React.ReactNode
-  functionCode?: string
-  children?: MenuItem[]
+  to?: string;
+  label: string;
+  icon?: React.ReactNode;
+  functionCode?: string;
+  children?: MenuItem[];
 }
 
-const SidebarItem = ({ item, isActive, isExpanded, onToggle, hasPermission }: { item: MenuItem, isActive: boolean, isExpanded: boolean, onToggle: () => void, hasPermission: (code?: string) => boolean }) => {
+const SidebarItem = ({
+  item,
+  isActive,
+  isExpanded,
+  onToggle,
+  hasPermission,
+}: {
+  item: MenuItem;
+  isActive: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  hasPermission: (code?: string) => boolean;
+}) => {
   const location = useLocation();
   const hasChildren = item.children && item.children.length > 0;
 
   // Lọc các con theo quyền
-  const visibleChildren = item.children?.filter((c: MenuItem) => hasPermission(c.functionCode)) || [];
+  const visibleChildren =
+    item.children?.filter((c: MenuItem) => hasPermission(c.functionCode)) || [];
 
   if (item.functionCode && !hasPermission(item.functionCode)) return null;
   if (hasChildren && visibleChildren.length === 0) return null;
 
   const content = (
-    <div className={`flex items-center justify-between w-full p-3 rounded-xl transition-all duration-300 group relative ${isActive && !hasChildren
-      ? "bg-slate-800/80 text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
-      : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-100"
-      }`}>
+    <div
+      className={`flex items-center justify-between w-full p-3 rounded-xl transition-all duration-300 group relative ${
+        isActive && !hasChildren
+          ? "bg-slate-800/80 text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+          : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-100"
+      }`}
+    >
       {isActive && !hasChildren && (
         <motion.div
           layoutId="active-pill"
@@ -67,10 +100,14 @@ const SidebarItem = ({ item, isActive, isExpanded, onToggle, hasPermission }: { 
         />
       )}
       <div className="flex items-center gap-3">
-        <div className={`transition-colors duration-300 ${isActive && !hasChildren ? "text-blue-400" : "group-hover:text-primary"}`}>
+        <div
+          className={`transition-colors duration-300 ${isActive && !hasChildren ? "text-blue-400" : "group-hover:text-primary"}`}
+        >
           {item.icon}
         </div>
-        <span className={`text-sm font-semibold tracking-wide transition-all ${isActive && !hasChildren ? "translate-x-1" : ""}`}>
+        <span
+          className={`text-sm font-semibold tracking-wide transition-all ${isActive && !hasChildren ? "translate-x-1" : ""}`}
+        >
           {item.label}
         </span>
       </div>
@@ -103,8 +140,11 @@ const SidebarItem = ({ item, isActive, isExpanded, onToggle, hasPermission }: { 
                 <Link
                   key={child.to}
                   to={child.to || "#"}
-                  className={`block p-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${location.pathname === child.to ? "text-blue-400" : "text-slate-500 hover:text-slate-300"
-                    }`}
+                  className={`block p-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                    location.pathname === child.to
+                      ? "text-blue-400"
+                      : "text-slate-500 hover:text-slate-300"
+                  }`}
                 >
                   {child.label}
                 </Link>
@@ -124,97 +164,170 @@ const SidebarItem = ({ item, isActive, isExpanded, onToggle, hasPermission }: { 
 };
 
 export default function Layout() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { username, roles } = useCurrentUser()
-  const [expandedItems, setExpandedItems] = useState<string[]>([])
-  const [allowedFunctions, setAllowedFunctions] = useState<string[]>([])
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { username, roles } = useCurrentUser();
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [allowedFunctions, setAllowedFunctions] = useState<string[]>([]);
 
-  const rolesKey = roles.join(",")
+  const rolesKey = roles.join(",");
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (!token) return
-    axios.get("/api/auth/my-permissions", {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setAllowedFunctions(res.data)).catch(() => { })
-  }, [rolesKey])
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    axios
+      .get("/api/auth/my-permissions", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setAllowedFunctions(res.data))
+      .catch(() => {});
+  }, [rolesKey]);
 
   const hasPermission = (functionCode?: string): boolean => {
     if (!functionCode) return true;
-    if (roles.includes("ROLE_ADMIN")) return true
-    return allowedFunctions.includes(functionCode)
-  }
+    if (roles.includes("ROLE_ADMIN")) return true;
+    return allowedFunctions.includes(functionCode);
+  };
 
-  const menuItems = useMemo<MenuItem[]>(() => [
-    { to: "/", label: "Tổng quan", icon: <Home size={18} />, functionCode: "DASHBOARD_VIEW" },
-    { to: "/config/salary", label: "Cấu hình Lương", icon: <Settings size={18} />, functionCode: "CONFIG_INSURANCE" },
-    {
-      label: "Dữ liệu tính lương", icon: <Database size={18} />, children: [
-        { to: "/employees", label: "Hồ sơ nhân sự", functionCode: "HR_EMPLOYEE" },
-        { to: "/attendance", label: "Chấm công tháng", functionCode: "HR_ATTENDANCE" },
-        { to: "/leaves", label: "Danh sách nghỉ phép", functionCode: "HR_LEAVE" },
-        { to: "/salary-changes", label: "Biến động lương", functionCode: "HR_SALARY_CHANGE" },
-        { to: "/hr-tracking", label: "Biến động nhân sự", functionCode: "HR_EMPLOYEE" },
-      ]
-    },
-    {
-      label: "Tính lương", icon: <FunctionIcon size={18} />, children: [
-        { to: "/payroll", label: "Bảng tính lương tháng", functionCode: "PAYROLL_CALCULATE" },
-        { to: "/accounting", label: "Nhật ký hạch toán", functionCode: "ACCOUNTING_VIEW" },
-        { to: "/ledger", label: "Sổ cái tài khoản", functionCode: "ACCOUNTING_VIEW" },
-      ]
-    },
-    {
-      label: "Chi trả", icon: <Wallet size={18} />, children: [
-        { to: "/payments", label: "Thanh toán & UNC", functionCode: "PAYROLL_PAY" },
-      ]
-    },
-    { to: "/reports", label: "Báo cáo", icon: <PieChart size={18} />, functionCode: "ACCOUNTING_VIEW" },
-    {
-      label: "Thiết lập", icon: <Settings size={18} />, children: [
-        { to: "/admin/users", label: "Quản lý người dùng", functionCode: "ADMIN_USERS" },
-        { to: "/config/accounts", label: "Danh mục tài khoản", functionCode: "CONFIG_ACCOUNT" },
-      ]
-    },
-  ], [])
+  const menuItems = useMemo<MenuItem[]>(
+    () => [
+      {
+        to: "/",
+        label: "Tổng quan",
+        icon: <Home size={18} />,
+        functionCode: "DASHBOARD_VIEW",
+      },
+      {
+        to: "/config/salary",
+        label: "Cấu hình Lương",
+        icon: <Settings size={18} />,
+        functionCode: "CONFIG_INSURANCE",
+      },
+      {
+        label: "Dữ liệu tính lương",
+        icon: <Database size={18} />,
+        children: [
+          {
+            to: "/employees",
+            label: "Hồ sơ nhân sự",
+            functionCode: "HR_EMPLOYEE",
+          },
+          {
+            to: "/attendance",
+            label: "Chấm công tháng",
+            functionCode: "HR_ATTENDANCE",
+          },
+          {
+            to: "/leaves",
+            label: "Danh sách nghỉ phép",
+            functionCode: "HR_LEAVE",
+          },
+          {
+            to: "/salary-changes",
+            label: "Biến động lương",
+            functionCode: "HR_SALARY_CHANGE",
+          },
+          {
+            to: "/hr-tracking",
+            label: "Biến động nhân sự",
+            functionCode: "HR_EMPLOYEE",
+          },
+        ],
+      },
+      {
+        label: "Tính lương",
+        icon: <FunctionIcon size={18} />,
+        children: [
+          {
+            to: "/payroll",
+            label: "Bảng tính lương tháng",
+            functionCode: "PAYROLL_CALCULATE",
+          },
+          {
+            to: "/accounting",
+            label: "Nhật ký hạch toán",
+            functionCode: "ACCOUNTING_VIEW",
+          },
+          {
+            to: "/ledger",
+            label: "Sổ cái tài khoản",
+            functionCode: "ACCOUNTING_VIEW",
+          },
+        ],
+      },
+      {
+        label: "Chi trả",
+        icon: <Wallet size={18} />,
+        children: [
+          {
+            to: "/payments",
+            label: "Thanh toán & UNC",
+            functionCode: "PAYROLL_PAY",
+          },
+        ],
+      },
+      {
+        to: "/reports",
+        label: "Báo cáo",
+        icon: <PieChart size={18} />,
+        functionCode: "ACCOUNTING_VIEW",
+      },
+      {
+        label: "Thiết lập",
+        icon: <Settings size={18} />,
+        children: [
+          {
+            to: "/admin/users",
+            label: "Quản lý người dùng",
+            functionCode: "ADMIN_USERS",
+          },
+          {
+            to: "/config/accounts",
+            label: "Danh mục tài khoản",
+            functionCode: "CONFIG_ACCOUNT",
+          },
+        ],
+      },
+    ],
+    [],
+  );
 
   const routeNames: Record<string, string> = {
     "": "Tổng quan hệ thống",
-    "employees": "Hồ sơ nhân sự",
-    "attendance": "Chấm công tháng",
-    "leaves": "Danh sách nghỉ phép",
+    employees: "Hồ sơ nhân sự",
+    attendance: "Chấm công tháng",
+    leaves: "Danh sách nghỉ phép",
     "salary-changes": "Biến động lương",
     "hr-tracking": "Biến động nhân sự",
-    "payroll": "Bảng tính lương tháng",
-    "accounting": "Nhật ký hạch toán",
-    "ledger": "Sổ cái tài khoản",
-    "payments": "Thanh toán & UNC",
-    "reports": "Báo cáo & Phân tích",
-    "admin": "Quản trị hệ thống",
-    "users": "Quản lý người dùng",
-    "config": "Cấu hình hệ thống",
-    "salary": "Cấu hình lương",
-    "accounts": "Danh mục tài khoản"
+    payroll: "Bảng tính lương tháng",
+    accounting: "Nhật ký hạch toán",
+    ledger: "Sổ cái tài khoản",
+    payments: "Thanh toán & UNC",
+    reports: "Báo cáo & Phân tích",
+    admin: "Quản trị hệ thống",
+    users: "Quản lý người dùng",
+    config: "Cấu hình hệ thống",
+    salary: "Cấu hình lương",
+    accounts: "Danh mục tài khoản",
   };
 
   const getPageTitle = () => {
-    const pathParts = location.pathname.split('/').filter(Boolean);
+    const pathParts = location.pathname.split("/").filter(Boolean);
     if (pathParts.length === 0) return routeNames[""];
     const lastPart = pathParts[pathParts.length - 1];
     return routeNames[lastPart] || lastPart.toUpperCase();
   };
 
   const toggleExpand = (label: string) => {
-    setExpandedItems(prev =>
-      prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
-    )
-  }
+    setExpandedItems((prev) =>
+      prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label],
+    );
+  };
 
   const roleLabel = useMemo(() => {
-    if (roles.includes("ROLE_ADMIN")) return "Quản trị viên"
-    if (roles.includes("ROLE_KE_TOAN_TRUONG")) return "Kế toán Trưởng"
-    return "Nhân viên"
-  }, [roles])
+    if (roles.includes("ROLE_ADMIN")) return "Quản trị viên";
+    if (roles.includes("ROLE_KE_TOAN_TRUONG")) return "Kế toán Trưởng";
+    return "Nhân viên";
+  }, [roles]);
 
   return (
     <div className="flex h-screen bg-background font-sans antialiased text-foreground print:bg-white print:block">
@@ -222,21 +335,36 @@ export default function Layout() {
         <div className="p-8 pb-6">
           <div className="flex items-center gap-3 px-2">
             <div className="w-12 h-12 flex-shrink-0 bg-white flex items-center justify-center rounded-xl shadow-sm overflow-hidden border border-white/10">
-              <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+              <img
+                src={logo}
+                alt="Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
-              <h1 className="text-white font-bold text-xl leading-tight whitespace-nowrap">Công ty Phúc Anh</h1>
-              <p className="text-blue-400 text-sm font-bold mt-0.5 whitespace-nowrap tracking-wide">Hệ thống kế toán tiền lương</p>
+              <h1 className="text-white font-bold text-xl leading-tight whitespace-nowrap">
+                Công ty Phúc Anh
+              </h1>
+              <p className="text-blue-400 text-sm font-bold mt-0.5 whitespace-nowrap tracking-wide">
+                Hệ thống kế toán tiền lương
+              </p>
             </div>
           </div>
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => {
-            if (item.functionCode && !hasPermission(item.functionCode)) return null;
-            if (item.children && !item.children.some(c => hasPermission(c.functionCode))) return null;
+            if (item.functionCode && !hasPermission(item.functionCode))
+              return null;
+            if (
+              item.children &&
+              !item.children.some((c) => hasPermission(c.functionCode))
+            )
+              return null;
 
-            const isActive = !!(item.to && location.pathname === item.to) || (item.children?.some(c => location.pathname === c.to) ?? false);
+            const isActive =
+              !!(item.to && location.pathname === item.to) ||
+              (item.children?.some((c) => location.pathname === c.to) ?? false);
             return (
               <SidebarItem
                 key={item.label}
@@ -246,7 +374,7 @@ export default function Layout() {
                 onToggle={() => toggleExpand(item.label)}
                 hasPermission={hasPermission}
               />
-            )
+            );
           })}
         </nav>
 
@@ -257,8 +385,12 @@ export default function Layout() {
                 {username.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-100 truncate">{username}</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">{roleLabel}</p>
+                <p className="text-sm font-bold text-slate-100 truncate">
+                  {username}
+                </p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">
+                  {roleLabel}
+                </p>
               </div>
             </div>
             <button
@@ -279,12 +411,19 @@ export default function Layout() {
         <header className="h-20 flex items-center justify-between px-10 border-b border-slate-200/60 sticky top-0 bg-background/80 backdrop-blur-xl z-10 no-print">
           <div className="flex items-center gap-4">
             <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{getPageTitle()}</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+              {getPageTitle()}
+            </span>
           </div>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
               <CalendarCheck size={14} className="text-primary/60" />
-              {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {new Date().toLocaleDateString("vi-VN", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
             </div>
             <div className="flex items-center gap-3">
               <button className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-2xl transition-all relative border border-transparent hover:border-slate-200 group">
@@ -300,6 +439,5 @@ export default function Layout() {
         </div>
       </main>
     </div>
-
-  )
+  );
 }

@@ -19,7 +19,7 @@ public class SalaryParameter extends BaseEntity {
     @Column(name = "ngay_cong_chuan", precision = 19, scale = 2)
     private BigDecimal standardWorkDays; // Ngày công chuẩn
 
-    @Column(name = "che_do_ngay_cong_chuan")
+    @Column(name = "che_do_ngay_cong_chuan", length = 20)
     private String standardWorkDayMode = "FIXED"; // Chế độ ngày công chuẩn (FIXED or MONTHLY)
 
     @Column(name = "luong_toi_thieu_vung", precision = 19, scale = 2)
@@ -34,6 +34,6 @@ public class SalaryParameter extends BaseEntity {
     @Column(name = "phu_cap_an_trua", precision = 19, scale = 2)
     private BigDecimal mealAllowance; // Phụ cấp ăn trưa
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", length = 30)
     private String status = "APPROVED"; // Trạng thái (APPROVED, PENDING)
 }

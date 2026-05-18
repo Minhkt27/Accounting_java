@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
 @Entity
-@Table(name = "diem_danh", uniqueConstraints = {
+@Table(name = "cham_cong", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"ma_nhan_vien", "thang", "nam"})
 }) // Bảng Chấm công
 @Data
@@ -27,22 +28,22 @@ public class Attendance extends BaseEntity {
     @Column(name = "nam")
     private Integer year; // Năm
 
-    @Column(name = "so_ngay_di_lam")
-    private Double realWorkDays; // Số ngày thực tế đi làm (Physical presence)
+    @Column(name = "so_ngay_di_lam", precision = 19, scale = 2)
+    private BigDecimal realWorkDays; // Số ngày thực tế đi làm (Physical presence)
 
-    @Column(name = "so_ngay_nghi_co_luong")
-    private Double paidLeaveDays; // Số ngày nghỉ hưởng lương (Paid leave)
+    @Column(name = "so_ngay_nghi_co_luong", precision = 19, scale = 2)
+    private BigDecimal paidLeaveDays; // Số ngày nghỉ hưởng lương (Paid leave)
     
-    @Column(name = "gio_tang_ca_ngay_thuong")
-    private Double otNormalHours = 0.0; // Giờ làm thêm ngày thường
+    @Column(name = "gio_tang_ca_ngay_thuong", precision = 19, scale = 2)
+    private BigDecimal otNormalHours = BigDecimal.ZERO; // Giờ làm thêm ngày thường
 
-    @Column(name = "gio_tang_ca_cuoi_tuan")
-    private Double otWeekendHours = 0.0; // Giờ làm thêm ngày nghỉ
+    @Column(name = "gio_tang_ca_cuoi_tuan", precision = 19, scale = 2)
+    private BigDecimal otWeekendHours = BigDecimal.ZERO; // Giờ làm thêm ngày nghỉ
 
-    @Column(name = "gio_tang_ca_ngay_le")
-    private Double otHolidayHours = 0.0; // Giờ làm thêm ngày lễ
+    @Column(name = "gio_tang_ca_ngay_le", precision = 19, scale = 2)
+    private BigDecimal otHolidayHours = BigDecimal.ZERO; // Giờ làm thêm ngày lễ
 
-    public Attendance(Employee employee, Integer month, Integer year, Double realWorkDays, Double paidLeaveDays, Double otNormalHours, Double otWeekendHours, Double otHolidayHours) {
+    public Attendance(Employee employee, Integer month, Integer year, BigDecimal realWorkDays, BigDecimal paidLeaveDays, BigDecimal otNormalHours, BigDecimal otWeekendHours, BigDecimal otHolidayHours) {
         this.employee = employee;
         this.month = month;
         this.year = year;

@@ -25,16 +25,16 @@ public class User extends BaseEntity {
     private Long id;
 
     @NotBlank
-    @Column(name = "ten_dang_nhap")
+    @Column(name = "ten_dang_nhap", length = 50)
     private String username; // Tên đăng nhập
 
     @NotBlank
     @Email
-    @Column(name = "email")
+    @Column(name = "email", length = 100)
     private String email; // Thư điện tử (Email)
 
     @NotBlank
-    @Column(name = "mat_khau")
+    @Column(name = "mat_khau", length = 255)
     private String password; // Mật khẩu
 
     @ManyToMany(fetch = FetchType.LAZY)
