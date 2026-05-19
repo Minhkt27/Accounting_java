@@ -20,7 +20,7 @@ public class RolePermission extends BaseEntity {
     @Column(name = "ten_vai_tro", nullable = false, length = 50)
     private String roleName; // Tên vai trò (e.g. "ROLE_NHAN_SU")
 
-    @Column(name = "ma_chuc_nang", nullable = false, length = 20)
+    @Column(name = "ma_chuc_nang", nullable = false, length = 50)
     private String functionCode; // Mã chức năng (e.g. "HR_EMPLOYEE")
 
     @Column(name = "duoc_phep", nullable = false)

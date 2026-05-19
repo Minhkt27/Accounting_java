@@ -75,7 +75,7 @@ Upon payroll approval, the system automatically generates accounting vouchers (V
 
 *   Docker Desktop (with Compose)
 *   Git
-*   Port `1433`, `8888`, `5173` phải trống (không bị ứng dụng khác chiếm)
+*   Port `1433`, `8888`, `3000` phải trống (không bị ứng dụng khác chiếm)
 
 ### Installation & Run
 
@@ -116,7 +116,7 @@ Upon payroll approval, the system automatically generates accounting vouchers (V
     > Hibernate sẽ tự động tạo tất cả bảng (với tên tiếng Việt) và seed dữ liệu mẫu (nhân viên, tài khoản kế toán...).
 
 6.  **Access the Application**:
-    *   Frontend: [http://localhost:5173](http://localhost:5173)
+    *   Frontend: [http://localhost:3000](http://localhost:3000)
     *   Backend API: [http://localhost:8888](http://localhost:8888)
 
 > [!TIP]
