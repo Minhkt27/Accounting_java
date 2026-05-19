@@ -15,9 +15,6 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Controller quản lý các đề xuất biến động lương/phụ cấp và chức vụ của nhân viên.
- */
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/salary-changes")
@@ -29,8 +26,7 @@ public class SalaryChangeController {
     private EmployeeRepository employeeRepo;
 
     /**
-     * Lấy danh sách biến động nhân sự, hỗ trợ lọc theo trạng thái (PENDING, APPROVED, REJECTED) và phân trang.
-     * Quyền yêu cầu: HR_SALARY_CHANGE hoặc HR_SALARY_CHANGE_APPROVE (Kế toán trưởng hoặc Nhân sự)
+     * Lấy danh sách tất cả biến động (hỗ trợ filter theo status)
      */
     @GetMapping
     @PreAuthorize("@perm.check('HR_SALARY_CHANGE') or @perm.check('HR_SALARY_CHANGE_APPROVE')")
@@ -38,7 +34,7 @@ public class SalaryChangeController {
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        
+
         org.springframework.data.domain.Page<SalaryChange> pageResult;
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
 
@@ -53,7 +49,7 @@ public class SalaryChangeController {
             map.put("id", c.getId());
             map.put("employeeId", c.getEmployee().getId());
             map.put("employeeName", c.getEmployee().getFullName());
-            map.put("changeType", c.getChangeType()); // Loại biến động (Ví dụ: SALARY_ADJUSTMENT, PROMOTION)
+            map.put("changeType", c.getChangeType());
             map.put("oldValue", c.getOldValue());
             map.put("newValue", c.getNewValue());
             map.put("reason", c.getReason());
@@ -68,23 +64,18 @@ public class SalaryChangeController {
         }).collect(Collectors.toList());
 
         com.accounting.app.dto.PageResponse<Map<String, Object>> response = new com.accounting.app.dto.PageResponse<>(
-            content,
-            pageResult.getNumber(),
-            pageResult.getSize(),
-            pageResult.getTotalElements(),
-            pageResult.getTotalPages(),
-            pageResult.isLast()
-        );
+                content,
+                pageResult.getNumber(),
+                pageResult.getSize(),
+                pageResult.getTotalElements(),
+                pageResult.getTotalPages(),
+                pageResult.isLast());
 
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Tạo đề xuất biến động nhân sự mới (ví dụ: điều chỉnh lương, thăng chức, chuyển bộ phận).
-     * Luật tự động duyệt:
-     *   - Nếu người tạo là Admin hoặc Nhân sự (ROLE_NHAN_SU), trạng thái sẽ tự động APPROVED 
-     *     và cập nhật trực tiếp mức lương mới vào hồ sơ nhân viên.
-     *   - Ngược lại, trạng thái sẽ là PENDING chờ phê duyệt.
+     * Tạo đề xuất biến động mới
      */
     @PostMapping
     @PreAuthorize("@perm.check('HR_SALARY_CHANGE')")
@@ -103,19 +94,21 @@ public class SalaryChangeController {
             change.setEffectiveDate(java.time.LocalDate.parse((String) body.get("effectiveDate")));
             change.setStatus("PENDING");
 
-            // Lấy tên tài khoản thực hiện tạo đề xuất
+            // Lấy username của người tạo
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             change.setCreatedBy(auth.getName());
 
+            // UC: Tự động phê duyệt nếu là Nhân sự tạo (trừ biến động Lương) hoặc Admin tạo
             boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
             boolean isHR = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_NHAN_SU"));
+            boolean isSalaryType = "SALARY_ADJUSTMENT".equals(change.getChangeType());
 
             if (isAdmin || isHR) {
                 change.setStatus("APPROVED");
                 change.setApprovedBy(auth.getName());
                 change.setApprovedAt(java.time.LocalDateTime.now());
 
-                // Nếu là thay đổi lương hoặc thăng chức thì áp dụng mức lương mới ngay lập tức
+                // Tự động cập nhật lương nếu là Điều chỉnh lương hoặc Thăng chức
                 if ("SALARY_ADJUSTMENT".equals(change.getChangeType()) || "PROMOTION".equals(change.getChangeType())) {
                     emp.setContractSalary(change.getNewValue());
                     employeeRepo.save(emp);
@@ -134,7 +127,7 @@ public class SalaryChangeController {
     }
 
     /**
-     * Cập nhật thông tin đề xuất biến động. Chỉ áp dụng cho Nhân sự hoặc Admin.
+     * Cập nhật biến động — Chỉ HR hoặc Admin
      */
     @PutMapping("/{id}")
     @PreAuthorize("@perm.check('HR_SALARY_CHANGE')")
@@ -149,6 +142,8 @@ public class SalaryChangeController {
             change.setReason((String) body.get("reason"));
             change.setEffectiveDate(java.time.LocalDate.parse((String) body.get("effectiveDate")));
 
+            // Nếu HR hoặc Admin sửa => đảm bảo trạng thái APPROVED và cập nhật lương nhân
+            // viên
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
             boolean isHR = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_NHAN_SU"));
@@ -170,7 +165,7 @@ public class SalaryChangeController {
     }
 
     /**
-     * Xóa đề xuất biến động.
+     * Xóa biến động — Chỉ HR hoặc Admin
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.check('HR_SALARY_CHANGE')")
@@ -185,19 +180,16 @@ public class SalaryChangeController {
         }
     }
 
-    /**
-     * Phê duyệt đề xuất biến động (Dành cho vai trò kiểm soát - Kế toán trưởng).
-     * Chuyển trạng thái sang APPROVED và cập nhật mức lương mới vào hồ sơ nhân viên.
-     */
     @PostMapping("/{id}/approve")
     @PreAuthorize("@perm.check('HR_SALARY_CHANGE_APPROVE')")
     public ResponseEntity<?> approve(@PathVariable Long id) {
         try {
             SalaryChange change = changeRepo.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động #" + id));
-            
+
             if (!"PENDING".equals(change.getStatus())) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Chỉ có thể phê duyệt biến động đang chờ duyệt."));
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Chỉ có thể phê duyệt biến động đang chờ duyệt."));
             }
 
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -218,18 +210,16 @@ public class SalaryChangeController {
         }
     }
 
-    /**
-     * Từ chối đề xuất biến động kèm theo lý do cụ thể.
-     */
     @PostMapping("/{id}/reject")
     @PreAuthorize("@perm.check('HR_SALARY_CHANGE_APPROVE')")
     public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, String> body) {
         try {
             SalaryChange change = changeRepo.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động #" + id));
-            
+
             if (!"PENDING".equals(change.getStatus())) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Chỉ có thể từ chối biến động đang chờ duyệt."));
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Chỉ có thể từ chối biến động đang chờ duyệt."));
             }
 
             change.setStatus("REJECTED");

@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -21,20 +20,22 @@ public class AttendanceService {
     @Autowired
     private LeaveRecordRepository leaveRecordRepository;
 
-    /**
-     * Tính toán gợi ý chấm công hàng loạt cho danh sách nhân viên.
-     */
+    // Gợi ý số ngày công thực tế cho hàng loạt nhân viên dựa trên danh sách nghỉ
+    // phép
     public Map<String, AttendanceSuggestion> getBulkSuggestions(List<String> employeeIds, Integer month, Integer year,
             BigDecimal standardDays) {
-        // Tải toàn bộ đơn nghỉ liên quan 1 lần duy nhất để tối ưu hiệu năng
+        // Bước 1: Tải toàn bộ đơn nghỉ liên quan của danh sách nhân viên trong tháng
         List<LeaveRecord> allLeaves = leaveRecordRepository.findAll().stream()
                 .filter(l -> employeeIds.contains(l.getEmployee().getId()))
                 .filter(l -> isWithinMonth(l, month, year))
                 .toList();
 
+        // Bước 2: Gom nhóm đơn nghỉ theo từng mã nhân viên
         Map<String, List<LeaveRecord>> leavesByEmp = allLeaves.stream()
                 .collect(Collectors.groupingBy(l -> l.getEmployee().getId()));
 
+        // Bước 3: Duyệt qua từng nhân viên để tính toán ngày công thực tế và ngày phép
+        // có lương
         Map<String, AttendanceSuggestion> results = new HashMap<>();
         for (String empId : employeeIds) {
             List<LeaveRecord> empLeaves = leavesByEmp.getOrDefault(empId, List.of());
@@ -59,18 +60,17 @@ public class AttendanceService {
         return results;
     }
 
-    /**
-     * Tính toán gợi ý chấm công:
-     * - physicalDays: Số ngày thực tế đi làm (Standard - Tất cả các loại nghỉ).
-     * - paidLeaveDays: Số ngày nghỉ vẫn được hưởng lương (ANNUAL).
-     */
+    // Gợi ý số ngày công thực tế cho một nhân viên cụ thể dựa trên danh sách nghỉ
+    // phép
     public AttendanceSuggestion getAttendanceSuggestion(String employeeId, Integer month, Integer year,
             BigDecimal standardDays) {
+        // Bước 1: Tải tất cả đơn nghỉ phép của nhân viên trong tháng
         List<LeaveRecord> leaves = leaveRecordRepository.findAll().stream()
                 .filter(l -> l.getEmployee().getId().equals(employeeId))
                 .filter(l -> isWithinMonth(l, month, year))
                 .toList();
 
+        // Bước 2: Tính tổng ngày nghỉ và số ngày nghỉ phép hưởng lương (ANNUAL)
         BigDecimal allOffDays = BigDecimal.ZERO;
         BigDecimal paidLeaveDays = BigDecimal.ZERO;
         for (LeaveRecord leave : leaves) {
@@ -81,6 +81,8 @@ public class AttendanceService {
             }
         }
 
+        // Bước 3: Tính ngày làm việc thực tế dựa trên công thức (Ngày công chuẩn - Tổng
+        // ngày nghỉ)
         BigDecimal physicalDays = standardDays.subtract(allOffDays);
         if (physicalDays.compareTo(BigDecimal.ZERO) < 0)
             physicalDays = BigDecimal.ZERO;
@@ -90,6 +92,7 @@ public class AttendanceService {
         return new AttendanceSuggestion(physicalDays, paidLeaveDays);
     }
 
+    // Kiểm tra xem đơn nghỉ phép có nằm trong tháng và năm chỉ định hay không
     private boolean isWithinMonth(LeaveRecord leave, int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
@@ -97,6 +100,8 @@ public class AttendanceService {
         return !leave.getStartDate().isAfter(endOfMonth) && !leave.getEndDate().isBefore(startOfMonth);
     }
 
+    // Tính số ngày nghỉ phép rơi vào ngày làm việc (Thứ 2 đến Thứ 6) trong tháng
+    // chỉ định
     private BigDecimal calculateDaysInMonth(LeaveRecord leave, int month, int year) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
