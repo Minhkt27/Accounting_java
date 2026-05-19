@@ -12,11 +12,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/leaves")
 public class LeaveRecordController {
-    @Autowired private LeaveRecordRepository leaveRepo;
+    @Autowired
+    private LeaveRecordRepository leaveRepo;
 
     @GetMapping
     @PreAuthorize("@perm.check('HR_LEAVE')")
-    public List<LeaveRecord> getAll() { return leaveRepo.findAll(); }
+    public List<LeaveRecord> getAll() {
+        return leaveRepo.findAll();
+    }
 
     @PostMapping
     @PreAuthorize("@perm.check('HR_LEAVE')")
@@ -24,18 +27,17 @@ public class LeaveRecordController {
         if (record.getStartDate().isAfter(record.getEndDate())) {
             throw new RuntimeException("Ngày bắt đầu không thể sau ngày kết thúc");
         }
-        
+
         boolean overlaps = leaveRepo.existsByEmployeeIdAndOverlap(
-            record.getEmployee().getId(), 
-            record.getStartDate(), 
-            record.getEndDate()
-        );
-        
+                record.getEmployee().getId(),
+                record.getStartDate(),
+                record.getEndDate());
+
         if (overlaps) {
             throw new RuntimeException("Nhân viên đã có lịch nghỉ trùng với khoảng thời gian này");
         }
-        
-        return leaveRepo.save(record); 
+
+        return leaveRepo.save(record);
     }
 
     @PutMapping("/{id}")
@@ -49,11 +51,10 @@ public class LeaveRecordController {
         }
 
         boolean overlaps = leaveRepo.existsByEmployeeIdAndOverlapExcludingId(
-            record.getEmployee().getId(),
-            id,
-            record.getStartDate(),
-            record.getEndDate()
-        );
+                record.getEmployee().getId(),
+                id,
+                record.getStartDate(),
+                record.getEndDate());
 
         if (overlaps) {
             throw new RuntimeException("Nhân viên đã có lịch nghỉ trùng với khoảng thời gian này");
@@ -69,5 +70,7 @@ public class LeaveRecordController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.check('HR_LEAVE')")
-    public void delete(@PathVariable Long id) { leaveRepo.deleteById(id); }
+    public void delete(@PathVariable Long id) {
+        leaveRepo.deleteById(id);
+    }
 }

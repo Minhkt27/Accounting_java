@@ -29,7 +29,7 @@ public class AccountCategoryController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAutoApprove = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
-        
+
         acc.setStatus(isAutoApprove ? "APPROVED" : "PENDING");
         return repository.save(acc);
     }
@@ -42,14 +42,14 @@ public class AccountCategoryController {
         existing.setType(acc.getType());
         existing.setEnglishName(acc.getEnglishName());
         existing.setParentId(acc.getParentId());
-        
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAutoApprove = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
         if (isAutoApprove) {
             existing.setStatus("APPROVED");
         }
-        
+
         return repository.save(existing);
     }
 

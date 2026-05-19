@@ -19,6 +19,9 @@ import java.nio.file.*;
 import java.util.List;
 import java.util.OptionalInt;
 
+/**
+ * Controller quản lý hồ sơ nhân viên (thông tin cá nhân, phòng ban, trạng thái làm việc, hợp đồng lao động).
+ */
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/employees")
@@ -28,8 +31,14 @@ public class EmployeeController {
     @Autowired
     private com.accounting.app.repository.LeaveRecordRepository leaveRepository;
 
+    // Thư mục lưu trữ tệp PDF hợp đồng lao động của nhân viên
     private final Path root = Paths.get("uploads/contracts");
 
+    /**
+     * Lấy danh sách nhân viên (phân trang).
+     * Hỗ trợ lọc nhân viên đang hoạt động tại một tháng/năm cụ thể.
+     * Tự động xác định trạng thái đang nghỉ phép (onLeave) tại thời điểm kiểm tra.
+     */
     @GetMapping
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public com.accounting.app.dto.PageResponse<Employee> getAll(
@@ -41,12 +50,13 @@ public class EmployeeController {
         if (month != null && year != null) {
             java.time.LocalDate targetDate = java.time.LocalDate.of(year, month, 1);
             java.time.LocalDate endDate = targetDate.withDayOfMonth(targetDate.lengthOfMonth());
+            // Chỉ lấy những nhân viên đang hoạt động trong khoảng thời gian này (chưa nghỉ việc hoặc bắt đầu vào làm)
             result = employeeRepository.findActiveAt(targetDate, endDate, org.springframework.data.domain.PageRequest.of(page, size));
         } else {
             result = employeeRepository.findAllSorted(org.springframework.data.domain.PageRequest.of(page, size));
         }
 
-        // Detect active leaves at a specific snapshot date
+        // Xác định mốc thời gian để kiểm tra xem nhân viên có đang nghỉ phép (onLeave) hay không
         java.time.LocalDate today = java.time.LocalDate.now();
         java.time.LocalDate checkDate;
         if (month != null && year != null) {
@@ -60,11 +70,13 @@ public class EmployeeController {
             checkDate = today;
         }
 
+        // Lấy danh sách các nhân viên đang có lịch nghỉ được duyệt vào ngày checkDate
         java.util.List<com.accounting.app.model.LeaveRecord> activeLeaves = leaveRepository.findActiveLeaves(checkDate);
         java.util.Set<String> onLeaveIds = activeLeaves.stream()
                 .map(lr -> lr.getEmployee().getId())
                 .collect(java.util.stream.Collectors.toSet());
 
+        // Map trạng thái đang nghỉ phép vào DTO trả về cho UI hiển thị icon/badge tương ứng
         result.getContent().forEach(emp -> {
             if (onLeaveIds.contains(emp.getId())) {
                 emp.setOnLeave(true);
@@ -81,6 +93,9 @@ public class EmployeeController {
         );
     }
 
+    /**
+     * Sinh tự động mã nhân viên tiếp theo theo định dạng: NV001, NV002, NV003,...
+     */
     @GetMapping("/next-id")
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public String getNextId() {
@@ -90,18 +105,25 @@ public class EmployeeController {
             try {
                 next = Integer.parseInt(maxId.substring(2)) + 1;
             } catch (Exception e) {
-                // Ignore
+                // Bỏ qua lỗi parse
             }
         }
         return String.format("NV%03d", next);
     }
 
+    /**
+     * Tạo mới thông tin nhân viên.
+     */
     @PostMapping
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public Employee create(@Valid @RequestBody Employee emp) {
         return employeeRepository.save(emp);
     }
 
+    /**
+     * Cập nhật thông tin chi tiết của nhân viên.
+     * Nếu cập nhật trạng thái sang nghỉ việc (LEFT), tự động gán ngày nghỉ việc nếu chưa khai báo.
+     */
     @PutMapping("/{id}")
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public Employee update(@PathVariable String id, @Valid @RequestBody Employee details) {
@@ -119,10 +141,8 @@ public class EmployeeController {
         emp.setGender(details.getGender());
         emp.setResignationDate(details.getResignationDate());
         
-        // Cập nhật trạng thái thủ công nếu cần
         if (details.getStatus() != null) {
             emp.setStatus(details.getStatus());
-            // Nếu chuyển sang Đã nghỉ mà chưa có ngày nghỉ thì lấy hôm nay
             if (details.getStatus() == com.accounting.app.model.EmployeeStatus.LEFT && emp.getResignationDate() == null) {
                 emp.setResignationDate(java.time.LocalDate.now());
             }
@@ -131,15 +151,21 @@ public class EmployeeController {
         return employeeRepository.save(emp);
     }
 
+    /**
+     * Xóa nhân viên (Soft Delete - Chuyển trạng thái sang LEFT và gán ngày nghỉ việc là hôm nay).
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public void delete(@PathVariable String id) {
         Employee emp = employeeRepository.findById(id).orElseThrow();
         emp.setStatus(EmployeeStatus.LEFT);
-        emp.setResignationDate(java.time.LocalDate.now()); // Tự động lấy ngày hôm nay
+        emp.setResignationDate(java.time.LocalDate.now());
         employeeRepository.save(emp);
     }
 
+    /**
+     * Tải lên file Hợp đồng lao động dạng PDF của nhân viên.
+     */
     @PostMapping("/upload-contract/{id}")
     @PreAuthorize("@perm.check('HR_EMPLOYEE')")
     public ResponseEntity<String> uploadContract(@PathVariable String id, @RequestParam("file") MultipartFile file) {
@@ -157,6 +183,9 @@ public class EmployeeController {
         }
     }
 
+    /**
+     * Tải xuống hoặc xem trực tuyến Hợp đồng lao động PDF của nhân viên.
+     */
     @GetMapping("/download-contract/{id}")
     @PreAuthorize("hasRole('NHAN_SU') or hasRole('KE_TOAN_LUONG') or hasRole('ADMIN')")
     public ResponseEntity<Resource> downloadContract(@PathVariable String id) {

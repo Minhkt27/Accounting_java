@@ -13,8 +13,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/payroll")
 public class PayrollController {
 
-    @Autowired private PayrollService payrollService;
-    @Autowired private PayrollRepository payrollRepository;
+    @Autowired
+    private PayrollService payrollService;
+    @Autowired
+    private PayrollRepository payrollRepository;
 
     @PostMapping("/calculate")
     @PreAuthorize("@perm.check('PAYROLL_CALCULATE')")
@@ -30,21 +32,19 @@ public class PayrollController {
     @GetMapping("/{month}/{year}")
     @PreAuthorize("@perm.check('PAYROLL_CALCULATE') or @perm.check('PAYROLL_PAY')")
     public com.accounting.app.dto.PageResponse<Payroll> getPayrollByMonth(
-            @PathVariable Integer month, 
+            @PathVariable Integer month,
             @PathVariable Integer year,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         org.springframework.data.domain.Page<Payroll> result = payrollRepository.findByMonthAndYearSorted(
-            month, year, org.springframework.data.domain.PageRequest.of(page, size)
-        );
+                month, year, org.springframework.data.domain.PageRequest.of(page, size));
         return new com.accounting.app.dto.PageResponse<>(
-            result.getContent(),
-            result.getNumber(),
-            result.getSize(),
-            result.getTotalElements(),
-            result.getTotalPages(),
-            result.isLast()
-        );
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast());
     }
 
     @PostMapping("/approve")
@@ -60,7 +60,8 @@ public class PayrollController {
 
     @PostMapping("/pay")
     @PreAuthorize("@perm.check('PAYROLL_PAY')")
-    public ResponseEntity<String> payPayroll(@RequestParam Integer month, @RequestParam Integer year, @RequestParam String paymentMethod) {
+    public ResponseEntity<String> payPayroll(@RequestParam Integer month, @RequestParam Integer year,
+            @RequestParam String paymentMethod) {
         try {
             payrollService.payMonthlyPayroll(month, year, paymentMethod);
             return ResponseEntity.ok("Thanh toán lương tháng " + month + "/" + year + " thành công.");
@@ -71,7 +72,8 @@ public class PayrollController {
 
     @PostMapping("/pay-insurance")
     @PreAuthorize("@perm.check('PAYROLL_PAY')")
-    public ResponseEntity<String> payInsurance(@RequestParam Integer month, @RequestParam Integer year, @RequestParam String paymentMethod) {
+    public ResponseEntity<String> payInsurance(@RequestParam Integer month, @RequestParam Integer year,
+            @RequestParam String paymentMethod) {
         try {
             payrollService.payInsurance(month, year, paymentMethod);
             return ResponseEntity.ok("Nộp bảo hiểm tháng " + month + "/" + year + " thành công.");
@@ -82,7 +84,8 @@ public class PayrollController {
 
     @PostMapping("/pay-tax")
     @PreAuthorize("@perm.check('PAYROLL_PAY')")
-    public ResponseEntity<String> payTax(@RequestParam Integer month, @RequestParam Integer year, @RequestParam String paymentMethod) {
+    public ResponseEntity<String> payTax(@RequestParam Integer month, @RequestParam Integer year,
+            @RequestParam String paymentMethod) {
         try {
             payrollService.payTax(month, year, paymentMethod);
             return ResponseEntity.ok("Nộp thuế TNCN tháng " + month + "/" + year + " thành công.");
@@ -94,7 +97,7 @@ public class PayrollController {
     @PostMapping("/reject")
     @PreAuthorize("@perm.check('PAYROLL_APPROVE')")
     public ResponseEntity<String> rejectPayroll(
-            @RequestParam Integer month, 
+            @RequestParam Integer month,
             @RequestParam Integer year,
             @RequestParam(required = false, defaultValue = "Không đạt yêu cầu") String reason) {
         try {

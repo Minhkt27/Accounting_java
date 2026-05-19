@@ -34,21 +34,19 @@ public class AttendanceController {
     @GetMapping("/{month}/{year}")
     @PreAuthorize("@perm.check('HR_ATTENDANCE')")
     public com.accounting.app.dto.PageResponse<Attendance> getByMonth(
-            @PathVariable Integer month, 
+            @PathVariable Integer month,
             @PathVariable Integer year,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         org.springframework.data.domain.Page<Attendance> result = attendanceRepository.findAllByMonthAndYearSorted(
-            month, year, org.springframework.data.domain.PageRequest.of(page, size)
-        );
+                month, year, org.springframework.data.domain.PageRequest.of(page, size));
         return new com.accounting.app.dto.PageResponse<>(
-            result.getContent(),
-            result.getNumber(),
-            result.getSize(),
-            result.getTotalElements(),
-            result.getTotalPages(),
-            result.isLast()
-        );
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast());
     }
 
     @PostMapping
@@ -71,14 +69,14 @@ public class AttendanceController {
 
             // Kiểm tra trạng thái bảng lương
             List<Payroll> payrolls = payrollRepository.findByMonthAndYearSortedList(first.getMonth(), first.getYear());
-            boolean isLocked = !payrolls.isEmpty() && payrolls.stream().anyMatch(p -> 
-                p.getStatus() != PayrollStatus.REJECTED
-            );
+            boolean isLocked = !payrolls.isEmpty()
+                    && payrolls.stream().anyMatch(p -> p.getStatus() != PayrollStatus.REJECTED);
 
             if (isLocked) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Bảng lương tháng " + first.getMonth() + "/" + first.getYear() + " đã được tính. Vui lòng từ chối bảng lương nếu muốn sửa lại công.");
+                        "Bảng lương tháng " + first.getMonth() + "/" + first.getYear()
+                                + " đã được tính. Vui lòng từ chối bảng lương nếu muốn sửa lại công.");
             }
         }
 

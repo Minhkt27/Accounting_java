@@ -16,10 +16,14 @@ import java.util.stream.Collectors;
 @PreAuthorize("@perm.check('ADMIN_USERS')")
 public class UserManagementController {
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private RoleRepository roleRepository;
-    @Autowired private RolePermissionRepository permissionRepository;
-    @Autowired private PasswordEncoder encoder;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private RolePermissionRepository permissionRepository;
+    @Autowired
+    private PasswordEncoder encoder;
 
     /**
      * Lấy danh sách tất cả người dùng

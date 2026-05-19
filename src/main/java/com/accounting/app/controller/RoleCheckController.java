@@ -15,8 +15,10 @@ import java.util.Map;
 @RequestMapping("/api/debug/test-roles")
 public class RoleCheckController {
 
-    @Autowired AuthenticationManager authenticationManager;
-    @Autowired JwtUtils jwtUtils;
+    @Autowired
+    AuthenticationManager authenticationManager;
+    @Autowired
+    JwtUtils jwtUtils;
 
     @GetMapping("/login-test")
     public Map<String, Object> testLogins() {
@@ -29,7 +31,7 @@ public class RoleCheckController {
     private String tryLogin(String username, String password) {
         try {
             Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password));
+                    new UsernamePasswordAuthenticationToken(username, password));
             return jwtUtils.generateJwtToken(authentication);
         } catch (Exception e) {
             return "ERROR: " + e.getMessage();

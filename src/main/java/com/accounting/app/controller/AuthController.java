@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 @RequestMapping("/api/auth")
 public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
-    
+
     @Autowired
     AuthenticationManager authenticationManager;
 
@@ -43,17 +43,17 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtUtils.generateJwtToken(authentication);
-        
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();    
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(new JwtResponse(jwt, 
-                                                 userDetails.getId(), 
-                                                 userDetails.getUsername(), 
-                                                 userDetails.getEmail(), 
-                                                 roles));
+        return ResponseEntity.ok(new JwtResponse(jwt,
+                userDetails.getId(),
+                userDetails.getUsername(),
+                userDetails.getEmail(),
+                roles));
     }
 
     /**
@@ -64,14 +64,13 @@ public class AuthController {
     public ResponseEntity<List<String>> getMyPermissions() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
-        
+
         // Admin có mọi quyền
         boolean isAdmin = authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         if (isAdmin) {
             return ResponseEntity.ok(List.of(
-                "CONFIG_ACCOUNT", "CONFIG_INSURANCE", "HR_EMPLOYEE", "HR_ATTENDANCE",
-                "HR_LEAVE", "PAYROLL_CALCULATE", "PAYROLL_APPROVE", "ACCOUNTING_VIEW", "ADMIN_USERS"
-            ));
+                    "CONFIG_ACCOUNT", "CONFIG_INSURANCE", "HR_EMPLOYEE", "HR_ATTENDANCE",
+                    "HR_LEAVE", "PAYROLL_CALCULATE", "PAYROLL_APPROVE", "ACCOUNTING_VIEW", "ADMIN_USERS"));
         }
 
         Set<String> allowed = new HashSet<>();

@@ -15,29 +15,34 @@ import java.util.List;
 @RequestMapping("/api/config")
 public class SystemConfigController {
 
-    @Autowired private SalaryParameterRepository salaryRepo;
-    @Autowired private TaxTierRepository taxRepo;
-    @Autowired private DeductionSettingRepository deductionRepo;
-    @Autowired private EmployeeTaxConfigRepository taxConfigRepo;
-    @Autowired private InsuranceConfigRepository insuranceConfigRepo;
+    @Autowired
+    private SalaryParameterRepository salaryRepo;
+    @Autowired
+    private TaxTierRepository taxRepo;
+    @Autowired
+    private DeductionSettingRepository deductionRepo;
+    @Autowired
+    private EmployeeTaxConfigRepository taxConfigRepo;
+    @Autowired
+    private InsuranceConfigRepository insuranceConfigRepo;
 
     @GetMapping("/all")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE') or @perm.check('PAYROLL_CALCULATE')")
     public com.accounting.app.dto.ConfigResponse getAllConfigs() {
         return new com.accounting.app.dto.ConfigResponse(
-            salaryRepo.findAll(),
-            insuranceConfigRepo.findAll(),
-            taxRepo.findAllByOrderByTierLevelAsc(),
-            deductionRepo.findAll(),
-            taxConfigRepo.findAll()
-        );
+                salaryRepo.findAll(),
+                insuranceConfigRepo.findAll(),
+                taxRepo.findAllByOrderByTierLevelAsc(),
+                deductionRepo.findAll(),
+                taxConfigRepo.findAll());
     }
-
 
     // NEW: Unified Insurance Config
     @GetMapping("/insurance-config")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public List<InsuranceConfig> getInsuranceConfig() { return insuranceConfigRepo.findAll(); }
+    public List<InsuranceConfig> getInsuranceConfig() {
+        return insuranceConfigRepo.findAll();
+    }
 
     @PostMapping("/insurance-config")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
@@ -66,7 +71,7 @@ public class SystemConfigController {
         List<InsuranceConfig> oldApproved = insuranceConfigRepo.findAll().stream()
                 .filter(c -> "APPROVED".equals(c.getStatus())).toList();
         insuranceConfigRepo.deleteAll(oldApproved);
-        
+
         config.setStatus("APPROVED");
         return insuranceConfigRepo.save(config);
     }
@@ -80,31 +85,32 @@ public class SystemConfigController {
         }
     }
 
-
     // UC 03: Salary Params
     @GetMapping("/params")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE') or @perm.check('HR_ATTENDANCE') or @perm.check('PAYROLL_CALCULATE')")
-    public List<SalaryParameter> getParams() { return salaryRepo.findAll(); }
+    public List<SalaryParameter> getParams() {
+        return salaryRepo.findAll();
+    }
 
     @PostMapping("/params")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public SalaryParameter saveParam(@RequestBody SalaryParameter param) { 
+    public SalaryParameter saveParam(@RequestBody SalaryParameter param) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
         boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         String status = (isAdmin || isChief) ? "APPROVED" : "PENDING";
         param.setStatus(status);
-        
+
         // Luôn đảm bảo chỉ có tối đa 1 bản ghi cho mỗi trạng thái
         List<SalaryParameter> existing = salaryRepo.findAll().stream()
                 .filter(p -> status.equals(p.getStatus())).toList();
         salaryRepo.deleteAll(existing);
-        
+
         // Reset ID để luôn là bản ghi mới (overwrite)
         param.setId(null);
-        
-        return salaryRepo.save(param); 
+
+        return salaryRepo.save(param);
     }
 
     @PostMapping("/params/{id}/approve")
@@ -116,7 +122,7 @@ public class SystemConfigController {
         List<SalaryParameter> oldApproved = salaryRepo.findAll().stream()
                 .filter(p -> "APPROVED".equals(p.getStatus())).toList();
         salaryRepo.deleteAll(oldApproved);
-        
+
         param.setStatus("APPROVED");
         return salaryRepo.save(param);
     }
@@ -134,7 +140,9 @@ public class SystemConfigController {
     // UC 04, 05: Tax Tiers
     @GetMapping("/tax")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public List<TaxTier> getTaxTiers() { return taxRepo.findAllByOrderByTierLevelAsc(); }
+    public List<TaxTier> getTaxTiers() {
+        return taxRepo.findAllByOrderByTierLevelAsc();
+    }
 
     @PostMapping("/tax")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
@@ -144,11 +152,13 @@ public class SystemConfigController {
         boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         String status = (isAdmin || isChief) ? "APPROVED" : "PENDING";
-        
-        // Nếu là APPROVED thì mới xóa cũ. Nếu là PENDING thì chỉ thêm mới các bản ghi PENDING? 
+
+        // Nếu là APPROVED thì mới xóa cũ. Nếu là PENDING thì chỉ thêm mới các bản ghi
+        // PENDING?
         // Đơn giản hơn: Nếu là PENDING, ta đánh dấu tất cả tiers mới này là PENDING.
-        // Khi duyệt, ta sẽ xóa tất cả APPROVED cũ và chuyển tất cả PENDING thành APPROVED.
-        
+        // Khi duyệt, ta sẽ xóa tất cả APPROVED cũ và chuyển tất cả PENDING thành
+        // APPROVED.
+
         for (TaxTier tier : tiers) {
             tier.setStatus(status);
             // Luôn reset ID để tránh xung đột khi thay thế bộ thuế mới
@@ -162,7 +172,7 @@ public class SystemConfigController {
                 tier.setUpperBoundYearly(tier.getUpperBound().multiply(new BigDecimal("12")));
             }
         }
-        
+
         if ("APPROVED".equals(status)) {
             taxRepo.deleteAll();
         } else {
@@ -170,7 +180,7 @@ public class SystemConfigController {
             List<TaxTier> oldPending = taxRepo.findAll().stream().filter(t -> "PENDING".equals(t.getStatus())).toList();
             taxRepo.deleteAll(oldPending);
         }
-        
+
         return taxRepo.saveAll((Iterable<TaxTier>) tiers);
     }
 
@@ -180,7 +190,7 @@ public class SystemConfigController {
         // Xóa tất cả APPROVED cũ
         List<TaxTier> oldApproved = taxRepo.findAll().stream().filter(t -> "APPROVED".equals(t.getStatus())).toList();
         taxRepo.deleteAll(oldApproved);
-        
+
         // Chuyển tất cả PENDING thành APPROVED
         List<TaxTier> pending = taxRepo.findAll().stream().filter(t -> "PENDING".equals(t.getStatus())).toList();
         for (TaxTier t : pending) {
@@ -199,11 +209,13 @@ public class SystemConfigController {
     // UC 06: Deductions
     @GetMapping("/deductions")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public List<DeductionSetting> getDeductions() { return deductionRepo.findAll(); }
+    public List<DeductionSetting> getDeductions() {
+        return deductionRepo.findAll();
+    }
 
     @PostMapping("/deductions")
     @PreAuthorize("@perm.check('CONFIG_INSURANCE')")
-    public DeductionSetting saveDeduction(@RequestBody DeductionSetting setting) { 
+    public DeductionSetting saveDeduction(@RequestBody DeductionSetting setting) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isChief = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_KE_TOAN_TRUONG"));
         boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
@@ -214,7 +226,7 @@ public class SystemConfigController {
             setting.setStatus("PENDING");
             setting.setId(null); // Tạo bản ghi nháp mới, không ghi đè Approved
         }
-        return deductionRepo.save(setting); 
+        return deductionRepo.save(setting);
     }
 
     @PostMapping("/deductions/{id}/approve")
@@ -226,7 +238,7 @@ public class SystemConfigController {
         List<DeductionSetting> oldApproved = deductionRepo.findAll().stream()
                 .filter(d -> "APPROVED".equals(d.getStatus())).toList();
         deductionRepo.deleteAll(oldApproved);
-        
+
         setting.setStatus("APPROVED");
         return deductionRepo.save(setting);
     }
@@ -257,7 +269,7 @@ public class SystemConfigController {
         boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         String status = (isAdmin || isChief) ? "APPROVED" : "PENDING";
-        
+
         for (EmployeeTaxConfig rule : rules) {
             rule.setStatus(status);
             rule.setId(null); // Reset ID to null to allow database IDENTITY generation
@@ -266,10 +278,11 @@ public class SystemConfigController {
         if ("APPROVED".equals(status)) {
             taxConfigRepo.deleteAll();
         } else {
-            List<EmployeeTaxConfig> oldPending = taxConfigRepo.findAll().stream().filter(r -> "PENDING".equals(r.getStatus())).toList();
+            List<EmployeeTaxConfig> oldPending = taxConfigRepo.findAll().stream()
+                    .filter(r -> "PENDING".equals(r.getStatus())).toList();
             taxConfigRepo.deleteAll(oldPending);
         }
-        
+
         return taxConfigRepo.saveAll((Iterable<EmployeeTaxConfig>) rules);
     }
 
@@ -278,11 +291,13 @@ public class SystemConfigController {
     @SuppressWarnings("unchecked")
     public List<EmployeeTaxConfig> approveTaxRules() {
         // Clear all APPROVED
-        List<EmployeeTaxConfig> oldApproved = taxConfigRepo.findAll().stream().filter(r -> "APPROVED".equals(r.getStatus())).toList();
+        List<EmployeeTaxConfig> oldApproved = taxConfigRepo.findAll().stream()
+                .filter(r -> "APPROVED".equals(r.getStatus())).toList();
         taxConfigRepo.deleteAll(oldApproved);
-        
+
         // Approve all PENDING
-        List<EmployeeTaxConfig> pending = taxConfigRepo.findAll().stream().filter(r -> "PENDING".equals(r.getStatus())).toList();
+        List<EmployeeTaxConfig> pending = taxConfigRepo.findAll().stream().filter(r -> "PENDING".equals(r.getStatus()))
+                .toList();
         for (EmployeeTaxConfig r : pending) {
             r.setStatus("APPROVED");
         }
