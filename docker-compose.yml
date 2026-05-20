@@ -11,6 +11,32 @@ services:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        /opt/mssql/bin/sqlservr &
+        echo "Waiting for SQL Server to start..."
+        counter=0
+        while [ $$counter -lt 60 ]; do
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "AccountingApp@123" -C -Q "SELECT 1" > /dev/null 2>&1
+          if [ $$? -eq 0 ]; then
+            echo "SQL Server is ready. Creating database if not exists..."
+            /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "AccountingApp@123" -C -Q "IF DB_ID('accounting_db') IS NULL CREATE DATABASE accounting_db"
+            echo "Database initialization completed."
+            break
+          fi
+          echo "SQL Server is not ready yet, retrying in 2 seconds..."
+          sleep 2
+          counter=$$((counter + 1))
+        done
+        wait
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -d accounting_db -U sa -P 'AccountingApp@123' -C -Q 'SELECT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
 
   backend:
@@ -22,7 +48,8 @@ services:
       - ./uploads:/app/uploads # Lưu trữ hợp đồng PDF bền vững
       - ~/.m2:/root/.m2 # Cache maven dependencies locally
     depends_on:
-      - sqlserver-db
+      sqlserver-db:
+        condition: service_healthy
     environment:
       - SPRING_DATASOURCE_URL=jdbc:sqlserver://sqlserver-db:1433;databaseName=accounting_db;encrypt=true;trustServerCertificate=true
       - SPRING_DATASOURCE_USERNAME=sa

@@ -27,40 +27,22 @@ Ví dụ: `cd D:\Accounting_java`
 
 ---
 
-## Bước 2 — Khởi động SQL Server
+## Bước 2 — Khởi động toàn bộ hệ thống
 
-```bash
-docker compose up -d sqlserver-db
-```
-
-> Chờ khoảng **15–20 giây** để SQL Server khởi động hoàn tất trước khi sang bước tiếp theo.
-
----
-
-## Bước 3 — Tạo database (chỉ làm 1 lần duy nhất)
-
-```bash
-docker exec accounting_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "AccountingApp@123" -C -Q "CREATE DATABASE accounting_db"
-```
-
-> [!IMPORTANT]
-> Nếu lệnh trên báo lỗi `cannot connect` hoặc tương tự, nghĩa là SQL Server chưa khởi động xong — hãy đợi thêm 10–15 giây rồi chạy lại.
-
----
-
-## Bước 4 — Khởi động toàn bộ hệ thống
+Chỉ cần chạy một câu lệnh duy nhất sau để tự động tải dependencies, khởi tạo database và chạy cả hệ thống:
 
 ```bash
 docker compose up --build
 ```
 
-> Lần đầu tiên sẽ tự động tải dependencies (Maven + npm), có thể mất **3–5 phút**. Những lần sau sẽ nhanh hơn.
->
-> Khi thấy log không còn cuộn nữa và không có lỗi đỏ → hệ thống đã sẵn sàng.
+> [!NOTE]
+> - Hệ thống sẽ tự động khởi tạo SQL Server, chờ cho đến khi SQL Server sẵn sàng, tự động chạy lệnh tạo database `accounting_db` nếu chưa tồn tại, sau đó mới chạy backend và frontend.
+> - Lần đầu tiên chạy sẽ tự động tải các thư viện (Maven + npm), có thể mất **3–5 phút**. Các lần tiếp theo sẽ khởi động rất nhanh.
+> - Khi thấy log dừng lại và không báo lỗi → hệ thống đã sẵn sàng hoạt động.
 
 ---
 
-## Bước 5 — Truy cập ứng dụng
+## Bước 3 — Truy cập ứng dụng
 
 Mở trình duyệt và vào địa chỉ:
 
