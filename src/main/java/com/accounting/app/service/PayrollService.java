@@ -329,6 +329,10 @@ public class PayrollService {
                 .findAllApprovedInMonth(firstDay, lastDay)
                 .stream().collect(java.util.stream.Collectors.groupingBy(c -> c.getEmployee().getId()));
 
+        java.util.Map<String, List<SalaryChange>> salaryAdjustmentsMap = salaryChangeRepository
+                .findAllApprovedSalaryAdjustments()
+                .stream().collect(java.util.stream.Collectors.groupingBy(c -> c.getEmployee().getId()));
+
         java.util.Map<EmployeeType, EmployeeTaxConfig> taxConfigMap = taxConfigRepo.findAll()
                 .stream().collect(java.util.stream.Collectors.toMap(c -> c.getEmployeeType(), c -> c, (c1, c2) -> c1));
 
@@ -389,14 +393,17 @@ public class PayrollService {
             payroll.setEmployee(emp);
             payroll.setMonth(month);
             payroll.setYear(year);
-            payroll.setContractSalary(emp.getContractSalary());
+
+            List<SalaryChange> adjustments = salaryAdjustmentsMap.getOrDefault(emp.getId(), List.of());
+            BigDecimal contractSal = getContractSalaryAt(emp, lastDay, adjustments);
+
+            payroll.setContractSalary(contractSal);
             payroll.setRealWorkDays(realDays);
             payroll.setPaidLeaveDays(paidLeaveDays);
             payroll.setStandardWorkDays(standardDays);
 
             // Bước 5.2: Tính lương thời gian (Lương cơ bản thực tế)
             BigDecimal totalPaidDays = realDays.add(paidLeaveDays != null ? paidLeaveDays : BigDecimal.ZERO);
-            BigDecimal contractSal = emp.getContractSalary() != null ? emp.getContractSalary() : BigDecimal.ZERO;
 
             // Lương chính = (Lương HĐ / Standard) * totalPaidDays
             BigDecimal baseSalary = BigDecimal.ZERO;
@@ -632,6 +639,33 @@ public class PayrollService {
             }
         }
         return businessDays;
+    }
+
+    // Lấy lương hợp đồng tại một thời điểm chỉ định dựa trên lịch sử biến động lương
+    private BigDecimal getContractSalaryAt(Employee emp, LocalDate targetDate, List<SalaryChange> adjustments) {
+        if (adjustments == null || adjustments.isEmpty()) {
+            return emp.getContractSalary() != null ? emp.getContractSalary() : BigDecimal.ZERO;
+        }
+
+        SalaryChange latestBeforeOrOnTarget = null;
+        for (SalaryChange change : adjustments) {
+            if (!change.getEffectiveDate().isAfter(targetDate)) {
+                latestBeforeOrOnTarget = change;
+            } else {
+                // Do danh sách biến động được sắp xếp tăng dần theo ngày hiệu lực,
+                // biến động đầu tiên sau ngày targetDate sẽ cho biết mức lương cũ ngay trước khi có biến động đó.
+                if (latestBeforeOrOnTarget == null) {
+                    return change.getOldValue() != null ? change.getOldValue() : BigDecimal.ZERO;
+                }
+                break;
+            }
+        }
+
+        if (latestBeforeOrOnTarget != null) {
+            return latestBeforeOrOnTarget.getNewValue() != null ? latestBeforeOrOnTarget.getNewValue() : BigDecimal.ZERO;
+        }
+
+        return emp.getContractSalary() != null ? emp.getContractSalary() : BigDecimal.ZERO;
     }
 
     // Khởi tạo các thông số lương mặc định phòng hờ khi chưa cấu hình hệ thống
