@@ -65,9 +65,9 @@ export default function PaymentDialog({
       <DialogTrigger>
         <Button
           disabled={disabled}
-          className={`gap-2 h-9 text-white font-bold shadow-md ${cfg.bgClass} ${!disabled ? "animate-pulse" : ""}`}
+          className={`h-9 text-white font-bold shadow-md ${cfg.bgClass}`}
         >
-          <Icon className="w-4 h-4" /> {cfg.title}
+          {cfg.title}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md p-6 bg-white rounded-2xl shadow-2xl border-none">

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 import {
   Calculator,
   CheckCircle,
@@ -10,7 +9,6 @@ import {
 } from "lucide-react";
 import { ExportService } from "../utils/ExportService";
 import PayslipDialog from "../components/PayslipDialog";
-import { Pagination } from "../components/ui/pagination";
 
 export interface Employee {
   id: string;
@@ -75,7 +73,6 @@ export default function PayrollPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [pageSize] = useState(20);
 
-  // Mặc định hiển thị tháng trước
   const [month, setMonth] = useState(
     new Date().getMonth() === 0 ? 12 : new Date().getMonth(),
   );
@@ -253,137 +250,116 @@ export default function PayrollPage() {
     payrolls.length > 0 && payrolls.every((p) => p.status === "REJECTED");
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Calculator className="w-6 h-6 text-primary" /> Quản lý Tiền lương
+    <div className="space-y-4 bg-gray-50 min-h-screen p-4">
+      {/* Header & Actions */}
+      <div className="flex flex-col xl:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200 gap-4">
+        <h1 className="text-xl font-bold flex items-center gap-2 text-gray-800">
+          <Calculator className="w-6 h-6 text-blue-600" /> Quản lý Tiền lương
         </h1>
 
-        <div className="flex flex-nowrap items-center gap-3 bg-muted/30 p-2 rounded-xl border shadow-sm overflow-x-auto scrollbar-hide flex-shrink-0">
-          <div className="flex items-center gap-2 border-r pr-3">
-            <span className="text-[10px] font-black uppercase text-muted-foreground mr-1">
-              Kỳ lương
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              Kỳ lương:
             </span>
-            <Input
+            <input
               type="number"
-              className="w-16 h-8 text-center font-bold"
+              className="w-16 h-10 text-center bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-gray-700"
               value={month}
               onChange={(e) =>
                 setMonth(Math.max(1, Math.min(12, Number(e.target.value))))
               }
             />
-            <span className="text-muted-foreground">/</span>
-            <Input
+            <span className="text-gray-400 font-bold">/</span>
+            <input
               type="number"
-              className="w-20 h-8 text-center font-bold"
+              className="w-20 h-10 text-center bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-gray-700"
               value={year}
               onChange={(e) => setYear(Math.max(2000, Number(e.target.value)))}
             />
           </div>
 
-          <Button
-            variant="outline"
-            onClick={handleExportExcel}
-            className="gap-2 h-8 border-green-600 text-green-600 hover:bg-green-50 shadow-sm"
-          >
-            <FileSpreadsheet className="w-4 h-4" /> Excel
-          </Button>
-
-          <div className="w-[1px] h-6 bg-slate-200 mx-1" />
-
-          <Button
-            onClick={handleCalculate}
-            disabled={
-              loading || isCurrentOrFuture || isApprovedAll || isPaidAll
-            }
-            className="gap-2 h-8"
-          >
-            <Calculator className="w-4 h-4" />{" "}
-            {loading
-              ? "Đang tính..."
-              : isRejectedAll
-                ? "Tính lại"
-                : "Tính Lương"}
-          </Button>
-
-          {canApprove && (
+          <div className="flex items-center gap-2">
             <Button
-              onClick={handleApprove}
-              disabled={!isDraftAll || payrolls.length === 0}
-              className="gap-2 h-8 bg-amber-500 hover:bg-amber-600 text-white font-bold"
+              onClick={handleExportExcel}
+              className="h-10 bg-white hover:bg-green-50 text-green-600 border border-green-200 hover:border-green-300 gap-1.5 rounded-lg shadow-sm font-medium text-sm transition-all"
             >
-              <CheckCircle className="w-4 h-4" /> Chốt Sổ
+              <FileSpreadsheet className="w-4 h-4" /> Excel
             </Button>
-          )}
 
-          {canApprove && (
             <Button
-              onClick={() => setShowRejectDialog(true)}
-              disabled={!isDraftAll || payrolls.length === 0}
-              className="gap-2 h-8 bg-red-500 hover:bg-red-600 text-white font-bold"
+              onClick={handleCalculate}
+              disabled={
+                loading || isCurrentOrFuture || isApprovedAll || isPaidAll
+              }
+              className="h-10 bg-blue-600 hover:bg-blue-700 text-white gap-1.5 rounded-lg shadow-sm font-medium text-sm transition-all"
             >
-              <XCircle className="w-4 h-4" /> Từ chối
+              <Calculator className="w-4 h-4" />{" "}
+              {loading
+                ? "Đang tính..."
+                : isRejectedAll
+                  ? "Tính lại"
+                  : "Tính Lương"}
             </Button>
-          )}
+
+            {canApprove && (
+              <Button
+                onClick={handleApprove}
+                disabled={!isDraftAll || payrolls.length === 0}
+                className="h-10 bg-amber-500 hover:bg-amber-600 text-white gap-1.5 rounded-lg shadow-sm font-medium text-sm transition-all"
+              >
+                <CheckCircle className="w-4 h-4" /> Chốt Sổ
+              </Button>
+            )}
+
+            {canApprove && (
+              <Button
+                onClick={() => setShowRejectDialog(true)}
+                disabled={!isDraftAll || payrolls.length === 0}
+                className="h-10 bg-red-600 hover:bg-red-700 text-white gap-1.5 rounded-lg shadow-sm font-medium text-sm transition-all"
+              >
+                <XCircle className="w-4 h-4" /> Từ chối
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ==============================================
-            KHU VỰC VẼ BẢNG HIỂN THỊ DANH SÁCH BẢNG LƯƠNG
-            (Hiển thị chi tiết từng khoản lương, phụ cấp, bảo hiểm, thuế của nhân viên trong tháng)
-            ============================================== */}
-      <div className="border rounded-xl bg-card shadow-lg overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm text-left whitespace-nowrap">
-          <thead className="bg-primary text-primary-foreground border-b border-primary-foreground/10">
-            <tr>
-              <th className="px-4 py-4 font-bold">Mã NV</th>
-              <th className="px-4 py-4 font-bold">Họ tên nhân viên</th>
-              <th className="px-4 py-4 font-bold text-center">Trạng thái</th>
-              <th className="px-4 py-4 font-bold text-center">Hành động</th>
-              <th className="px-4 py-4 font-bold text-right text-yellow-200">
-                Thực lĩnh
-              </th>
-              <th className="px-4 py-4 font-medium text-right bg-primary/95">
-                Công mặt
-              </th>
-              <th className="px-4 py-4 font-medium text-right bg-primary/95">
-                Ngày phép
-              </th>
-              <th className="px-4 py-4 font-medium text-right">
-                Lương thời gian
-              </th>
-              <th className="px-4 py-4 font-medium text-right">Phụ cấp/OT</th>
-              <th className="px-4 py-4 font-black text-blue-300 text-right">
-                Tổng thu nhập
-              </th>
-              <th className="px-4 py-4 font-medium text-right text-red-300">
-                Bảo hiểm
-              </th>
-              <th className="px-4 py-4 font-medium text-right text-red-300">
-                Thuế TNCN
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {payrolls.map((p) => (
-              <tr key={p.id} className="hover:bg-muted/50 transition-colors">
-                <td className="px-4 py-4 font-bold text-muted-foreground">
-                  {p.employee.id}
-                </td>
-                <td className="px-4 py-4 font-semibold">
-                  {p.employee.fullName}
-                </td>
-                <td className="px-4 py-4 text-center">
-                  <div className="flex flex-col items-center gap-1">
+      {/* Main Table Container */}
+      <div className="bg-white rounded-lg border border-gray-300 shadow-sm overflow-hidden flex flex-col">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse whitespace-nowrap">
+            <thead>
+              <tr className="bg-[#E6F4F1] border-b border-gray-300">
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300">Mã NV</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300">Họ tên nhân viên</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-center">Trạng thái</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-center">Hành động</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-right text-green-800">Thực lĩnh</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-right bg-slate-50/10">Công mặt</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-right bg-slate-50/10">Ngày phép</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-right">Lương thời gian</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-right">Phụ cấp/OT</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-right text-blue-800">Tổng thu nhập</th>
+                <th className="px-4 py-3 font-bold text-black border-r border-gray-300 text-right text-red-800">Bảo hiểm</th>
+                <th className="px-4 py-3 font-bold text-black text-right text-red-800">Thuế TNCN</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {payrolls.map((p) => (
+                <tr key={p.id} className="hover:bg-[#FFF8E1] transition-colors">
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-gray-700">{p.employee.id}</td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 font-semibold text-gray-900">{p.employee.fullName}</td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-center">
                     <span
-                      className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-lg shadow-sm border ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                         p.status === "APPROVED"
-                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          ? "bg-amber-50 text-amber-600"
                           : p.status === "PAID"
-                            ? "bg-green-50 text-green-700 border-green-200"
+                            ? "bg-emerald-50 text-emerald-600"
                             : p.status === "REJECTED"
-                              ? "bg-red-50 text-red-700 border-red-200 cursor-help"
-                              : "bg-slate-50 text-slate-700 border-slate-200"
+                              ? "bg-red-50 text-red-600"
+                              : "bg-gray-100 text-gray-600"
                       }`}
                       title={p.status === "REJECTED" ? p.rejectionReason : ""}
                     >
@@ -396,82 +372,127 @@ export default function PayrollPage() {
                             : "Đã trả"}
                       {p.status === "REJECTED" && p.rejectionReason && " *"}
                     </span>
-                  </div>
-                </td>
-                <td className="px-4 py-4 text-center">
-                  <PayslipDialog payroll={p} />
-                </td>
-                <td className="px-4 py-4 text-right">
-                  <div className="font-black text-green-600 dark:text-green-400 text-base tabular-nums">
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-center">
+                    <PayslipDialog payroll={p} />
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-right font-black text-emerald-600 tabular-nums">
                     {formatVND(p.netPay)}
-                  </div>
-                </td>
-                <td className="px-4 py-4 text-right font-medium text-slate-500 tabular-nums bg-muted/20">
-                  {p.realWorkDays}
-                </td>
-                <td className="px-4 py-4 text-right font-bold text-green-600 tabular-nums bg-muted/20">
-                  +{p.paidLeaveDays || 0}
-                </td>
-                <td className="px-4 py-4 text-right font-bold tabular-nums text-primary/80">
-                  {formatVND(p.baseSalaryPay)}
-                </td>
-                <td className="px-4 py-4 text-right tabular-nums">
-                  {formatVND(
-                    p.mealAllowance +
-                      p.otPay +
-                      (p.seniorityAllowance || 0) +
-                      (p.bonus || 0) +
-                      (p.otherAllowances || 0) -
-                      (p.penalty || 0),
-                  )}
-                </td>
-                <td className="px-4 py-4 text-right font-black text-blue-600 dark:text-blue-400 tabular-nums">
-                  {formatVND(p.grossIncome)}
-                </td>
-                <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">
-                  {formatVND(Math.abs(p.totalInsurance))}
-                </td>
-                <td className="px-4 py-4 text-right text-red-500 font-medium tabular-nums">
-                  {formatVND(Math.abs(p.taxAmount))}
-                </td>
-              </tr>
-            ))}
-            {payrolls.length === 0 && (
-              <tr>
-                <td
-                  colSpan={12}
-                  className="px-6 py-16 text-center text-muted-foreground/60 italic"
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-right text-gray-600 tabular-nums">
+                    {p.realWorkDays}
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-right font-bold text-emerald-600 tabular-nums">
+                    +{p.paidLeaveDays || 0}
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-right text-gray-700 tabular-nums">
+                    {formatVND(p.baseSalaryPay)}
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-right text-gray-600 tabular-nums">
+                    {formatVND(
+                      p.mealAllowance +
+                        p.otPay +
+                        (p.seniorityAllowance || 0) +
+                        (p.bonus || 0) +
+                        (p.otherAllowances || 0) -
+                        (p.penalty || 0),
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-right font-bold text-blue-800 tabular-nums">
+                    {formatVND(p.grossIncome)}
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-gray-200 text-right text-red-500 font-medium tabular-nums">
+                    {formatVND(Math.abs(p.totalInsurance))}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-red-500 font-medium tabular-nums">
+                    {formatVND(Math.abs(p.taxAmount))}
+                  </td>
+                </tr>
+              ))}
+              {payrolls.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={12}
+                    className="px-6 py-20 text-center text-gray-400 italic bg-white"
+                  >
+                    <Calculator className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                    Chưa có dữ liệu bảng lương tháng {month}/{year}. Vui lòng nhấn "Tính Lương".
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Professional Footer */}
+        <div className="bg-white border-t border-gray-300 p-3 flex flex-col md:flex-row items-center justify-between text-xs text-gray-600 gap-4">
+          <div className="font-medium">
+            Tổng số:{" "}
+            <span className="font-bold text-black">
+              {totalElements}
+            </span>{" "}
+            bản ghi
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">{pageSize} bản ghi trên 1 trang</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                disabled={page === 0}
+                onClick={() => setPage(page - 1)}
+                className={`px-2 py-1 rounded transition-colors ${
+                  page === 0
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-blue-600 font-medium hover:bg-gray-100"
+                }`}
+              >
+                Trước
+              </button>
+              {Array.from({ length: totalPages }).map((_, pIdx) => (
+                <button
+                  key={pIdx}
+                  onClick={() => setPage(pIdx)}
+                  className={`w-7 h-7 flex items-center justify-center rounded border transition-all ${
+                    pIdx === page
+                      ? "border-blue-600 bg-blue-50 text-blue-600 font-bold"
+                      : "border-transparent hover:bg-gray-100 text-gray-600"
+                  }`}
                 >
-                  <Calculator className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                  Chưa có dữ liệu bảng lương tháng {month}/{year}. Vui lòng nhấn
-                  "Tính Lương".
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalElements={totalElements}
-          pageSize={pageSize}
-          onPageChange={setPage}
-        />
+                  {pIdx + 1}
+                </button>
+              ))}
+              <button
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage(page + 1)}
+                className={`px-2 py-1 rounded transition-colors ${
+                  page >= totalPages - 1
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-blue-600 font-medium hover:bg-gray-100"
+                }`}
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Reject Dialog */}
       {showRejectDialog && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4">
             <h3 className="font-bold text-lg flex items-center gap-2 text-red-600">
               <XCircle className="w-5 h-5" /> Từ chối Bảng lương tháng {month}/
               {year}
             </h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-gray-500">
               Sau khi từ chối, Kế toán tiền lương sẽ cần tính lại bảng lương.
             </p>
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-500">
+              <label className="text-[10px] font-black uppercase text-gray-500">
                 Lý do từ chối *
               </label>
               <textarea
